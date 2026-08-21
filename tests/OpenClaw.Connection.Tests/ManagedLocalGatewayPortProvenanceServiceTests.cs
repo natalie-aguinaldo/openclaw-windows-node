@@ -1,4 +1,7 @@
 using System.Net;
+using System.Runtime.Versioning;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using OpenClaw.Shared;
 using Xunit;
 
@@ -55,41 +58,120 @@ public class ManagedLocalGatewayPortProvenanceServiceTests
 
     private const string WslPackageFamilyName =
         "MicrosoftCorporationII.WindowsSubsystemForLinux_8wekyb3d8bbwe";
-    private const string NonCanonicalWslRelayPath = @"C:\Program Files\WSL\wslrelay.exe";
+    private const string WslPackageInstallLocation =
+        @"C:\Program Files\WindowsApps\MicrosoftCorporationII.WindowsSubsystemForLinux_2.9.4.0_x64__8wekyb3d8bbwe";
+    private const string ExternalWslRelayPath = @"C:\Program Files\WSL\wslrelay.exe";
+    private const string PackageVersion = "2.9.4.0";
 
     [Fact]
-    public void VerifyMicrosoftSignedFile_AuthenticodeFailsButWslPackageCorroborates_IsTrusted()
+    public void VerifyMicrosoftSignedFile_AuthenticodeFailsButProtectedExternalRelayMatchesPackage_IsTrusted()
     {
-        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            NonCanonicalWslRelayPath,
-            () => new AppxPackageInfo(
-                WslPackageFamilyName,
-                "CN=Microsoft Windows, O=Microsoft Corporation, C=US",
-                "Developer"));
+        var result = VerifyPackageFallback(ExternalWslRelayPath, ValidWslPackage());
 
         Assert.True(result.IsTrusted, result.Detail);
     }
 
     [Fact]
-    public void VerifyMicrosoftSignedFile_AuthenticodeFailsAndNoWslPackageFound_IsRejectedWithOriginalDetail()
+    public void VerifyMicrosoftSignedFile_AuthenticodeFailsButPackageOwnsWindowsAppsRelay_IsTrusted()
     {
+        var packageRelayPath = Path.Combine(WslPackageInstallLocation, "wslrelay.exe");
+
+        var result = VerifyPackageFallback(
+            packageRelayPath,
+            ValidWslPackage(),
+            WslRelayPathInspection.Secure("different-file-version"));
+
+        Assert.True(result.IsTrusted, result.Detail);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_SiblingWindowsAppsRelay_IsRejectedWithoutPathInspection()
+    {
+        var inspected = false;
+        var siblingRelayPath = Path.Combine(
+            @"C:\Program Files\WindowsApps\SomeOther.Package_1.0.0.0_x64__deadbeefcafe",
+            "wslrelay.exe");
+
         var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            NonCanonicalWslRelayPath,
-            () => null);
+            siblingRelayPath,
+            _ => AuthenticodeTrustResult.Rejected("Injected primary failure."),
+            () => ValidWslPackage(),
+            (_, _) =>
+            {
+                inspected = true;
+                return WslRelayPathInspection.Secure(PackageVersion);
+            });
 
         Assert.False(result.IsTrusted);
-        Assert.Contains("Authenticode", result.Detail, StringComparison.Ordinal);
+        Assert.False(inspected);
+        Assert.Contains("not owned", result.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_ExternalRelayVersionMismatch_IsRejected()
+    {
+        var result = VerifyPackageFallback(
+            ExternalWslRelayPath,
+            ValidWslPackage(),
+            WslRelayPathInspection.Secure("2.9.3.0"));
+
+        Assert.False(result.IsTrusted);
+        Assert.Contains("version does not match", result.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_ExternalRelayWithUnprotectedPath_IsRejected()
+    {
+        var result = VerifyPackageFallback(
+            ExternalWslRelayPath,
+            ValidWslPackage(),
+            WslRelayPathInspection.Rejected("Injected unprotected path."));
+
+        Assert.False(result.IsTrusted);
+        Assert.Contains("unprotected", result.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_RelativePackageLocation_IsRejectedWithoutPathInspection()
+    {
+        var inspected = false;
+        var package = ValidWslPackage() with { InstallLocation = @"relative\package" };
+
+        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
+            ExternalWslRelayPath,
+            _ => AuthenticodeTrustResult.Rejected("Injected primary failure."),
+            () => package,
+            (_, _) =>
+            {
+                inspected = true;
+                return WslRelayPathInspection.Secure(PackageVersion);
+            });
+
+        Assert.False(result.IsTrusted);
+        Assert.False(inspected);
+        Assert.Contains("location data is unavailable", result.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_AuthenticodeFailsAndNoWslPackageFound_IsRejectedWithOriginalDetail()
+    {
+        var result = VerifyPackageFallback(ExternalWslRelayPath, null);
+
+        Assert.False(result.IsTrusted);
+        Assert.Contains("Injected primary failure", result.Detail, StringComparison.Ordinal);
     }
 
     [Fact]
     public void VerifyMicrosoftSignedFile_AuthenticodeFailsAndWslPackageFamilyNameMismatches_IsRejected()
     {
-        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            NonCanonicalWslRelayPath,
-            () => new AppxPackageInfo(
+        var result = VerifyPackageFallback(
+            ExternalWslRelayPath,
+            new AppxPackageInfo(
                 "SomeImpostor.WindowsSubsystemForLinux_deadbeefcafe",
                 "CN=Microsoft Windows, O=Microsoft Corporation, C=US",
-                "Developer"));
+                "Developer",
+                WslPackageInstallLocation,
+                PackageVersion));
 
         Assert.False(result.IsTrusted);
     }
@@ -97,12 +179,14 @@ public class ManagedLocalGatewayPortProvenanceServiceTests
     [Fact]
     public void VerifyMicrosoftSignedFile_AuthenticodeFailsAndWslPackageUnsigned_IsRejected()
     {
-        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            NonCanonicalWslRelayPath,
-            () => new AppxPackageInfo(
+        var result = VerifyPackageFallback(
+            ExternalWslRelayPath,
+            new AppxPackageInfo(
                 WslPackageFamilyName,
                 "CN=Microsoft Windows, O=Microsoft Corporation, C=US",
-                "None"));
+                "None",
+                WslPackageInstallLocation,
+                PackageVersion));
 
         Assert.False(result.IsTrusted);
         Assert.Contains("WSL package", result.Detail, StringComparison.Ordinal);
@@ -111,12 +195,14 @@ public class ManagedLocalGatewayPortProvenanceServiceTests
     [Fact]
     public void VerifyMicrosoftSignedFile_AuthenticodeFailsAndWslPackagePublisherNotMicrosoft_IsRejected()
     {
-        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            NonCanonicalWslRelayPath,
-            () => new AppxPackageInfo(
+        var result = VerifyPackageFallback(
+            ExternalWslRelayPath,
+            new AppxPackageInfo(
                 WslPackageFamilyName,
                 "CN=Evil Corp, O=Evil Corp, C=US",
-                "Developer"));
+                "Developer",
+                WslPackageInstallLocation,
+                PackageVersion));
 
         Assert.False(result.IsTrusted);
         Assert.Contains("WSL package", result.Detail, StringComparison.Ordinal);
@@ -125,20 +211,112 @@ public class ManagedLocalGatewayPortProvenanceServiceTests
     [Fact]
     public void VerifyMicrosoftSignedFile_AuthenticodeSucceeds_NeverConsultsWslPackageFallback()
     {
-        var windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-        var wslPath = Path.Combine(windowsDir, "System32", "wsl.exe");
         var fallbackInvoked = false;
 
         var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
-            wslPath,
+            ExternalWslRelayPath,
+            _ => AuthenticodeTrustResult.Trusted(),
             () =>
             {
                 fallbackInvoked = true;
                 throw new InvalidOperationException("Fallback should not be consulted.");
-            });
+            },
+            (_, _) => throw new InvalidOperationException("Path should not be inspected."));
 
         Assert.True(result.IsTrusted, result.Detail);
         Assert.False(fallbackInvoked);
+    }
+
+    [Fact]
+    public void VerifyMicrosoftSignedFile_NonRelayFailure_NeverConsultsWslPackageFallback()
+    {
+        var fallbackInvoked = false;
+
+        var result = WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
+            @"C:\Program Files\WSL\wsl.exe",
+            _ => AuthenticodeTrustResult.Rejected("Injected primary failure."),
+            () =>
+            {
+                fallbackInvoked = true;
+                return ValidWslPackage();
+            },
+            (_, _) => throw new InvalidOperationException("Path should not be inspected."));
+
+        Assert.False(result.IsTrusted);
+        Assert.Contains("Injected primary failure", result.Detail, StringComparison.Ordinal);
+        Assert.False(fallbackInvoked);
+    }
+
+    private static AppxPackageInfo ValidWslPackage() => new(
+        WslPackageFamilyName,
+        "CN=Microsoft Windows, O=Microsoft Corporation, C=US",
+        "Developer",
+        WslPackageInstallLocation,
+        PackageVersion);
+
+    private static AuthenticodeTrustResult VerifyPackageFallback(
+        string path,
+        AppxPackageInfo? package,
+        WslRelayPathInspection? pathInspection = null) =>
+        WindowsAuthenticodeVerifier.VerifyMicrosoftSignedFile(
+            path,
+            _ => AuthenticodeTrustResult.Rejected("Injected primary failure."),
+            () => package,
+            (_, _) => pathInspection ?? WslRelayPathInspection.Secure(PackageVersion));
+
+    [Fact]
+    [SupportedOSPlatform("windows")]
+    public void HasProtectedOwnershipAndWriteAcl_AllowsReadOnlyUsersButRejectsUserWrite()
+    {
+        var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+        var administrators = new SecurityIdentifier(
+            WellKnownSidType.BuiltinAdministratorsSid,
+            null);
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        FileSystemAccessRule[] protectedRules =
+        [
+            new(system, FileSystemRights.FullControl, AccessControlType.Allow),
+            new(administrators, FileSystemRights.Modify, AccessControlType.Allow),
+            new(users, FileSystemRights.ReadAndExecute, AccessControlType.Allow),
+            new(
+                new SecurityIdentifier(WellKnownSidType.CreatorOwnerSid, null),
+                FileSystemRights.FullControl,
+                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                PropagationFlags.InheritOnly,
+                AccessControlType.Allow),
+        ];
+
+        Assert.True(
+            WindowsAuthenticodeVerifier.HasProtectedOwnershipAndWriteAcl(
+                system,
+                protectedRules,
+                hasDiscretionaryAcl: true));
+
+        var writableByUsers = protectedRules.Append(
+            new FileSystemAccessRule(
+                users,
+                FileSystemRights.WriteData,
+                AccessControlType.Allow));
+        Assert.False(
+            WindowsAuthenticodeVerifier.HasProtectedOwnershipAndWriteAcl(
+                system,
+                writableByUsers,
+                hasDiscretionaryAcl: true));
+        Assert.False(
+            WindowsAuthenticodeVerifier.HasProtectedOwnershipAndWriteAcl(
+                users,
+                protectedRules,
+                hasDiscretionaryAcl: true));
+        Assert.False(
+            WindowsAuthenticodeVerifier.HasProtectedOwnershipAndWriteAcl(
+                system,
+                [],
+                hasDiscretionaryAcl: false));
+        Assert.True(
+            WindowsAuthenticodeVerifier.HasProtectedOwnershipAndWriteAcl(
+                system,
+                [],
+                hasDiscretionaryAcl: true));
     }
 
     [Theory]
