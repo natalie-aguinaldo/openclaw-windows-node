@@ -114,6 +114,21 @@
                                         <TextBlock Grid.Column="2" Text="Several GB" Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontFamily="Cascadia Mono, Consolas" VerticalAlignment="Center" />
                                     </Grid>
                                 </Border>
+                                <InfoBar x:Name="LocalAiUnavailablePanel"
+                                         AutomationProperties.AutomationId="LocalAiUnavailablePanel"
+                                         AutomationProperties.LiveSetting="Polite"
+                                         IsOpen="True" IsClosable="False" Severity="Informational"
+                                         Title="Local AI is not available"
+                                         Message="This PC does not meet one or more Local AI requirements."
+                                         Visibility="Collapsed">
+                                    <InfoBar.ActionButton>
+                                        <HyperlinkButton x:Name="LocalAiUnavailableDetailsButton"
+                                                         AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
+                                                         Content="See why" Padding="0"
+                                                         HorizontalAlignment="Left"
+                                                         Click="LocalAiUnavailableDetails_Click" />
+                                    </InfoBar.ActionButton>
+                                </InfoBar>
                                 <Border x:Name="LocalAiInstallReviewCard"
                                         AutomationProperties.AutomationId="LocalAiInstallReviewCard"
                                         Visibility="Collapsed"
@@ -121,23 +136,6 @@
                                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                         BorderThickness="1" CornerRadius="4" Padding="14,12">
                                     <StackPanel Spacing="10">
-                                        <InfoBar x:Name="LocalAiUnavailablePanel"
-                                                 AutomationProperties.AutomationId="LocalAiUnavailablePanel"
-                                                 AutomationProperties.LiveSetting="Polite"
-                                                 IsOpen="True" IsClosable="False" Severity="Informational"
-                                                 Title="Local AI is not available"
-                                                 Visibility="Collapsed">
-                                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
-                                                <TextBlock Text="This PC does not meet one or more Local AI requirements."
-                                                           TextWrapping="Wrap" VerticalAlignment="Center"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                <HyperlinkButton x:Name="LocalAiUnavailableDetailsButton"
-                                                                 AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
-                                                                 Content="See why" Padding="0"
-                                                                 HorizontalAlignment="Left"
-                                                                 Click="LocalAiUnavailableDetails_Click" />
-                                            </StackPanel>
-                                        </InfoBar>
                                         <StackPanel x:Name="LocalAiOptionContent"
                                                     AutomationProperties.Name="Local AI setup options"
                                                     Spacing="10">
