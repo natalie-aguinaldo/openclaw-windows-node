@@ -1364,11 +1364,11 @@ public sealed class AppRefactorContractTests
         Assert.Contains("This PC does not meet one or more Local AI requirements.", xaml);
         Assert.Contains("Title=\"Local AI is not available\"", xaml);
         Assert.Contains("SetLocalAiOptionAvailability(isAvailable: false)", ExtractMethod(source, "ShowLocalAiUnavailable"));
-        Assert.Matches(
-            new Regex(
-                "<InfoBar\\s+x:Name=\"LocalAiUnavailablePanel\"[^>]*>\\s*" +
-                "<StackPanel\\s+Orientation=\"Horizontal\"\\s+Spacing=\"8\"\\s+Margin=\"0,0,0,12\">"),
-            xaml);
+        Assert.Contains("Message=\"This PC does not meet one or more Local AI requirements.\"", xaml);
+        Assert.Contains("<InfoBar.ActionButton>", xaml);
+        Assert.True(
+            xaml.IndexOf("x:Name=\"LocalAiUnavailablePanel\"", StringComparison.Ordinal) <
+            xaml.IndexOf("x:Name=\"LocalAiInstallReviewCard\"", StringComparison.Ordinal));
     }
 
     [Fact]

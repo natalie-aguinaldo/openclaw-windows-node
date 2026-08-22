@@ -49,13 +49,19 @@ public sealed class LocalAiSetupUxContractTests
             "OpenClaw.SetupEngine.UI",
             "Pages",
             "CapabilitiesPage.xaml.cs"));
+        string infoBar = ExtractElement(xaml, "LocalAiUnavailablePanel", "</InfoBar>");
 
         Assert.Contains("Title=\"Local AI is not available\"", xaml);
         Assert.Contains("Severity=\"Informational\"", xaml);
         Assert.Contains("AutomationProperties.LiveSetting=\"Polite\"", xaml);
+        Assert.Contains("Message=\"This PC does not meet one or more Local AI requirements.\"", infoBar);
+        Assert.Contains("<InfoBar.ActionButton>", infoBar);
+        Assert.DoesNotContain("<StackPanel", infoBar);
         AssertInOrder(
             xaml,
+            "x:Name=\"LocalAiUnavailablePanel\"",
             "x:Name=\"LocalAiUnavailableDetailsButton\"",
+            "x:Name=\"LocalAiInstallReviewCard\"",
             "x:Name=\"LocalAiOptionContent\"");
         Assert.Contains("LocalAiOptionContent.IsHitTestVisible = isAvailable", source);
         Assert.Contains("LocalAiOptionContent.Opacity = isAvailable ? 1 : 0.55", source);
