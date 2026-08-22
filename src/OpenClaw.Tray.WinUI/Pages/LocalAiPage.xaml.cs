@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using OpenClaw.Shared;
@@ -87,6 +88,13 @@ public sealed partial class LocalAiPage : Page
         ActionErrorText.Visibility = string.IsNullOrWhiteSpace(ActionErrorText.Text) ? Visibility.Collapsed : Visibility.Visible;
         EngineBusyIndicator.IsActive = _viewModel.IsBusy;
         EngineBusyIndicator.Visibility = _viewModel.IsBusy ? Visibility.Visible : Visibility.Collapsed;
+        LocalAiUnavailableInfoBar.Visibility =
+            _viewModel.IsAvailabilityKnown && !_viewModel.IsLocalAiAvailable
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        SetOptionAvailability(LocalAiEngineOption, _viewModel.AreOptionsEnabled);
+        SetOptionAvailability(LocalAiModelOption, _viewModel.AreOptionsEnabled);
+        SetOptionAvailability(LocalAiGatewayOption, _viewModel.AreOptionsEnabled);
         StartButton.IsEnabled = _viewModel.CanStart;
         StopButton.IsEnabled = _viewModel.CanStop;
         RestartButton.IsEnabled = _viewModel.CanRestart;
@@ -104,6 +112,21 @@ public sealed partial class LocalAiPage : Page
     private void OnRetrySetup(object sender, RoutedEventArgs e) => _viewModel?.RetrySetup();
     private void OnRepairConnection(object sender, RoutedEventArgs e) => _viewModel?.RepairConnection();
     private void OnOpenChat(object sender, RoutedEventArgs e) => _viewModel?.OpenChat();
+    private void LocalAiUnavailableDetails_Click(object sender, RoutedEventArgs e)
+    {
+        LocalAiUnavailableReasonText.Text = _viewModel?.LocalAiUnavailableReason ?? string.Empty;
+        LocalAiUnavailableDetailsTip.IsOpen = !LocalAiUnavailableDetailsTip.IsOpen;
+    }
+
+    private static void SetOptionAvailability(Control option, bool isAvailable)
+    {
+        option.IsEnabled = isAvailable;
+        option.Opacity = isAvailable ? 1 : 0.55;
+        AutomationProperties.SetHelpText(
+            option,
+            isAvailable ? string.Empty : "Unavailable because Local AI is not available on this device.");
+    }
+
     private static void RunAction(Func<Task<bool>> action, string source) =>
         AsyncEventHandlerGuard.Run(action, new AppLogger(), source);
     private static Brush ResolveBrush(string key) => (Brush)Application.Current.Resources[key];

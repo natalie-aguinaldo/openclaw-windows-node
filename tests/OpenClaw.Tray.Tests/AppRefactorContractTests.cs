@@ -1361,11 +1361,13 @@ public sealed class AppRefactorContractTests
         Assert.Contains("Why Local AI is unavailable", source);
         Assert.Contains("LocalAiInstallReviewCard.Visibility = Visibility.Visible", ExtractMethod(source, "ShowLocalAiUnavailable"));
         Assert.Contains("LocalAiAvailabilityReasons.Build", source);
-        Assert.Contains("One or more Local AI requirements are unavailable.", xaml);
+        Assert.Contains("This PC does not meet one or more Local AI requirements.", xaml);
+        Assert.Contains("Title=\"Local AI is not available\"", xaml);
+        Assert.Contains("SetLocalAiOptionAvailability(isAvailable: false)", ExtractMethod(source, "ShowLocalAiUnavailable"));
         Assert.Matches(
             new Regex(
                 "<InfoBar\\s+x:Name=\"LocalAiUnavailablePanel\"[^>]*>\\s*" +
-                "<StackPanel\\s+Orientation=\"Horizontal\"\\s+Spacing=\"8\"\\s+Margin=\"0,-12,0,12\">"),
+                "<StackPanel\\s+Orientation=\"Horizontal\"\\s+Spacing=\"8\"\\s+Margin=\"0,0,0,12\">"),
             xaml);
     }
 
@@ -1374,11 +1376,12 @@ public sealed class AppRefactorContractTests
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
         var source = File.ReadAllText(Path.Combine(root, "src", "OpenClaw.SetupEngine.UI", "Pages", "CapabilitiesPage.xaml.cs"));
+        var diagnostics = File.ReadAllText(Path.Combine(root, "src", "OpenClaw.Shared", "Inference", "Catalog", "LocalInferenceEligibilityDiagnostics.cs"));
 
         Assert.Contains("LocalInferenceEligibility.GetRequiredMemoryBytes(model) <= capacityBytes", source);
-        Assert.Contains("eligibility.RequiredTotalMemoryBytes", source);
-        Assert.Contains("eligibility.DetectedTotalMemoryBytes", source);
-        Assert.Contains("model weights, KV cache, and runtime workspace", source);
+        Assert.Contains("eligibility.RequiredTotalMemoryBytes", diagnostics);
+        Assert.Contains("eligibility.DetectedTotalMemoryBytes", diagnostics);
+        Assert.Contains("model weights, KV cache, and runtime workspace", diagnostics);
         Assert.DoesNotContain("2 GiB runtime margin", source);
         Assert.DoesNotContain("HardwareProfile", source);
         Assert.DoesNotContain("RTX PRO 6000", source);
