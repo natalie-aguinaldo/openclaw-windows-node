@@ -42,6 +42,23 @@ public class CommandRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_ProcessTimeoutRemainsBounded()
+    {
+        var runner = CreateRunner();
+        var (executable, arguments) = SleepingCommand();
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await runner.RunAsync(
+            executable,
+            arguments,
+            TimeSpan.FromMilliseconds(250));
+
+        Assert.True(result.TimedOut);
+        Assert.Equal(-1, result.ExitCode);
+        Assert.InRange(stopwatch.Elapsed, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
     public async Task RunAsync_StreamStdinPreservesBinaryBytes()
     {
         var path = Path.Combine(Path.GetTempPath(), $"openclaw-stdin-{Guid.NewGuid():N}.bin");
@@ -87,11 +104,34 @@ public class CommandRunnerTests
         var (executable, arguments) = ExitsLeavingPipeHolderCommand();
         var stopwatch = Stopwatch.StartNew();
 
-        var result = await runner.RunAsync(executable, arguments, TimeSpan.FromSeconds(30));
+        var result = await runner.RunAsync(
+            executable,
+            arguments,
+            TimeSpan.FromSeconds(30),
+            allowInheritedPipeHandleEscape: true);
 
         Assert.False(result.TimedOut);
         Assert.Equal(0, result.ExitCode);
         Assert.InRange(stopwatch.Elapsed, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task RunAsync_DrainsHighVolumeStdoutAndStderrThroughTrailingMarkers()
+    {
+        const int lineCount = 8_000;
+        var (executable, arguments) = HighVolumeOutputCommand(lineCount);
+
+        var result = await CreateRunner().RunAsync(
+            executable,
+            arguments,
+            TimeSpan.FromSeconds(30));
+
+        Assert.False(result.TimedOut);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(lineCount, CountLinesStartingWith(result.Stdout, "stdout-"));
+        Assert.Equal(lineCount, CountLinesStartingWith(result.Stderr, "stderr-"));
+        Assert.EndsWith($"STDOUT_MARKER{Environment.NewLine}", result.Stdout, StringComparison.Ordinal);
+        Assert.EndsWith($"STDERR_MARKER{Environment.NewLine}", result.Stderr, StringComparison.Ordinal);
     }
 
     private static CommandRunner CreateRunner()
@@ -106,6 +146,29 @@ public class CommandRunnerTests
         => OperatingSystem.IsWindows()
             ? ("cmd.exe", ["/d", "/s", "/c", "ping 127.0.0.1 -n 30 >nul"])
             : ("/bin/sh", ["-c", "sleep 30"]);
+
+    private static (string Executable, string[] Arguments) HighVolumeOutputCommand(int lineCount)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            var shellScript =
+                $"i=0; while [ $i -lt {lineCount} ]; do echo stdout-$i; echo stderr-$i >&2; i=$((i+1)); done; " +
+                "echo STDOUT_MARKER; echo STDERR_MARKER >&2";
+            return ("/bin/sh", ["-c", shellScript]);
+        }
+
+        var powerShellScript =
+            $"for ($i = 0; $i -lt {lineCount}; $i++) {{ " +
+            "[Console]::Out.WriteLine(\"stdout-$i\"); " +
+            "[Console]::Error.WriteLine(\"stderr-$i\") }; " +
+            "[Console]::Out.WriteLine('STDOUT_MARKER'); " +
+            "[Console]::Error.WriteLine('STDERR_MARKER')";
+        return ("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", powerShellScript]);
+    }
+
+    private static int CountLinesStartingWith(string value, string prefix)
+        => value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Count(line => line.StartsWith(prefix, StringComparison.Ordinal));
 
     private static (string Executable, string[] Arguments) CopyStdinCommand(string path)
     {

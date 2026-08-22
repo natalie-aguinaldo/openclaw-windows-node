@@ -17,7 +17,8 @@ public interface ICommandRunner
         string? workingDirectory = null,
         string? stdinInput = null,
         CancellationToken ct = default,
-        Stream? stdinStream = null);
+        Stream? stdinStream = null,
+        bool allowInheritedPipeHandleEscape = false);
 
     /// <summary>
     /// Run a command inside a WSL distro.
@@ -86,7 +87,8 @@ public sealed class CommandRunner : ICommandRunner
         string? workingDirectory = null,
         string? stdinInput = null,
         CancellationToken ct = default,
-        Stream? stdinStream = null)
+        Stream? stdinStream = null,
+        bool allowInheritedPipeHandleEscape = false)
     {
         ArgumentNullException.ThrowIfNull(executable);
         ArgumentNullException.ThrowIfNull(arguments);
@@ -192,12 +194,17 @@ public sealed class CommandRunner : ICommandRunner
             throw;
         }
 
-        // A surviving descendant can keep inherited pipe handles open after the child
-        // exits. Preserve output already in flight without charging the command's full
-        // timeout to an EOF that may never arrive.
-        await Task.WhenAny(
-            Task.WhenAll(stdoutClosed.Task, stderrClosed.Task),
-            Task.Delay(s_outputDrainGrace));
+        var outputClosed = Task.WhenAll(stdoutClosed.Task, stderrClosed.Task);
+        if (timedOut || allowInheritedPipeHandleEscape)
+        {
+            // Some WSL inspection commands can leave a descendant holding inherited
+            // pipe handles. Bound only those known waits, plus timeout cleanup.
+            await Task.WhenAny(outputClosed, Task.Delay(s_outputDrainGrace));
+        }
+        else
+        {
+            await outputClosed;
+        }
 
         sw.Stop();
         var result = new CommandResult(
