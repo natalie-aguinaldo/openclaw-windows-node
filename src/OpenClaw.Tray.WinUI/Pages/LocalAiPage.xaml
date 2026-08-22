@@ -12,9 +12,39 @@
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
 
-            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                    CornerRadius="8" Padding="16" AutomationProperties.AutomationId="LocalAiEngineCard">
+            <InfoBar x:Name="LocalAiUnavailableInfoBar"
+                     x:Uid="LocalAiPage_UnavailableInfoBar"
+                     Title="Local AI is not available"
+                     Severity="Informational"
+                     IsOpen="True" IsClosable="False"
+                     Visibility="Collapsed"
+                     AutomationProperties.AutomationId="LocalAiUnavailableInfoBar"
+                     AutomationProperties.LiveSetting="Polite">
+                <HyperlinkButton x:Name="LocalAiUnavailableDetailsButton"
+                                 x:Uid="LocalAiPage_UnavailableDetailsButton"
+                                 Content="See why" Padding="0"
+                                 HorizontalAlignment="Left"
+                                 AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
+                                 Click="LocalAiUnavailableDetails_Click"/>
+            </InfoBar>
+            <TeachingTip x:Name="LocalAiUnavailableDetailsTip"
+                         x:Uid="LocalAiPage_UnavailableDetailsTip"
+                         Title="Why Local AI is unavailable"
+                         Target="{x:Bind LocalAiUnavailableDetailsButton}"
+                         PreferredPlacement="Bottom"
+                         IsLightDismissEnabled="True">
+                <TextBlock x:Name="LocalAiUnavailableReasonText"
+                           TextWrapping="Wrap"
+                           MaxWidth="420"/>
+            </TeachingTip>
+
+            <ContentControl x:Name="LocalAiEngineOption"
+                            IsTabStop="False"
+                            HorizontalContentAlignment="Stretch"
+                            AutomationProperties.AutomationId="LocalAiEngineCard">
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="16">
                 <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                         <Ellipse x:Name="EngineStatusDot" Width="12" Height="12" VerticalAlignment="Center"
@@ -62,11 +92,16 @@
                                 Click="OnOpenLogs" AutomationProperties.AutomationId="LocalAiOpenLogs"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+                </Border>
+            </ContentControl>
 
-            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                    CornerRadius="8" Padding="16" AutomationProperties.AutomationId="LocalAiModelCard">
+            <ContentControl x:Name="LocalAiModelOption"
+                            IsTabStop="False"
+                            HorizontalContentAlignment="Stretch"
+                            AutomationProperties.AutomationId="LocalAiModelCard">
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="16">
                 <StackPanel Spacing="10">
                     <TextBlock x:Uid="LocalAiPage_ModelHeading" Text="Model"
                                Style="{StaticResource BodyStrongTextBlockStyle}"/>
@@ -86,11 +121,16 @@
                             Content="Retry setup or download" Click="OnRetrySetup" HorizontalAlignment="Left"
                             AutomationProperties.AutomationId="LocalAiRetrySetup"/>
                 </StackPanel>
-            </Border>
+                </Border>
+            </ContentControl>
 
-            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
-                    CornerRadius="8" Padding="16" AutomationProperties.AutomationId="LocalAiGatewayCard">
+            <ContentControl x:Name="LocalAiGatewayOption"
+                            IsTabStop="False"
+                            HorizontalContentAlignment="Stretch"
+                            AutomationProperties.AutomationId="LocalAiGatewayCard">
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                        CornerRadius="8" Padding="16">
                 <StackPanel Spacing="10">
                     <TextBlock x:Uid="LocalAiPage_GatewayHeading" Text="Gateway connection"
                                Style="{StaticResource BodyStrongTextBlockStyle}"/>
@@ -113,7 +153,8 @@
                                 AutomationProperties.AutomationId="LocalAiOpenChat"/>
                     </StackPanel>
                 </StackPanel>
-            </Border>
+                </Border>
+            </ContentControl>
         </StackPanel>
     </ScrollViewer>
 </Page>
