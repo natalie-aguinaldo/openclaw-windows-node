@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace OpenClaw.Tray.Tests;
 
 /// <summary>
@@ -198,28 +200,105 @@ public sealed class InstallerIssAssertionTests
         Assert.DoesNotContain("<DevBuild>true</DevBuild>", project);
     }
 
-    [Fact]
-    public void ProductionBuild_DisablesComWrapperDiagnosticsWithoutChangingDevBuilds()
+    [Theory]
+    [InlineData("Release", false, false, "win-x64", true)]
+    [InlineData("Release", false, true, "win-x64", true)]
+    [InlineData("Release", false, false, "win-arm64", true)]
+    [InlineData("Release", false, true, "win-arm64", true)]
+    [InlineData("Release", true, false, "win-x64", false)]
+    [InlineData("Debug", false, false, "win-x64", false)]
+    public async Task ComWrapperDiagnosticsSwitch_EvaluatesOnlyForProductionBuilds(
+        string configuration,
+        bool devBuild,
+        bool packageMsix,
+        string runtimeIdentifier,
+        bool expected)
     {
+        var repositoryRoot = TestRepositoryPaths.GetRepositoryRoot();
         var projectPath = Path.Combine(
-            TestRepositoryPaths.GetRepositoryRoot(),
+            repositoryRoot,
             "src",
             "OpenClaw.Tray.WinUI",
             "OpenClaw.Tray.WinUI.csproj");
-        var project = System.Xml.Linq.XDocument.Load(projectPath);
-        var option = Assert.Single(
-            project.Descendants("RuntimeHostConfigurationOption"),
-            element =>
-                string.Equals(
-                    element.Attribute("Include")?.Value,
-                    "System.Diagnostics.Debugger.IsSupported",
-                    StringComparison.Ordinal));
+        var startInfo = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = repositoryRoot,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("msbuild");
+        startInfo.ArgumentList.Add(projectPath);
+        startInfo.ArgumentList.Add("-nologo");
+        startInfo.ArgumentList.Add("-v:q");
+        startInfo.ArgumentList.Add("-getItem:RuntimeHostConfigurationOption");
+        startInfo.ArgumentList.Add($"-p:Configuration={configuration}");
+        startInfo.ArgumentList.Add($"-p:DevBuild={devBuild.ToString().ToLowerInvariant()}");
+        startInfo.ArgumentList.Add($"-p:PackageMsix={packageMsix.ToString().ToLowerInvariant()}");
+        startInfo.ArgumentList.Add($"-p:RuntimeIdentifier={runtimeIdentifier}");
 
-        Assert.Equal("false", option.Attribute("Value")?.Value);
-        Assert.Equal("true", option.Attribute("Trim")?.Value);
-        Assert.Equal(
-            "'$(Configuration)' == 'Release' and '$(DevBuild)' != 'true'",
-            option.Parent?.Attribute("Condition")?.Value);
+        using var process = Process.Start(startInfo);
+        Assert.NotNull(process);
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+            await process.WaitForExitAsync();
+
+            throw new TimeoutException(
+                $"MSBuild evaluation timed out.{Environment.NewLine}" +
+                $"Standard output:{Environment.NewLine}{await standardOutput}{Environment.NewLine}" +
+                $"Standard error:{Environment.NewLine}{await standardError}");
+        }
+
+        var output = await standardOutput;
+        var error = await standardError;
+
+        Assert.True(
+            process.ExitCode == 0,
+            $"MSBuild evaluation failed with exit code {process.ExitCode}.{Environment.NewLine}" +
+            $"Standard output:{Environment.NewLine}{output}{Environment.NewLine}" +
+            $"Standard error:{Environment.NewLine}{error}");
+
+        JsonNode? result;
+        try
+        {
+            result = JsonNode.Parse(output);
+        }
+        catch (System.Text.Json.JsonException exception)
+        {
+            throw new InvalidDataException(
+                $"MSBuild evaluation returned invalid JSON:{Environment.NewLine}{output}",
+                exception);
+        }
+
+        var options = result?["Items"]?["RuntimeHostConfigurationOption"]?.AsArray();
+        Assert.NotNull(options);
+        var matchingOptions = options
+            .Where(option =>
+                string.Equals(
+                    option?["Identity"]?.GetValue<string>(),
+                    "System.Diagnostics.Debugger.IsSupported",
+                    StringComparison.Ordinal))
+            .ToArray();
+
+        if (!expected)
+        {
+            Assert.Empty(matchingOptions);
+            return;
+        }
+
+        var matchingOption = Assert.Single(matchingOptions);
+        Assert.Equal("false", matchingOption?["Value"]?.GetValue<string>());
+        Assert.Equal("true", matchingOption?["Trim"]?.GetValue<string>());
     }
 
     [Fact]
