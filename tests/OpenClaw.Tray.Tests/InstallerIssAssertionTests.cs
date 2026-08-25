@@ -199,6 +199,30 @@ public sealed class InstallerIssAssertionTests
     }
 
     [Fact]
+    public void ProductionBuild_DisablesComWrapperDiagnosticsWithoutChangingDevBuilds()
+    {
+        var projectPath = Path.Combine(
+            TestRepositoryPaths.GetRepositoryRoot(),
+            "src",
+            "OpenClaw.Tray.WinUI",
+            "OpenClaw.Tray.WinUI.csproj");
+        var project = System.Xml.Linq.XDocument.Load(projectPath);
+        var option = Assert.Single(
+            project.Descendants("RuntimeHostConfigurationOption"),
+            element =>
+                string.Equals(
+                    element.Attribute("Include")?.Value,
+                    "System.Diagnostics.Debugger.IsSupported",
+                    StringComparison.Ordinal));
+
+        Assert.Equal("false", option.Attribute("Value")?.Value);
+        Assert.Equal("true", option.Attribute("Trim")?.Value);
+        Assert.Equal(
+            "'$(Configuration)' == 'Release' and '$(DevBuild)' != 'true'",
+            option.Parent?.Attribute("Condition")?.Value);
+    }
+
+    [Fact]
     public void MsixManifest_IsGeneratedUnderObjWithoutMutatingTrackedSource()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
