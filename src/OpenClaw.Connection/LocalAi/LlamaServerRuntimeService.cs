@@ -246,7 +246,7 @@ public sealed class LlamaServerRuntimeService : ILocalAiRuntime
                             install.ModelPath,
                             cancellationToken)
                         .ConfigureAwait(false);
-                    if (probe.IsHealthy)
+                    if (probe.IsReady)
                     {
                         LocalAiInstallManifest verifiedManifest = install.Manifest with
                         {
@@ -346,7 +346,7 @@ public sealed class LlamaServerRuntimeService : ILocalAiRuntime
                 install.ModelPath,
                 cancellationToken)
             .ConfigureAwait(false);
-        return probe.IsHealthy
+        return probe.IsReady
             ? PublishHealthy(probe)
             : Publish(
                 LocalAiRuntimeState.Starting,

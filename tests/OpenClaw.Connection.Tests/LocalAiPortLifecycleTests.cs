@@ -287,6 +287,32 @@ public sealed class LocalAiPortLifecycleTests
         Assert.Equal(28_768, recovered.Endpoint.Port);
     }
 
+    [Fact]
+    public async Task Startup_DoesNotPublishWhenModelEvidenceIsNotVerified()
+    {
+        using var temp = new TempDirectory("local-ai-port-");
+        LocalAiPaths paths = await PrepareInstallAsync(temp);
+        var events = new List<string>();
+        var platform = new FakePlatform();
+        var host = new FakeProcessHost(platform, events, selectedPort: 28_773);
+        var client = new FakeClient(events)
+        {
+            Result = new LlamaServerRouterProbeResult(
+                true,
+                LocalAiModelAvailabilityState.NotInstalled,
+                null,
+                "The configured model is not registered."),
+        };
+        await using var runtime = CreateRuntime(paths, host, platform, client, new FakeLifecycle(events));
+
+        LocalAiRuntimeSnapshot snapshot = await runtime.EnsureStartedAsync();
+
+        Assert.Equal(LocalAiRuntimeState.Failed, snapshot.State);
+        Assert.DoesNotContain("publish:28773", events);
+        LocalAiResolvedInstall? saved = await new LocalAiManifestStore(paths).LoadAsync();
+        Assert.Null(saved!.Endpoint);
+    }
+
     private static LlamaServerRuntimeService CreateRuntime(
         LocalAiPaths paths,
         FakeProcessHost host,
@@ -442,6 +468,7 @@ public sealed class LocalAiPortLifecycleTests
     private sealed class FakeClient(List<string> events) : ILlamaServerClient
     {
         public List<int> ProbedPorts { get; } = [];
+        public LlamaServerRouterProbeResult? Result { get; init; }
 
         public Task<LlamaServerRouterProbeResult> ProbeRouterAsync(
             Uri endpoint,
@@ -452,7 +479,7 @@ public sealed class LocalAiPortLifecycleTests
             cancellationToken.ThrowIfCancellationRequested();
             ProbedPorts.Add(endpoint.Port);
             events.Add($"probe:{endpoint.Port}");
-            return Task.FromResult(new LlamaServerRouterProbeResult(
+            return Task.FromResult(Result ?? new LlamaServerRouterProbeResult(
                 true,
                 LocalAiModelAvailabilityState.Verified,
                 expectedModelPath,

@@ -6,7 +6,14 @@ public sealed record LlamaServerRouterProbeResult(
     bool IsHealthy,
     LocalAiModelAvailabilityState ModelState,
     string? ReportedModelPath,
-    string? Detail);
+    string? Detail)
+{
+    public bool HasVerifiedManagedModel =>
+        ModelState is LocalAiModelAvailabilityState.Verified or LocalAiModelAvailabilityState.Loaded &&
+        !string.IsNullOrWhiteSpace(ReportedModelPath);
+
+    public bool IsReady => IsHealthy && HasVerifiedManagedModel;
+}
 
 public sealed record LlamaServerModelStatusEvidence(
     LocalAiModelAvailabilityState State,
@@ -191,11 +198,11 @@ public sealed class LlamaServerClient : ILlamaServerClient
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return new(true, LocalAiModelAvailabilityState.Unknown, null, "The model status check timed out.");
+            return new(false, LocalAiModelAvailabilityState.Unknown, null, "The model status check timed out.");
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException or InvalidDataException)
         {
-            return new(true, LocalAiModelAvailabilityState.Unknown, null, "The model status response was invalid.");
+            return new(false, LocalAiModelAvailabilityState.Unknown, null, "The model status response was invalid.");
         }
     }
 
@@ -249,9 +256,10 @@ public sealed class LlamaServerClient : ILlamaServerClient
             modelAlias,
             expectedModelPath);
         if (evidence is null)
-            return new(true, LocalAiModelAvailabilityState.NotInstalled, null, "The configured model is not registered.");
+            return new(false, LocalAiModelAvailabilityState.NotInstalled, null, "The configured model is not registered.");
+        bool hasVerifiedManagedModel = evidence.State is LocalAiModelAvailabilityState.Verified or LocalAiModelAvailabilityState.Loaded;
         return new(
-            true,
+            hasVerifiedManagedModel,
             evidence.State,
             evidence.ModelPath,
             $"llama-server reports the model as {evidence.ServerStatus}.");
