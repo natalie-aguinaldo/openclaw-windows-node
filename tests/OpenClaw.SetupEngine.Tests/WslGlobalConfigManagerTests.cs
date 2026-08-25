@@ -17,7 +17,7 @@ public sealed class WslGlobalConfigManagerTests : IDisposable
     [InlineData("\r\n", false, true)]
     [InlineData("\r\n", true, false)]
     [InlineData("\r\n", true, true)]
-    public void ApplyMirroredNetworking_PreservesLineBoundariesAndEncoding(
+    public void ApplyMirroredNetworking_PreservesLineBoundariesAndUtf8Bom(
         string newLine,
         bool includeBom,
         bool includeFinalNewLine)
@@ -45,6 +45,54 @@ public sealed class WslGlobalConfigManagerTests : IDisposable
 
         Assert.Equal(WslGlobalConfigRestoreResult.Restored, manager.RestoreIfUnchanged());
         Assert.Equal(originalBytes, File.ReadAllBytes(configPath));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ApplyMirroredNetworking_PreservesUtf16BomEncoding(bool littleEndian)
+    {
+        Directory.CreateDirectory(_root);
+        var configPath = Path.Combine(_root, "wslconfig");
+        var backupPath = Path.Combine(_root, "backup");
+        var encoding = new UnicodeEncoding(
+            bigEndian: !littleEndian,
+            byteOrderMark: true,
+            throwOnInvalidBytes: true);
+        var originalText = "[wsl2]\r\nmemory=8GB\r\n";
+        byte[] originalBytes = [.. encoding.GetPreamble(), .. encoding.GetBytes(originalText)];
+        File.WriteAllBytes(configPath, originalBytes);
+
+        var manager = new WslGlobalConfigManager(configPath, backupPath);
+        var result = manager.ApplyMirroredNetworking();
+
+        Assert.True(result.Changed);
+        var updatedBytes = File.ReadAllBytes(configPath);
+        Assert.True(updatedBytes.AsSpan().StartsWith(encoding.GetPreamble()));
+        Assert.Contains(
+            "memory=8GB\r\nnetworkingMode=mirrored",
+            encoding.GetString(updatedBytes, encoding.GetPreamble().Length, updatedBytes.Length - encoding.GetPreamble().Length));
+
+        Assert.Equal(WslGlobalConfigRestoreResult.Restored, manager.RestoreIfUnchanged());
+        Assert.Equal(originalBytes, File.ReadAllBytes(configPath));
+    }
+
+    [Fact]
+    public void ApplyMirroredNetworking_RejectsInvalidUtf8WithoutMutating()
+    {
+        Directory.CreateDirectory(_root);
+        var configPath = Path.Combine(_root, "wslconfig");
+        var backupPath = Path.Combine(_root, "backup");
+        byte[] originalBytes = [0x5B, 0x77, 0x73, 0x6C, 0x32, 0x5D, 0x0A, 0xFF, 0x0A];
+        File.WriteAllBytes(configPath, originalBytes);
+
+        var manager = new WslGlobalConfigManager(configPath, backupPath);
+        var ex = Assert.Throws<InvalidDataException>(() => manager.ApplyMirroredNetworking());
+
+        Assert.Contains("OpenClaw will not modify it", ex.Message);
+        Assert.Equal(originalBytes, File.ReadAllBytes(configPath));
+        Assert.False(File.Exists(Path.Combine(backupPath, "wslconfig.original")));
+        Assert.False(File.Exists(Path.Combine(backupPath, "wslconfig.rollback.json")));
     }
 
     [Fact]

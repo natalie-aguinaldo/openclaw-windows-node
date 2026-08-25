@@ -42,7 +42,7 @@ internal sealed class WslGlobalConfigManager : IWslGlobalConfigManager
         if (!File.Exists(_configPath))
             return new(false, false);
 
-        var document = WslConfigDocument.Parse(ReadUtf8Document(_configPath).Text);
+        var document = WslConfigDocument.Parse(ReadTextDocument(_configPath).Text);
         return new(true, document.IsMirrored);
     }
 
@@ -52,14 +52,14 @@ internal sealed class WslGlobalConfigManager : IWslGlobalConfigManager
         var original = originalExists
             ? File.ReadAllBytes(_configPath)
             : [];
-        var decoded = DecodeUtf8(original);
+        var decoded = DecodeDocument(original);
         var document = WslConfigDocument.Parse(decoded.Text);
 
         if (document.IsMirrored)
             return new(false, null);
 
         var updatedText = document.WithMirroredNetworking(decoded.NewLine);
-        var updated = EncodeUtf8(updatedText, decoded.HasBom);
+        var updated = decoded.Encoding.Encode(updatedText);
         var metadata = new WslGlobalConfigRollbackMetadata(
             OriginalExisted: originalExists,
             OriginalSha256: ComputeSha256(original),
@@ -124,27 +124,61 @@ internal sealed class WslGlobalConfigManager : IWslGlobalConfigManager
         return WslGlobalConfigRestoreResult.Restored;
     }
 
-    private static Utf8Document ReadUtf8Document(string path) => DecodeUtf8(File.ReadAllBytes(path));
+    private static WslConfigTextDocument ReadTextDocument(string path) => DecodeDocument(File.ReadAllBytes(path));
 
-    private static Utf8Document DecodeUtf8(byte[] bytes)
+    private static WslConfigTextDocument DecodeDocument(byte[] bytes)
     {
-        var hasBom = bytes.AsSpan().StartsWith(Encoding.UTF8.Preamble);
-        var text = Encoding.UTF8.GetString(bytes, hasBom ? Encoding.UTF8.Preamble.Length : 0, bytes.Length - (hasBom ? Encoding.UTF8.Preamble.Length : 0));
+        var encoding = WslConfigEncoding.Detect(bytes);
+        string text;
+        try
+        {
+            text = encoding.Decode(bytes);
+        }
+        catch (DecoderFallbackException ex)
+        {
+            throw new InvalidDataException(
+                "The global .wslconfig file is not valid UTF-8 or UTF-16 with a byte order mark. OpenClaw will not modify it.",
+                ex);
+        }
+
         var newLine = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        return new(text, hasBom, newLine);
+        return new(text, encoding, newLine);
     }
 
-    private static byte[] EncodeUtf8(string text, bool includeBom)
+    private sealed record WslConfigEncoding(Encoding Encoding, byte[] Preamble)
     {
-        var payload = Encoding.UTF8.GetBytes(text);
-        if (!includeBom)
-            return payload;
+        private static readonly UTF8Encoding StrictUtf8NoBom = new(false, true);
+        private static readonly UTF8Encoding StrictUtf8Bom = new(true, true);
+        private static readonly UnicodeEncoding StrictUtf16LittleEndian = new(false, true, true);
+        private static readonly UnicodeEncoding StrictUtf16BigEndian = new(true, true, true);
 
-        var preamble = Encoding.UTF8.Preamble;
-        var result = new byte[preamble.Length + payload.Length];
-        preamble.CopyTo(result.AsSpan());
-        payload.CopyTo(result, preamble.Length);
-        return result;
+        public static WslConfigEncoding Detect(byte[] bytes)
+        {
+            var span = bytes.AsSpan();
+            if (span.StartsWith(StrictUtf8Bom.Preamble))
+                return new(StrictUtf8Bom, StrictUtf8Bom.Preamble.ToArray());
+            if (span.StartsWith(StrictUtf16LittleEndian.Preamble))
+                return new(StrictUtf16LittleEndian, StrictUtf16LittleEndian.Preamble.ToArray());
+            if (span.StartsWith(StrictUtf16BigEndian.Preamble))
+                return new(StrictUtf16BigEndian, StrictUtf16BigEndian.Preamble.ToArray());
+
+            return new(StrictUtf8NoBom, []);
+        }
+
+        public string Decode(byte[] bytes) =>
+            Encoding.GetString(bytes, Preamble.Length, bytes.Length - Preamble.Length);
+
+        public byte[] Encode(string text)
+        {
+            var payload = Encoding.GetBytes(text);
+            if (Preamble.Length == 0)
+                return payload;
+
+            var result = new byte[Preamble.Length + payload.Length];
+            Preamble.CopyTo(result.AsSpan());
+            payload.CopyTo(result, Preamble.Length);
+            return result;
+        }
     }
 
     private static void AtomicWriteBytes(string path, byte[] contents)
@@ -190,7 +224,7 @@ internal sealed class WslGlobalConfigManager : IWslGlobalConfigManager
         }
     }
 
-    private sealed record Utf8Document(string Text, bool HasBom, string NewLine);
+    private sealed record WslConfigTextDocument(string Text, WslConfigEncoding Encoding, string NewLine);
 
     private sealed class WslConfigDocument
     {
