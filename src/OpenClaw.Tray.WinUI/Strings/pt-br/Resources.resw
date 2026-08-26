@@ -531,123 +531,123 @@
   </data>
   <!-- Notification test -->
   <data name="TestNotification_Title" xml:space="preserve">
-    <value>Test Notification</value>
+    <value>Notificação de teste</value>
   </data>
   <data name="TestNotification_Body" xml:space="preserve">
-    <value>This is a test notification from OpenClaw Tray.</value>
+    <value>Esta é uma notificação de teste do OpenClaw Tray.</value>
   </data>
   <!-- Status detail runtime -->
   <data name="Status_LastCheckFormat" xml:space="preserve">
-    <value>Last check: {0}</value>
+    <value>Última verificação {0}</value>
   </data>
   <!-- Time ago strings -->
   <data name="TimeAgo_JustNow" xml:space="preserve">
-    <value>Just now</value>
+    <value>Agora mesmo</value>
   </data>
   <data name="TimeAgo_MinutesFormat" xml:space="preserve">
-    <value>{0}m ago</value>
+    <value>há {0} min</value>
   </data>
   <data name="TimeAgo_HoursFormat" xml:space="preserve">
-    <value>{0}h ago</value>
+    <value>há {0} h</value>
   </data>
   <!-- Activity stream runtime -->
   <data name="Activity_ClickToOpen" xml:space="preserve">
-    <value>Click to open in dashboard</value>
+    <value>Clique para abrir no painel</value>
   </data>
   <data name="TimeAgo_DaysFormat" xml:space="preserve">
-    <value>{0}d ago</value>
+    <value>há {0} d</value>
   </data>
   <!-- Status display text (plain, no emoji) -->
   <data name="StatusDisplay_Connected" xml:space="preserve">
-    <value>Connected</value>
+    <value>Conectado</value>
   </data>
   <data name="StatusDisplay_Connecting" xml:space="preserve">
-    <value>Connecting</value>
+    <value>Conectando</value>
   </data>
   <data name="StatusDisplay_Disconnected" xml:space="preserve">
-    <value>Disconnected</value>
+    <value>Desconectado</value>
   </data>
   <data name="StatusDisplay_Error" xml:space="preserve">
-    <value>Error</value>
+    <value>Erro</value>
   </data>
   <data name="StatusDisplay_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Desconhecido</value>
   </data>
   <data name="Status_NotAvailable" xml:space="preserve">
-    <value>n/a</value>
+    <value>n/d</value>
   </data>
   <!-- ==================== CanvasWindow.xaml ==================== -->
   <data name="WindowTitle_Canvas" xml:space="preserve">
     <value>Canvas</value>
   </data>
   <data name="CanvasErrorTitle.Text" xml:space="preserve">
-    <value>❌ Canvas Error</value>
+    <value>❌ Erro do Canvas</value>
   </data>
   <data name="CanvasRetryButton.Content" xml:space="preserve">
-    <value>Retry</value>
+    <value>Tentar novamente</value>
   </data>
   <data name="Canvas_ReadyTitle" xml:space="preserve">
-    <value>🎨 Canvas Ready</value>
+    <value>🎨 Canvas pronto</value>
   </data>
   <data name="Canvas_WaitingForContent" xml:space="preserve">
-    <value>Waiting for content...</value>
+    <value>Aguardando conteúdo</value>
   </data>
   <data name="A2UI_CanvasTitle" xml:space="preserve">
     <value>Canvas</value>
   </data>
   <data name="A2UI_UnsupportedComponent" xml:space="preserve">
-    <value>Unsupported component: {0}</value>
+    <value>Componente não compatível: {0}</value>
   </data>
   <data name="A2UI_TabFallback" xml:space="preserve">
-    <value>Tab</value>
+    <value>Aba</value>
   </data>
   <data name="A2UI_ModalClose" xml:space="preserve">
-    <value>Close</value>
+    <value>Fechar</value>
   </data>
   <data name="A2UI_DateTimeSelectDate" xml:space="preserve">
-    <value>Select date</value>
+    <value>Selecionar data</value>
   </data>
   <data name="A2UI_MultipleChoiceSelect" xml:space="preserve">
-    <value>Select...</value>
+    <value>Selecionar...</value>
   </data>
   <!-- ==================== WebChatWindow.xaml ==================== -->
   <data name="WebChatErrorTitle.Text" xml:space="preserve">
-    <value>Web Chat Unavailable</value>
+    <value>Web Chat indisponível</value>
   </data>
   <data name="WebChatOpenBrowserButton.Content" xml:space="preserve">
-    <value>Open in Browser Instead</value>
+    <value>Abrir no navegador</value>
   </data>
   <data name="WebChat_ConnectionError" xml:space="preserve">
-    <value>Can't reach OpenClaw Gateway</value>
+    <value>Não foi possível conectar ao Gateway do OpenClaw</value>
   </data>
   <data name="WebChat_ConnectionErrorDetail" xml:space="preserve">
-    <value>The gateway at {0} is not responding.
+    <value>O Gateway em {0} não está respondendo.
 
-To connect:
-• Make sure your OpenClaw gateway is running
-• If remote, connect via VPN to your home network
-• Or use SSH tunnel: ssh -N -L 18789:localhost:18789 your-server</value>
+Para conectar:
+• Verifique se o Gateway do OpenClaw está em execução
+• Se for remoto, conecte-se à sua rede doméstica via VPN
+• Ou use um túnel SSH: ssh -N -L 18789:localhost:18789 seu-servidor</value>
   </data>
   <data name="WebChat_CertError" xml:space="preserve">
-    <value>The gateway HTTPS certificate is not trusted.
+    <value>O certificado HTTPS do Gateway não é confiável.
 
-To connect securely:
-• Use an HTTPS gateway URL (for example: https://host.tailnet.ts.net)
-• If self-signed, import the cert into Windows Trusted Root Certification Authorities
-• Or use SSH tunnel to localhost and keep using localhost URLs</value>
+Para conectar com segurança:
+• Use uma URL de Gateway HTTPS (por exemplo: https://host.tailnet.ts.net)
+• Se for autoassinado, importe o certificado na lista de Autoridades de Certificação Raiz Confiáveis do Windows
+• Ou use um túnel SSH para localhost e continue usando URLs localhost</value>
   </data>
   <data name="WebChat_InvalidUrl" xml:space="preserve">
-    <value>Invalid gateway URL: {0}</value>
+    <value>URL do Gateway inválida: {0}</value>
   </data>
   <data name="WebChat_SecureContextRequired" xml:space="preserve">
-    <value>Web chat requires a secure context.
+    <value>O Web Chat requer um contexto seguro.
 
-There is no safe bypass for remote plain HTTP: browsers and WebView enforce this.
+Não existe uma forma segura de ignorar essa exigência para HTTP remoto sem criptografia: os navegadores e o WebView impõem essa regra.
 
-Use one of these options:
-• Use a trusted HTTPS/WSS endpoint (Let's Encrypt, Tailscale Serve, Caddy)
-• If self-signed, import your gateway CA/cert into Windows Trusted Root (certmgr.msc)
-• Or tunnel to localhost: ssh -N -L 18789:localhost:18789 &lt;server&gt;</value>
+Use uma destas opções:
+• Use um endpoint HTTPS/WSS confiável (Let's Encrypt, Tailscale Serve, Caddy)
+• Se for autoassinado, importe a CA/o certificado do Gateway para as Autoridades de Certificação Raiz Confiáveis do Windows (certmgr.msc)
+• Ou faça um túnel para localhost: ssh -N -L 18789:localhost:18789 &lt;servidor&gt;</value>
   </data>
   <!-- ==================== TrayMenuWindow.xaml ==================== -->
   <data name="WindowTitle_TrayMenu" xml:space="preserve">
