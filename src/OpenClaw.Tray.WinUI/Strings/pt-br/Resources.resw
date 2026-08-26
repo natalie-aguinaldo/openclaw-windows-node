@@ -1557,214 +1557,214 @@ Use uma destas opções:
     <value>O Gateway está conectado; o chat ainda está sendo iniciado.</value>
   </data>
   <data name="ConfigPage_TextBlock_17.Text" xml:space="preserve">
-    <value>Config</value>
+    <value>Configuração</value>
   </data>
   <data name="ConfigPage_TextBlock_21.Text" xml:space="preserve">
-    <value>Refresh</value>
+    <value>Atualizar</value>
   </data>
   <data name="ConfigPage_OpenConnection.Content" xml:space="preserve">
-    <value>Open Connection</value>
+    <value>Abrir conexão</value>
   </data>
   <data name="ConfigPage_ConnectionInfoBar.Title" xml:space="preserve">
-    <value>Gateway disconnected</value>
+    <value>Gateway desconectado</value>
   </data>
   <data name="ConfigPage_ConnectionInfoBar.Message" xml:space="preserve">
-    <value>Connect to a gateway to load and save configuration.</value>
+    <value>Conecte-se a um Gateway para carregar e salvar a configuração.</value>
   </data>
   <data name="ConfigPage_LoadingText.Text" xml:space="preserve">
-    <value>Loading gateway config...</value>
+    <value>Carregando configuração do Gateway...</value>
   </data>
   <data name="ConfigPage_EditorLabel.Text" xml:space="preserve">
     <value>Editor</value>
   </data>
   <data name="ConfigSearchBox.PlaceholderText" xml:space="preserve">
-    <value>Filter settings</value>
+    <value>Filtrar configurações</value>
   </data>
   <data name="ToggleJsonPreviewButton.Content" xml:space="preserve">
-    <value>Collapse JSON</value>
+    <value>Recolher JSON</value>
   </data>
   <data name="ToggleJsonPreviewButton_Show.Content" xml:space="preserve">
-    <value>Show JSON</value>
+    <value>Mostrar JSON</value>
   </data>
   <data name="ResetSectionButton.Content" xml:space="preserve">
-    <value>Reset section</value>
+    <value>Redefinir seção</value>
   </data>
   <data name="DetailLoadingText.Text" xml:space="preserve">
-    <value>Loading section...</value>
+    <value>Carregando seção...</value>
   </data>
   <data name="ConfigPage_LoadingFullConfigPreview" xml:space="preserve">
-    <value>Loading full config preview...</value>
+    <value>Carregando visualização completa da configuração...</value>
   </data>
   <data name="ConfigPage_LoadingSectionFormat" xml:space="preserve">
-    <value>Loading {0}...</value>
+    <value>Carregando {0}...</value>
   </data>
   <data name="SelectedJsonPreviewTitle.Text" xml:space="preserve">
-    <value>JSON preview</value>
+    <value>Visualização do JSON</value>
   </data>
   <data name="SelectedJsonCaption.Text" xml:space="preserve">
-    <value>Compare the gateway value with the proposed unsaved value.</value>
+    <value>Compare o valor do Gateway com o valor proposto ainda não salvo.</value>
   </data>
   <data name="CopySelectedJsonButton.Content" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copiar</value>
   </data>
   <data name="DiscardButton.Content" xml:space="preserve">
-    <value>Discard changes</value>
+    <value>Descartar alterações</value>
   </data>
   <data name="ConfigPage_TabViewItem_34.Text" xml:space="preserve">
     <value>Editor</value>
   </data>
   <data name="DetailPath.Text" xml:space="preserve">
-    <value>Select a config section</value>
+    <value>Selecione uma seção da configuração</value>
   </data>
   <data name="ConfigPage_TabViewItem_82.Text" xml:space="preserve">
-    <value>Raw JSON</value>
+    <value>JSON bruto</value>
   </data>
   <data name="ConfigPage_TextBlock_95.Text" xml:space="preserve">
-    <value>Schema not available</value>
+    <value>Esquema indisponível</value>
   </data>
   <data name="ConfigPage_TextBlock_98.Text" xml:space="preserve">
-    <value>The gateway configuration schema could not be loaded. Use the web dashboard to edit settings.</value>
+    <value>Não foi possível carregar o esquema de configuração do Gateway. Use o painel web para editar as configurações.</value>
   </data>
   <data name="OpenDashboardButton.Content" xml:space="preserve">
-    <value>Open Dashboard</value>
+    <value>Abrir painel</value>
   </data>
   <data name="ConfigPage_ReconnectDialogTitle" xml:space="preserve">
-    <value>Saving configuration</value>
+    <value>Salvando configuração</value>
   </data>
   <data name="ConfigPage_ReconnectDialogBody" xml:space="preserve">
-    <value>OpenClaw is applying your edits. The gateway may restart briefly and reconnect automatically.</value>
+    <value>O OpenClaw está aplicando suas alterações. O Gateway pode ser reiniciado brevemente e se reconectará automaticamente.</value>
   </data>
   <data name="ConfigPage_ReconnectDialogAccepted" xml:space="preserve">
-    <value>Gateway is restarting...</value>
+    <value>O Gateway está reiniciando...</value>
   </data>
   <data name="ConfigPage_ReconnectDialogWaiting" xml:space="preserve">
-    <value>Reconnecting...</value>
+    <value>Reconectando...</value>
   </data>
   <data name="SaveButton.Content" xml:space="preserve">
-    <value>Save Changes</value>
+    <value>Salvar alterações</value>
   </data>
   <data name="SaveButtonText.Text" xml:space="preserve">
-    <value>Save Changes</value>
+    <value>Salvar alterações</value>
   </data>
   <data name="ConnectionPage_TextBlock_10.Text" xml:space="preserve">
-    <value>🔗 Connection</value>
+    <value>🔗 Conexão</value>
   </data>
   <data name="ConnectionPage_TextBlock_11.Text" xml:space="preserve">
-    <value>Gateway endpoint used by both the operator client and node service.</value>
+    <value>Endpoint do Gateway usado pelo cliente operador e pelo serviço de Node.</value>
   </data>
   <data name="StatusText.Text" xml:space="preserve">
-    <value>Disconnected</value>
+    <value>Desconectado</value>
   </data>
   <data name="ReconnectButton.Content" xml:space="preserve">
-    <value>Reconnect</value>
+    <value>Reconectar</value>
   </data>
   <data name="OperatorStatusText.Text" xml:space="preserve">
-    <value>Operator: …</value>
+    <value>Operador: …</value>
   </data>
   <data name="ConnectToggle.Header" xml:space="preserve">
-    <value>Connection</value>
+    <value>Conexão</value>
   </data>
   <data name="ConnectionPage_TextBlock_76.Text" xml:space="preserve">
-    <value>📡 Available Gateways</value>
+    <value>📡 Gateways disponíveis</value>
   </data>
   <data name="ConnectionPage_TextBlock_84.Text" xml:space="preserve">
-    <value>Scan</value>
+    <value>Procurar</value>
   </data>
   <data name="TokenPromptText.Text" xml:space="preserve">
-    <value>This gateway requires a token to connect.</value>
+    <value>Este Gateway requer um token para se conectar.</value>
   </data>
   <data name="ConnectionPage_Button_105.Content" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Cancelar</value>
   </data>
   <data name="TokenPromptConnectBtn.Content" xml:space="preserve">
-    <value>Connect</value>
+    <value>Conectar</value>
   </data>
   <data name="ConnectionPage_TextBlock_111.Text" xml:space="preserve">
-    <value>Run 'openclaw qr' on the gateway host for a setup code, or find the token in the gateway's config.</value>
+    <value>Execute 'openclaw qr' no host do Gateway para obter um código de configuração ou encontre o token na configuração do Gateway.</value>
   </data>
   <data name="GatewayEmptyText.Text" xml:space="preserve">
-    <value>No gateways found. Click Scan to search.</value>
+    <value>Nenhum Gateway encontrado. Clique em Procurar para pesquisar.</value>
   </data>
   <data name="ConnectionPage_TextBlock_128.Text" xml:space="preserve">
-    <value>🔑 Setup Code</value>
+    <value>🔑 Código de configuração</value>
   </data>
   <data name="ConnectionPage_TextBlock_129.Text" xml:space="preserve">
-    <value>Paste a setup code from openclaw qr</value>
+    <value>Cole um código de configuração de openclaw qr</value>
   </data>
   <data name="ApplySetupCodeButton.Content" xml:space="preserve">
-    <value>Apply</value>
+    <value>Aplicar</value>
   </data>
   <data name="ConnectionPage_TextBlock_152.Text" xml:space="preserve">
-    <value>Advanced Connection Settings</value>
+    <value>Configurações avançadas de conexão</value>
   </data>
   <data name="GatewayUrlTextBox.Header" xml:space="preserve">
-    <value>Gateway URL</value>
+    <value>URL do Gateway</value>
   </data>
   <data name="TokenTextBox.Header" xml:space="preserve">
     <value>Token</value>
   </data>
   <data name="TestButton.Content" xml:space="preserve">
-    <value>Test</value>
+    <value>Testar</value>
   </data>
   <data name="SshToggle.Header" xml:space="preserve">
-    <value>SSH Tunnel</value>
+    <value>Túnel SSH</value>
   </data>
   <data name="SshUserBox.Header" xml:space="preserve">
-    <value>SSH User</value>
+    <value>Usuário SSH</value>
   </data>
   <data name="SshUserBox.PlaceholderText" xml:space="preserve">
-    <value>user</value>
+    <value>usuário</value>
   </data>
   <data name="SshHostBox.Header" xml:space="preserve">
-    <value>SSH Host</value>
+    <value>Host SSH</value>
   </data>
   <data name="SshHostBox.PlaceholderText" xml:space="preserve">
-    <value>machine-name</value>
+    <value>nome-da-máquina</value>
   </data>
   <data name="SshRemotePortBox.Header" xml:space="preserve">
-    <value>Remote Port</value>
+    <value>Porta remota</value>
   </data>
   <data name="SshLocalPortBox.Header" xml:space="preserve">
-    <value>Local Port</value>
+    <value>Porta local</value>
   </data>
   <data name="ConnectionPage_Button_190.Content" xml:space="preserve">
-    <value>Save</value>
+    <value>Salvar</value>
   </data>
   <data name="ConnectionPage_TextBlock_200.Text" xml:space="preserve">
-    <value>🪪 This Device</value>
+    <value>🪪 Este dispositivo</value>
   </data>
   <data name="ConnectionPage_TextBlock_207.Text" xml:space="preserve">
-    <value>Device ID:</value>
+    <value>ID do dispositivo:</value>
   </data>
   <data name="CopyDeviceIdButton.Content" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copiar</value>
   </data>
   <data name="ConnectionPage_TextBlock_219.Text" xml:space="preserve">
-    <value>Run this command on the gateway host to approve:</value>
+    <value>Execute este comando no host do Gateway para aprovar:</value>
   </data>
   <data name="CopyApprovalButton.Content" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copiar</value>
   </data>
   <data name="ConnectionPage_TextBlock_243.Text" xml:space="preserve">
-    <value>📋 Connection Log</value>
+    <value>📋 Registro de conexão</value>
   </data>
   <data name="ConnectionLogEmpty.Text" xml:space="preserve">
-    <value>No recent connection events.</value>
+    <value>Nenhum evento de conexão recente.</value>
   </data>
   <data name="ConversationsPage_TextBlock_16.Text" xml:space="preserve">
-    <value>Conversations</value>
+    <value>Conversas</value>
   </data>
   <data name="ConversationsPage_ComboBoxItem_29.Content" xml:space="preserve">
-    <value>All</value>
+    <value>Todas</value>
   </data>
   <data name="ConversationsPage_ComboBoxItem_30.Content" xml:space="preserve">
-    <value>By Channel</value>
+    <value>Por canal</value>
   </data>
   <data name="ConversationsPage_ComboBoxItem_31.Content" xml:space="preserve">
-    <value>By Status</value>
+    <value>Por status</value>
   </data>
   <data name="ConversationsPage_TextBlock_37.Text" xml:space="preserve">
-    <value>Refresh</value>
+    <value>Atualizar</value>
   </data>
   <data name="CronPage_TextBlock_10.Text" xml:space="preserve">
     <value>⏱️ Cron Jobs</value>
