@@ -655,286 +655,286 @@ Use uma destas opções:
   </data>
   <!-- ==================== Toast: Device / Node ==================== -->
   <data name="Toast_DeviceIdCopied" xml:space="preserve">
-    <value>📋 Device ID Copied</value>
+    <value>📋 ID do dispositivo copiado</value>
   </data>
   <data name="Toast_DeviceIdCopiedDetail" xml:space="preserve">
-    <value>Run: openclaw devices approve {0}...</value>
+    <value>Execute: openclaw devices approve {0}...</value>
   </data>
   <data name="Toast_NodeSummaryCopied" xml:space="preserve">
-    <value>📋 Node summary copied</value>
+    <value>📋 Resumo do Node copiado</value>
   </data>
   <data name="Toast_NodeSummaryCopiedDetail" xml:space="preserve">
-    <value>{0} node(s) copied to clipboard</value>
+    <value>{0} Node(s) copiado(s) para a área de transferência</value>
   </data>
   <!-- ==================== Toast: Session ==================== -->
   <data name="Toast_SessionActionFailed" xml:space="preserve">
-    <value>❌ Session action failed</value>
+    <value>❌ Falha ao executar ação na sessão</value>
   </data>
   <data name="Toast_SessionActionFailedDetail" xml:space="preserve">
-    <value>Could not send request to gateway.</value>
+    <value>Não foi possível enviar a solicitação ao Gateway.</value>
   </data>
   <!-- ==================== Toast: Node Mode ==================== -->
   <data name="Toast_NodeModeActive" xml:space="preserve">
-    <value>🔌 Node Mode Active</value>
+    <value>🔌 Modo Node ativo</value>
   </data>
   <data name="Toast_NodeModeActiveDetail" xml:space="preserve">
-    <value>This PC can now receive commands from the agent (canvas, screenshots)</value>
+    <value>Este PC agora pode receber comandos do agente (Canvas, capturas de tela)</value>
   </data>
   <data name="Toast_PairingPending" xml:space="preserve">
-    <value>⏳ Awaiting Pairing Approval</value>
+    <value>⏳ Aguardando aprovação do pareamento</value>
   </data>
   <data name="Toast_PairingPendingDetail" xml:space="preserve">
-    <value>Run on gateway: openclaw devices approve {0}...</value>
+    <value>Execute no Gateway: openclaw devices approve {0}...</value>
   </data>
   <data name="Toast_CopyPairingCommand" xml:space="preserve">
-    <value>Copy approval command</value>
+    <value>Copiar comando de aprovação</value>
   </data>
   <data name="Toast_PairingCommandCopied" xml:space="preserve">
-    <value>Pairing command copied</value>
+    <value>Comando de pareamento copiado</value>
   </data>
   <data name="Toast_PairingRequestTitle" xml:space="preserve">
-    <value>Pairing request</value>
+    <value>Solicitação de pareamento</value>
   </data>
   <data name="Toast_PairingRequestBody" xml:space="preserve">
-    <value>{0} wants to connect</value>
+    <value>{0} quer se conectar</value>
   </data>
   <data name="Toast_PairingRequestBodyNode" xml:space="preserve">
-    <value>{0} wants to connect as a node</value>
+    <value>{0} quer se conectar como Node</value>
   </data>
   <data name="Toast_PairingReview" xml:space="preserve">
-    <value>Review</value>
+    <value>Revisar</value>
   </data>
   <data name="Toast_PairingApprovedTitle" xml:space="preserve">
-    <value>Pairing approved</value>
+    <value>Pareamento aprovado</value>
   </data>
   <data name="Toast_PairingApprovedBody" xml:space="preserve">
-    <value>{0} can now connect</value>
+    <value>{0} agora pode se conectar</value>
   </data>
   <data name="Toast_PairingRejectedTitle" xml:space="preserve">
-    <value>Pairing rejected</value>
+    <value>Pareamento rejeitado</value>
   </data>
   <data name="Toast_PairingRejectedBody" xml:space="preserve">
-    <value>{0} was not allowed to connect</value>
+    <value>{0} não teve permissão para se conectar</value>
   </data>
   <data name="PairingApproval_WindowTitle" xml:space="preserve">
-    <value>Pairing request</value>
+    <value>Solicitação de pareamento</value>
   </data>
   <data name="PairingApproval_DeviceHeading" xml:space="preserve">
-    <value>A device wants to connect</value>
+    <value>Um dispositivo quer se conectar</value>
   </data>
   <data name="PairingApproval_NodeHeading" xml:space="preserve">
-    <value>A node wants to connect</value>
+    <value>Um Node quer se conectar</value>
   </data>
   <data name="PairingApproval_Subtitle" xml:space="preserve">
-    <value>Only approve if you recognize this request. You can remove it later in Connection settings.</value>
+    <value>Aprove somente se você reconhecer esta solicitação. Você poderá removê-la posteriormente nas configurações de conexão.</value>
   </data>
   <data name="PairingApproval_AccessRequested" xml:space="preserve">
-    <value>Access requested</value>
+    <value>Acesso solicitado</value>
   </data>
   <data name="PairingApproval_RepairBadge" xml:space="preserve">
-    <value>Re-pair request: the device token will rotate.</value>
+    <value>Solicitação de novo pareamento: o token do dispositivo será renovado.</value>
   </data>
   <data name="PairingApproval_Approve" xml:space="preserve">
-    <value>Approve</value>
+    <value>Aprovar</value>
   </data>
   <data name="PairingApproval_ApproveDevice" xml:space="preserve">
-    <value>Approve device</value>
+    <value>Aprovar dispositivo</value>
   </data>
   <data name="PairingApproval_ApproveNode" xml:space="preserve">
-    <value>Approve node</value>
+    <value>Aprovar Node</value>
   </data>
   <data name="PairingApproval_Reject" xml:space="preserve">
-    <value>Reject</value>
+    <value>Rejeitar</value>
   </data>
   <data name="PairingApproval_Later" xml:space="preserve">
-    <value>Decide later</value>
+    <value>Decidir mais tarde</value>
   </data>
   <data name="PairingApproval_MoreWaiting" xml:space="preserve">
-    <value>{0} more waiting</value>
+    <value>Mais {0} aguardando</value>
   </data>
   <data name="PairingApproval_ApproveHint" xml:space="preserve">
-    <value>Approve becomes available in a moment</value>
+    <value>A opção Aprovar ficará disponível em instantes</value>
   </data>
   <data name="PairingApproval_UnknownDevice" xml:space="preserve">
-    <value>Unknown device</value>
+    <value>Dispositivo desconhecido</value>
   </data>
   <data name="PairingApproval_UnknownPlatform" xml:space="preserve">
-    <value>Unknown platform</value>
+    <value>Plataforma desconhecida</value>
   </data>
   <data name="ExecApproval_WindowTitle" xml:space="preserve">
-    <value>Command Approval</value>
+    <value>Aprovação de comando</value>
   </data>
   <data name="ExecApproval_Heading" xml:space="preserve">
-    <value>Allow Command?</value>
+    <value>Permitir comando?</value>
   </data>
   <data name="ExecApproval_Body" xml:space="preserve">
-    <value>The following command is requesting permission to run:</value>
+    <value>O comando a seguir está solicitando permissão para ser executado:</value>
   </data>
   <data name="ExecApproval_AgentLabel" xml:space="preserve">
-    <value>Agent:</value>
+    <value>Agente:</value>
   </data>
   <data name="ExecApproval_CwdLabel" xml:space="preserve">
-    <value>Working directory:</value>
+    <value>Diretório de trabalho:</value>
   </data>
   <data name="ExecApproval_ExecutableLabel" xml:space="preserve">
-    <value>Executable:</value>
+    <value>Executável:</value>
   </data>
   <data name="ExecApproval_AllowOnce" xml:space="preserve">
-    <value>Allow Once</value>
+    <value>Permitir uma vez</value>
   </data>
   <data name="ExecApproval_AllowAlways" xml:space="preserve">
-    <value>Allow Always</value>
+    <value>Permitir sempre</value>
   </data>
   <data name="ExecApproval_Deny" xml:space="preserve">
-    <value>Deny</value>
+    <value>Negar</value>
   </data>
   <data name="ExecApproval_ArmHint" xml:space="preserve">
-    <value>Allow becomes available in a moment</value>
+    <value>A opção Permitir ficará disponível em instantes</value>
   </data>
   <data name="ExecApproval_ScrollHint" xml:space="preserve">
-    <value>Scroll to the end of the command before allowing</value>
+    <value>Role até o final do comando antes de permitir sua execução</value>
   </data>
   <data name="ExecApproval_ConfusableWarning" xml:space="preserve">
-    <value>This command mixes character sets and may not read the way it looks. Check it carefully.</value>
+    <value>Este comando mistura conjuntos de caracteres e pode não ser exibido como parece. Verifique-o cuidadosamente.</value>
   </data>
   <data name="Toast_NodePaired" xml:space="preserve">
-    <value>✅ Node Paired!</value>
+    <value>✅ Node pareado!</value>
   </data>
   <data name="Toast_NodePairedDetail" xml:space="preserve">
-    <value>This PC can now receive commands from the agent</value>
+    <value>Este PC agora pode receber comandos do agente</value>
   </data>
   <data name="Toast_PairingRejected" xml:space="preserve">
-    <value>❌ Pairing Rejected</value>
+    <value>❌ Pareamento rejeitado</value>
   </data>
   <data name="Toast_PairingRejectedDetail" xml:space="preserve">
-    <value>The gateway rejected this device pairing request.</value>
+    <value>O Gateway rejeitou esta solicitação de pareamento do dispositivo.</value>
   </data>
   <!-- ==================== Toast: Health Check ==================== -->
   <data name="Toast_HealthCheck" xml:space="preserve">
-    <value>Health Check</value>
+    <value>Verificação do sistema</value>
   </data>
   <data name="Toast_HealthCheckNotConnected" xml:space="preserve">
-    <value>Gateway is not connected yet.</value>
+    <value>O Gateway ainda não está conectado.</value>
   </data>
   <data name="Toast_HealthCheckSent" xml:space="preserve">
-    <value>Health check request sent.</value>
+    <value>Solicitação de verificação do sistema enviada.</value>
   </data>
   <data name="Toast_HealthCheckFailed" xml:space="preserve">
-    <value>Health Check Failed</value>
+    <value>Falha na verificação do sistema</value>
   </data>
   <!-- ==================== Toast: Screen / Camera ==================== -->
   <data name="Toast_ScreenCaptured" xml:space="preserve">
-    <value>📸 Screen Captured</value>
+    <value>📸 Tela capturada</value>
   </data>
   <data name="Toast_ScreenCapturedDetail" xml:space="preserve">
-    <value>OpenClaw agent captured your screen</value>
+    <value>O agente do OpenClaw capturou sua tela</value>
   </data>
   <data name="Toast_CameraBlocked" xml:space="preserve">
-    <value>📷 Camera access blocked</value>
+    <value>📷 Acesso à câmera bloqueado</value>
   </data>
   <data name="Toast_CameraBlockedDetail" xml:space="preserve">
-    <value>Enable camera access in Windows Privacy settings for OpenClaw Tray</value>
+    <value>Ative o acesso à câmera nas configurações de privacidade do Windows para o OpenClaw Tray</value>
   </data>
   <!-- ==================== Toast: Recording ==================== -->
   <data name="Toast_ScreenRecordingStarted" xml:space="preserve">
-    <value>🔴 Screen Recording Started</value>
+    <value>🔴 Gravação de tela iniciada</value>
   </data>
   <data name="Toast_ScreenRecordingStartedDetail" xml:space="preserve">
-    <value>OpenClaw agent is recording your screen</value>
+    <value>O agente do OpenClaw está gravando sua tela</value>
   </data>
   <data name="Toast_ScreenRecordingComplete" xml:space="preserve">
-    <value>✅ Screen Recording Complete</value>
+    <value>✅ Gravação de tela concluída</value>
   </data>
   <data name="Toast_ScreenRecordingCompleteDetail" xml:space="preserve">
-    <value>Screen recording has been sent to the agent</value>
+    <value>A gravação de tela foi enviada ao agente</value>
   </data>
   <data name="Toast_ScreenRecordingFailed" xml:space="preserve">
-    <value>❌ Screen Recording Failed</value>
+    <value>❌ Falha na gravação de tela</value>
   </data>
   <data name="Toast_ScreenRecordingFailedDetail" xml:space="preserve">
-    <value>An error occurred while recording the screen</value>
+    <value>Ocorreu um erro durante a gravação da tela</value>
   </data>
   <data name="Toast_CameraRecordingStarted" xml:space="preserve">
-    <value>🔴 Camera Recording Started</value>
+    <value>🔴 Gravação da câmera iniciada</value>
   </data>
   <data name="Toast_CameraRecordingStartedDetail" xml:space="preserve">
-    <value>OpenClaw agent is recording from your camera</value>
+    <value>O agente do OpenClaw está gravando com sua câmera</value>
   </data>
   <data name="Toast_CameraRecordingComplete" xml:space="preserve">
-    <value>✅ Camera Recording Complete</value>
+    <value>✅ Gravação da câmera concluída</value>
   </data>
   <data name="Toast_CameraRecordingCompleteDetail" xml:space="preserve">
-    <value>Camera clip has been sent to the agent</value>
+    <value>O clipe da câmera foi enviado ao agente</value>
   </data>
   <!-- ==================== Recording Consent Dialog ==================== -->
   <data name="RecordingConsent_WindowTitle" xml:space="preserve">
-    <value>Permission Request</value>
+    <value>Solicitação de permissão</value>
   </data>
   <data name="RecordingConsent_ScreenTitle" xml:space="preserve">
-    <value>Allow screen recording?</value>
+    <value>Permitir gravação de tela?</value>
   </data>
   <data name="RecordingConsent_CameraTitle" xml:space="preserve">
-    <value>Allow camera recording?</value>
+    <value>Permitir gravação da câmera?</value>
   </data>
   <data name="RecordingConsent_ScreenDescription" xml:space="preserve">
-    <value>An agent is requesting to record your screen. This will capture video from your display and send it to the agent. Your choice will be remembered for future requests until you change it in Settings.</value>
+    <value>Um agente está solicitando permissão para gravar sua tela. Isso capturará vídeo da sua tela e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
   </data>
   <data name="RecordingConsent_CameraDescription" xml:space="preserve">
-    <value>An agent is requesting to record from your camera. This will capture video from your webcam and send it to the agent. Your choice will be remembered for future requests until you change it in Settings.</value>
+    <value>Um agente está solicitando permissão para gravar com sua câmera. Isso capturará vídeo da sua webcam e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
   </data>
   <data name="RecordingConsent_Privacy" xml:space="preserve">
-    <value>You can change this later in Settings.</value>
+    <value>Você pode alterar isso posteriormente nas configurações.</value>
   </data>
   <data name="RecordingConsent_Allow" xml:space="preserve">
-    <value>Allow recording</value>
+    <value>Permitir gravação</value>
   </data>
   <data name="RecordingConsent_Deny" xml:space="preserve">
-    <value>Deny</value>
+    <value>Negar</value>
   </data>
   <!-- ==================== Settings: Privacy ==================== -->
   <data name="Settings_PrivacyHeader" xml:space="preserve">
-    <value>Privacy</value>
+    <value>Privacidade</value>
   </data>
   <data name="Settings_PrivacyDescription" xml:space="preserve">
-    <value>Control which capabilities agents can use on this device.</value>
+    <value>Controle quais recursos os agentes podem usar neste dispositivo.</value>
   </data>
   <data name="Settings_AllowScreenRecording" xml:space="preserve">
-    <value>Allow screen recording</value>
+    <value>Permitir gravação de tela</value>
   </data>
   <data name="Settings_AllowCameraRecording" xml:space="preserve">
-    <value>Allow camera recording</value>
+    <value>Permitir gravação da câmera</value>
   </data>
   <data name="SettingsPrivacyHeader.Text" xml:space="preserve">
-    <value>Privacy</value>
+    <value>Privacidade</value>
   </data>
   <data name="SettingsPrivacyDescription.Text" xml:space="preserve">
-    <value>Pre-approve capabilities so agents can use them without a permission prompt each time. You'll still see a countdown before recording starts.</value>
+    <value>Pré-aprove recursos para que os agentes possam usá-los sem pedir permissão todas as vezes. Você ainda verá uma contagem regressiva antes do início da gravação.</value>
   </data>
   <data name="ScreenRecordingToggle.Header" xml:space="preserve">
-    <value>Allow screen recording</value>
+    <value>Permitir gravação de tela</value>
   </data>
   <data name="CameraRecordingToggle.Header" xml:space="preserve">
-    <value>Allow camera recording</value>
+    <value>Permitir gravação da câmera</value>
   </data>
   <!-- ==================== Toast: Activity Stream Tip ==================== -->
   <data name="Toast_ActivityStreamTip" xml:space="preserve">
-    <value>⚡ New: Activity Stream</value>
+    <value>⚡ Novidade: Fluxo de atividade</value>
   </data>
   <data name="Toast_ActivityStreamTipDetail" xml:space="preserve">
-    <value>Open the tray menu to view live sessions, usage, and node activity in one flyout.</value>
+    <value>Abra o menu da bandeja para visualizar sessões em tempo real, uso e atividade dos Nodes em um único painel.</value>
   </data>
   <data name="Toast_ActivityStreamTipButton" xml:space="preserve">
-    <value>Open Activity Stream</value>
+    <value>Abrir fluxo de atividade</value>
   </data>
   <!-- ==================== Local MCP server (SettingsWindow) ==================== -->
   <data name="SettingsDeveloperModeHeader.Text" xml:space="preserve">
-    <value>DEVELOPER MODE</value>
+    <value>MODO DE DESENVOLVEDOR</value>
   </data>
   <data name="SettingsMcpServerToggle.Header" xml:space="preserve">
-    <value>Enable Local MCP Server</value>
+    <value>Ativar servidor MCP local</value>
   </data>
   <data name="SettingsMcpDescription.Text" xml:space="preserve">
-    <value>Exposes the same node capabilities (system, screen, camera, microphone, speakers, canvas) to local MCP clients (Claude Desktop, Cursor, Claude Code).</value>
+    <value>Disponibiliza os mesmos recursos do Node (sistema, tela, câmera, microfone, alto-falantes e Canvas) para clientes MCP locais (Claude Desktop, Cursor, Claude Code).</value>
   </data>
   <data name="SettingsMcpEndpointLabel.Text" xml:space="preserve">
     <value>Endpoint:</value>
@@ -943,71 +943,71 @@ Use uma destas opções:
     <value>Status:</value>
   </data>
   <data name="Mcp_Status_Disabled" xml:space="preserve">
-    <value>Disabled</value>
+    <value>Desativado</value>
   </data>
   <data name="Mcp_Status_Listening" xml:space="preserve">
-    <value>Listening</value>
+    <value>Escutando</value>
   </data>
   <data name="Mcp_Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Parado</value>
   </data>
   <data name="Mcp_Status_WillStartOnSave" xml:space="preserve">
-    <value>Will start on Save</value>
+    <value>Será iniciado ao salvar</value>
   </data>
   <data name="Mcp_Status_WillStopOnSave" xml:space="preserve">
-    <value>Will stop on Save</value>
+    <value>Será parado ao salvar</value>
   </data>
   <data name="Mcp_Status_FailedToStart" xml:space="preserve">
-    <value>Failed to start: </value>
+    <value>Falha ao iniciar: </value>
   </data>
   <!-- ==================== MCP token (SettingsWindow) ==================== -->
   <data name="SettingsMcpTokenLabel.Text" xml:space="preserve">
-    <value>Bearer token:</value>
+    <value>Token Bearer:</value>
   </data>
   <data name="SettingsMcpTokenRevealButton.Content" xml:space="preserve">
-    <value>Reveal</value>
+    <value>Mostrar</value>
   </data>
   <data name="SettingsMcpTokenCopyButton.Content" xml:space="preserve">
-    <value>Copy</value>
+    <value>Copiar</value>
   </data>
   <data name="SettingsMcpTokenResetButton.Content" xml:space="preserve">
-    <value>Reset</value>
+    <value>Redefinir</value>
   </data>
   <data name="SettingsMcpToken_RevealButton" xml:space="preserve">
-    <value>Reveal</value>
+    <value>Mostrar</value>
   </data>
   <data name="SettingsMcpToken_HideButton" xml:space="preserve">
-    <value>Hide</value>
+    <value>Ocultar</value>
   </data>
   <data name="SettingsMcpToken_NotGenerated" xml:space="preserve">
-    <value>(not generated: enable MCP server and click Save)</value>
+    <value>(não gerado: ative o servidor MCP e clique em Salvar)</value>
   </data>
   <data name="SettingsMcpToken_StoredAtFormat" xml:space="preserve">
-    <value>Stored at {0}</value>
+    <value>Armazenado em {0}</value>
   </data>
   <data name="SettingsMcpToken_HintFormat" xml:space="preserve">
-    <value>Send as 'Authorization: Bearer &lt;token&gt;' on every request. Stored at {0}.</value>
+    <value>Envie como 'Authorization: Bearer &lt;token&gt;' em todas as solicitações. Armazenado em {0}.</value>
   </data>
   <data name="SettingsMcpToken_ResetToastTitle" xml:space="preserve">
-    <value>MCP token reset</value>
+    <value>Token MCP redefinido</value>
   </data>
   <data name="SettingsMcpToken_ResetToastBody" xml:space="preserve">
-    <value>Old MCP bearer tokens are now invalid.</value>
+    <value>Os tokens Bearer MCP antigos agora são inválidos.</value>
   </data>
   <data name="SettingsMcpToken_ResetFailedFormat" xml:space="preserve">
-    <value>Failed to reset token: {0}</value>
+    <value>Falha ao redefinir o token: {0}</value>
   </data>
   <data name="SettingsMcpTokenResetDialog_Title" xml:space="preserve">
-    <value>Reset MCP bearer token?</value>
+    <value>Redefinir o token Bearer MCP?</value>
   </data>
   <data name="SettingsMcpTokenResetDialog_Body" xml:space="preserve">
-    <value>Existing local MCP clients (Claude Desktop, Cursor, Claude Code) will stop working until you reconfigure them with the new token.</value>
+    <value>Os clientes MCP locais existentes (Claude Desktop, Cursor, Claude Code) deixarão de funcionar até que você os reconfigure com o novo token.</value>
   </data>
   <data name="SettingsMcpTokenResetDialog_PrimaryButton" xml:space="preserve">
-    <value>Reset</value>
+    <value>Redefinir</value>
   </data>
   <data name="SettingsMcpTokenResetDialog_CloseButton" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Cancelar</value>
   </data>
   <!-- ==================== DownloadProgressDialog ==================== -->
   <data name="WindowTitle_Downloading" xml:space="preserve">
