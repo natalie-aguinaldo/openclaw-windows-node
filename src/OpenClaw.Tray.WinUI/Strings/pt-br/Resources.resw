@@ -301,233 +301,233 @@
   <!-- ==================== Runtime strings (C# code) ==================== -->
   <!-- Window titles -->
   <data name="WindowTitle_Settings" xml:space="preserve">
-    <value>Settings: OpenClaw Tray</value>
+    <value>Configurações: OpenClaw Tray</value>
   </data>
   <data name="WindowTitle_Status" xml:space="preserve">
     <value>Status: OpenClaw Tray</value>
   </data>
   <data name="WindowTitle_ActivityStream" xml:space="preserve">
-    <value>Activity Stream: OpenClaw Tray</value>
+    <value>Fluxo de atividade: OpenClaw Tray</value>
   </data>
   <data name="WindowTitle_NotificationHistory" xml:space="preserve">
-    <value>Notification History: OpenClaw Tray</value>
+    <value>Histórico de notificações: OpenClaw Tray</value>
   </data>
   <data name="WindowTitle_WebChat" xml:space="preserve">
-    <value>OpenClaw Chat</value>
+    <value>Chat do OpenClaw</value>
   </data>
   <data name="WindowTitle_Welcome" xml:space="preserve">
-    <value>Welcome to OpenClaw</value>
+    <value>Bem vindo ao OpenClaw</value>
   </data>
   <data name="WindowTitle_Update" xml:space="preserve">
-    <value>OpenClaw Update</value>
+    <value>Atualização do OpenClaw</value>
   </data>
   <!-- Settings runtime status -->
   <data name="Status_Testing" xml:space="preserve">
-    <value>Testing...</value>
+    <value>Testando...</value>
   </data>
   <data name="Status_Connected" xml:space="preserve">
-    <value>✅ Connected!</value>
+    <value>✅ Conectado!</value>
   </data>
   <data name="Status_ConnectionFailed" xml:space="preserve">
-    <value>❌ Connection failed</value>
+    <value>❌ Falha na conexão</value>
   </data>
   <!-- WelcomeDialog -->
   <data name="Welcome_Title" xml:space="preserve">
-    <value>Welcome to OpenClaw!</value>
+    <value>Bem-vindo ao OpenClaw!</value>
   </data>
   <data name="Welcome_Description" xml:space="preserve">
-    <value>OpenClaw Tray is your Windows companion for OpenClaw, the AI-powered personal assistant.</value>
+    <value>O OpenClaw Tray é seu aplicativo complementar para Windows do OpenClaw, o assistente pessoal com tecnologia de IA.</value>
   </data>
   <data name="Welcome_GettingStarted" xml:space="preserve">
-    <value>To get started, you'll need:</value>
+    <value>Para começar, você precisará de:</value>
   </data>
   <data name="Welcome_NeedGateway" xml:space="preserve">
-    <value>• A running OpenClaw gateway</value>
+    <value>• Um Gateway do OpenClaw em execução</value>
   </data>
   <data name="Welcome_NeedToken" xml:space="preserve">
-    <value>• Your API token from the dashboard</value>
+    <value>• Seu token de API no painel</value>
   </data>
   <data name="Welcome_ViewDocs" xml:space="preserve">
-    <value>📚 View Documentation</value>
+    <value>📚 Ver documentação</value>
   </data>
   <data name="Welcome_LaterButton" xml:space="preserve">
-    <value>Later</value>
+    <value>Mais tarde</value>
   </data>
   <data name="Welcome_OpenSettingsButton" xml:space="preserve">
-    <value>Open Settings</value>
+    <value>Abrir configurações</value>
   </data>
   <!-- UpdateDialog -->
   <data name="Update_VersionAvailable" xml:space="preserve">
-    <value>🎉 Version {0} is available!</value>
+    <value>🎉 A versão {0} está disponível!</value>
   </data>
   <data name="Update_CurrentVersion" xml:space="preserve">
-    <value>Current version: {0}</value>
+    <value>Versão atual: {0}</value>
   </data>
   <data name="Update_WhatsNew" xml:space="preserve">
-    <value>What's New:</value>
+    <value>Novidades:</value>
   </data>
   <data name="Update_SkipButton" xml:space="preserve">
-    <value>Skip This Version</value>
+    <value>Ignorar esta versão</value>
   </data>
   <data name="Update_RemindLaterButton" xml:space="preserve">
-    <value>Remind Me Later</value>
+    <value>Lembrar mais tarde</value>
   </data>
   <data name="Update_DownloadButton" xml:space="preserve">
-    <value>Download &amp; Install</value>
+    <value>Baixar &amp; Instalar</value>
   </data>
   <data name="Update_Title_UpToDate" xml:space="preserve">
-    <value>You're up to date</value>
+    <value>Você está atualizado</value>
   </data>
   <data name="Update_Message_UpToDate" xml:space="preserve">
-    <value>You're running the latest version (v{0}).</value>
+    <value>Você está usando a versão mais recente (v{0}).</value>
   </data>
   <data name="Update_Title_Failed" xml:space="preserve">
-    <value>Couldn't check for updates</value>
+    <value>Não foi possível verificar se há atualizações</value>
   </data>
   <data name="Update_Message_Failed" xml:space="preserve">
-    <value>Something went wrong while checking for updates.
+    <value>Algo deu errado ao verificar se há atualizações.
 
 {0}</value>
   </data>
   <data name="Update_Title_Skipped" xml:space="preserve">
-    <value>Update check skipped</value>
+    <value>Verificação de atualizações ignorada</value>
   </data>
   <data name="Update_Message_Skipped_Debug" xml:space="preserve">
-    <value>Update checks are disabled in debug builds.</value>
+    <value>A verificação de atualizações está desativada em builds de depuração.</value>
   </data>
   <data name="Update_Message_Skipped_Dev" xml:space="preserve">
-    <value>Update checks are disabled in development builds.</value>
+    <value>A verificação de atualizações está desativada em builds de desenvolvimento.</value>
   </data>
   <data name="Update_OK" xml:space="preserve">
     <value>OK</value>
   </data>
   <!-- Tray menu items -->
   <data name="Menu_OpenDashboard" xml:space="preserve">
-    <value>Open Dashboard</value>
+    <value>Abrir painel</value>
   </data>
   <data name="Menu_OpenWebChat" xml:space="preserve">
-    <value>Open Web Chat</value>
+    <value>Abrir Web Chat</value>
   </data>
   <data name="Menu_ActivityStream" xml:space="preserve">
-    <value>Activity Stream...</value>
+    <value>Fluxo de atividade...</value>
   </data>
   <data name="Menu_NotificationHistory" xml:space="preserve">
-    <value>Notification History...</value>
+    <value>Histórico de notificações...</value>
   </data>
   <data name="Menu_RunHealthCheck" xml:space="preserve">
-    <value>Run Health Check</value>
+    <value>Executar verificação do sistema</value>
   </data>
   <data name="Menu_Settings" xml:space="preserve">
-    <value>Settings...</value>
+    <value>Configurações...</value>
   </data>
   <data name="Menu_AutoStart" xml:space="preserve">
-    <value>Auto-start</value>
+    <value>Iniciar automaticamente</value>
   </data>
   <data name="Menu_AutoStartEnabled" xml:space="preserve">
-    <value>Auto-start ✓</value>
+    <value>Iniciar automaticamente ✓</value>
   </data>
   <data name="Menu_OpenLogFile" xml:space="preserve">
-    <value>Open Log File</value>
+    <value>Abrir arquivo de log</value>
   </data>
   <data name="Menu_Exit" xml:space="preserve">
-    <value>Exit</value>
+    <value>Sair</value>
   </data>
   <data name="Menu_CopyNodeSummary" xml:space="preserve">
-    <value>Copy node summary</value>
+    <value>Copiar resumo do Node</value>
   </data>
   <data name="Menu_CheckForUpdates" xml:space="preserve">
-    <value>Check for Updates</value>
+    <value>Verificar atualizações</value>
   </data>
   <data name="Menu_SetupGuide" xml:space="preserve">
-    <value>Setup Guide...</value>
+    <value>Guia de configuração...</value>
   </data>
   <data name="Menu_Reconfigure" xml:space="preserve">
-    <value>Reconfigure…</value>
+    <value>Reconfigurar…</value>
   </data>
   <data name="Menu_SupportDebugHeader" xml:space="preserve">
-    <value>🧰 Support &amp; Debug</value>
+    <value>🧰 Suporte &amp; Depuração</value>
   </data>
   <data name="Menu_OpenSupportFiles" xml:space="preserve">
-    <value>Open Support Files</value>
+    <value>Abrir arquivos de suporte</value>
   </data>
   <data name="Menu_LogsFolder" xml:space="preserve">
-    <value>Logs Folder</value>
+    <value>Pasta de logs</value>
   </data>
   <data name="Menu_ConfigFolder" xml:space="preserve">
-    <value>Config Folder</value>
+    <value>Pasta de configurações</value>
   </data>
   <data name="Menu_DiagnosticsFolder" xml:space="preserve">
-    <value>Diagnostics Folder</value>
+    <value>Pasta de diagnósticos</value>
   </data>
   <data name="Menu_CopyDiagnostics" xml:space="preserve">
-    <value>Copy Diagnostics</value>
+    <value>Copiar diagnósticos</value>
   </data>
   <data name="Menu_SupportContext" xml:space="preserve">
-    <value>Support Context</value>
+    <value>Contexto de suporte</value>
   </data>
   <data name="Menu_DebugBundle" xml:space="preserve">
-    <value>Debug Bundle</value>
+    <value>Pacote de depuração</value>
   </data>
   <data name="Menu_BrowserSetup" xml:space="preserve">
-    <value>Browser Setup</value>
+    <value>Configuração do navegador</value>
   </data>
   <data name="Menu_PortDiagnostics" xml:space="preserve">
-    <value>Port Diagnostics</value>
+    <value>Diagnóstico de portas</value>
   </data>
   <data name="Menu_CapabilityDiagnostics" xml:space="preserve">
-    <value>Capability Diagnostics</value>
+    <value>Diagnóstico de capacidades</value>
   </data>
   <data name="Menu_NodeInventory" xml:space="preserve">
-    <value>Node Inventory</value>
+    <value>Inventário de Nodes</value>
   </data>
   <data name="Menu_ChannelSummary" xml:space="preserve">
-    <value>Channel Summary</value>
+    <value>Resumo de canais</value>
   </data>
   <data name="Menu_ActivitySummary" xml:space="preserve">
-    <value>Activity Summary</value>
+    <value>Resumo de atividades</value>
   </data>
   <data name="Menu_ExtensibilitySummary" xml:space="preserve">
-    <value>Extensibility Summary</value>
+    <value>Resumo de extensibilidade</value>
   </data>
   <data name="Menu_RestartSshTunnel" xml:space="preserve">
-    <value>Restart SSH Tunnel</value>
+    <value>Reiniciar túnel SSH</value>
   </data>
   <!-- Tray menu dynamic text -->
   <data name="Menu_StatusFormat" xml:space="preserve">
     <value>Status: {0}</value>
   </data>
   <data name="Menu_SessionsFormat" xml:space="preserve">
-    <value>Sessions ({0})</value>
+    <value>Sessões ({0})</value>
   </data>
   <data name="Menu_NodesFormat" xml:space="preserve">
     <value>Nodes ({0})</value>
   </data>
   <data name="Menu_RecentActivityFormat" xml:space="preserve">
-    <value>Recent Activity ({0})</value>
+    <value>Atividade recente ({0})</value>
   </data>
   <data name="Menu_NoUsageData" xml:space="preserve">
-    <value>No usage data</value>
+    <value>Nenhum dado de uso</value>
   </data>
   <data name="Menu_ResetSession" xml:space="preserve">
-    <value>↳ Reset session</value>
+    <value>↳ Redefinir sessão</value>
   </data>
   <data name="Menu_CompactLog" xml:space="preserve">
-    <value>↳ Compact log</value>
+    <value>↳ Compactar log</value>
   </data>
   <data name="Menu_DeleteSession" xml:space="preserve">
-    <value>↳ Delete session</value>
+    <value>↳ Excluir sessão</value>
   </data>
   <data name="Menu_NodeWaitingApproval" xml:space="preserve">
-    <value>⏳ Waiting for approval...</value>
+    <value>⏳ Aguardando aprovação...</value>
   </data>
   <data name="Menu_NodePairedConnected" xml:space="preserve">
-    <value>✅ Paired &amp; Connected</value>
+    <value>✅ Pareado &amp; Conectado</value>
   </data>
   <data name="Menu_NodeConnecting" xml:space="preserve">
-    <value>🔄 Connecting...</value>
+    <value>🔄 Conectando</value>
   </data>
   <data name="Menu_NodeDisconnected" xml:space="preserve">
-    <value>⚪ Disconnected</value>
+    <value>⚪ Desconectado</value>
   </data>
   <!-- Notification test -->
   <data name="TestNotification_Title" xml:space="preserve">
