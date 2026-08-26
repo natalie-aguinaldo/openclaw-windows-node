@@ -1767,181 +1767,186 @@ Use uma destas opções:
     <value>Atualizar</value>
   </data>
   <data name="CronPage_TextBlock_10.Text" xml:space="preserve">
-    <value>⏱️ Cron Jobs</value>
+    <value>⏱️ Tarefas do Cron</value>
   </data>
   <data name="CronPage_TextBlock_29.Text" xml:space="preserve">
-    <value>Scheduler Status</value>
+    <value>Status do agendador</value>
   </data>
   <data name="SchedulerStatusText.Text" xml:space="preserve">
-    <value>Enabled</value>
+    <value>Ativado</value>
   </data>
   <data name="StorePathText.Text" xml:space="preserve">
-    <value>Store: ~/.openclaw/cron.db</value>
+    <value>Armazenamento: ~/.openclaw/cron.db</value>
   </data>
   <data name="NextWakeText.Text" xml:space="preserve">
-    <value>Next wake: …</value>
+    <value>Próxima execução: …</value>
   </data>
   <data name="CronPage_Button_80.Content" xml:space="preserve">
-    <value>Run Now</value>
+    <value>Executar agora</value>
   </data>
   <data name="CronPage_TextBlock_90.Text" xml:space="preserve">
-    <value>Last run:</value>
+    <value>Última execução:</value>
   </data>
   <data name="CronPage_TextBlock_104.Text" xml:space="preserve">
-    <value>Next run:</value>
+    <value>Próxima execução:</value>
   </data>
   <data name="CronPage_TextBlock_120.Text" xml:space="preserve">
-    <value>No cron jobs configured</value>
+    <value>Nenhuma tarefa do Cron configurada</value>
   </data>
   <data name="DebugPage_TextBlock_8.Text" xml:space="preserve">
     <value>🐛 Debug</value>
   </data>
+  <data name="DebugPage_TextBlock_8.Text" xml:space="preserve">
+    <value>🐛 Depuração</value>
+  </data>
   <data name="DebugPage_TextBlock_14.Text" xml:space="preserve">
-    <value>Log Viewer</value>
+    <value>Visualizador de logs</value>
   </data>
   <data name="DebugPage_Button_18.Content" xml:space="preserve">
-    <value>⟳ Refresh</value>
+    <value>⟳ Atualizar</value>
   </data>
   <data name="DebugPage_Button_19.Content" xml:space="preserve">
-    <value>📋 Copy Log</value>
+    <value>📋 Copiar log</value>
   </data>
   <data name="LogText.Text" xml:space="preserve">
-    <value>Loading...</value>
+    <value>Carregando...</value>
   </data>
   <data name="DebugPage_TextBlock_38.Text" xml:space="preserve">
-    <value>Connection Status</value>
+    <value>Status da conexão</value>
   </data>
   <data name="DebugPage_TextBlock_52.Text" xml:space="preserve">
-    <value>Operator Status</value>
+    <value>Status do operador</value>
   </data>
   <data name="DebugPage_TextBlock_56.Text" xml:space="preserve">
-    <value>Gateway URL</value>
+    <value>URL do Gateway</value>
   </data>
   <data name="DebugPage_TextBlock_61.Text" xml:space="preserve">
     <value>Node Mode</value>
   </data>
   <data name="DebugPage_TextBlock_72.Text" xml:space="preserve">
-    <value>Device Identity</value>
+    <value>Identidade do dispositivo</value>
   </data>
   <data name="DebugPage_TextBlock_86.Text" xml:space="preserve">
-    <value>Device ID</value>
+    <value>ID do dispositivo</value>
   </data>
   <data name="DebugPage_Button_91.Content" xml:space="preserve">
-    <value>📋 Copy</value>
+    <value>📋 Copiar</value>
   </data>
   <data name="DebugPage_TextBlock_94.Text" xml:space="preserve">
-    <value>Public Key</value>
+    <value>Chave pública</value>
   </data>
   <data name="DebugPage_TextBlock_108.Text" xml:space="preserve">
-    <value>Debug Actions</value>
+    <value>Ações de depuração</value>
   </data>
   <data name="DebugPage_Button_111.Content" xml:space="preserve">
-    <value>📄 Open Log File</value>
+    <value>📄 Abrir arquivo de log</value>
   </data>
   <data name="DebugPage_Button_112.Content" xml:space="preserve">
-    <value>📁 Open Config Folder</value>
+    <value>📁 Abrir pasta de configuração</value>
   </data>
   <data name="DebugPage_Button_113.Content" xml:space="preserve">
-    <value>📁 Open Diagnostics Folder</value>
+    <value>📁 Abrir pasta de diagnósticos</value>
   </data>
   <data name="DebugPage_Button_114.Content" xml:space="preserve">
-    <value>📋 Copy Support Context</value>
+    <value>📋 Copiar contexto de suporte</value>
   </data>
   <data name="StatusHeadline.Text" xml:space="preserve">
-    <value>Not connected to gateway</value>
+    <value>Não conectado ao Gateway</value>
   </data>
   <data name="ScanButton.Content" xml:space="preserve">
-    <value>Scan for gateways</value>
+    <value>Procurar Gateways</value>
   </data>
   <data name="DashboardButton.Content" xml:space="preserve">
-    <value>Open Dashboard</value>
+    <value>Abrir painel</value>
   </data>
   <data name="ChatButton.Content" xml:space="preserve">
-    <value>Open Chat</value>
+    <value>Abrir Chat</value>
   </data>
   <data name="HealthCheckButton.Content" xml:space="preserve">
-    <value>Health Check</value>
+    <value>Verificação do sistema</value>
   </data>
   <data name="RefreshButton.Content" xml:space="preserve">
-    <value>⟳ Refresh</value>
+    <value>⟳ Atualizar</value>
   </data>
   <data name="NodesPage_Action_Rename" xml:space="preserve">
-    <value>Rename</value>
+    <value>Renomear</value>
   </data>
   <data name="NodesPage_Action_Forget" xml:space="preserve">
-    <value>Forget</value>
+    <value>Esquecer</value>
   </data>
   <data name="NodesPage_Action_MoreOptions" xml:space="preserve">
-    <value>More options</value>
+    <value>Mais opções</value>
   </data>
   <data name="NodesPage_Label_Version" xml:space="preserve">
-    <value>Version</value>
+    <value>Versão</value>
   </data>
   <data name="NodesPage_Label_Hardware" xml:space="preserve">
     <value>Hardware</value>
   </data>
   <data name="NodesPage_Label_Network" xml:space="preserve">
-    <value>Network</value>
+    <value>Rede</value>
   </data>
   <data name="NodesPage_Label_Approved" xml:space="preserve">
-    <value>Approved</value>
+    <value>Aprovado</value>
   </data>
   <data name="NodesPage_Label_Connected" xml:space="preserve">
-    <value>Connected</value>
+    <value>Conectado</value>
   </data>
   <data name="NodesPage_Label_LastSeen" xml:space="preserve">
-    <value>Seen</value>
+    <value>Visto</value>
   </data>
   <data name="NodesPage_Label_Capabilities" xml:space="preserve">
-    <value>Capabilities</value>
+    <value>Recursos</value>
   </data>
   <data name="NodesPage_Label_Permissions" xml:space="preserve">
-    <value>Permissions</value>
+    <value>Permissões</value>
   </data>
   <data name="NodesPage_Label_PathEnv" xml:space="preserve">
     <value>PATH</value>
   </data>
   <data name="NodesPage_Commands_Header" xml:space="preserve">
-    <value>Commands ({0})</value>
+    <value>Comandos ({0})</value>
   </data>
   <data name="NodesPage_Command_DisabledSuffix" xml:space="preserve">
-    <value> (disabled)</value>
+    <value> (desativado)</value>
   </data>
+
   <data name="NodesPage_Rename_Title" xml:space="preserve">
-    <value>Rename node</value>
+    <value>Renomear Node</value>
   </data>
   <data name="NodesPage_Rename_Body" xml:space="preserve">
-    <value>Pick a new display name for {0}.</value>
+    <value>Escolha um novo nome de exibição para {0}.</value>
   </data>
   <data name="NodesPage_Rename_Placeholder" xml:space="preserve">
-    <value>Display name</value>
+    <value>Nome de exibição</value>
   </data>
   <data name="NodesPage_Rename_Primary" xml:space="preserve">
-    <value>Rename</value>
+    <value>Renomear</value>
   </data>
   <data name="NodesPage_Rename_Error_Empty" xml:space="preserve">
-    <value>Display name cannot be empty.</value>
+    <value>O nome de exibição não pode ficar vazio.</value>
   </data>
   <data name="NodesPage_Rename_Error_Generic" xml:space="preserve">
-    <value>Rename failed.</value>
+    <value>Falha ao renomear.</value>
   </data>
+
   <data name="NodesPage_Forget_Title" xml:space="preserve">
-    <value>Forget node?</value>
+    <value>Esquecer Node?</value>
   </data>
   <data name="NodesPage_Forget_Body" xml:space="preserve">
-    <value>This will remove the gateway's record of the node below. The node will need to re-pair before it can reconnect.</value>
+    <value>Isso removerá do Gateway o registro do Node abaixo. O Node precisará ser pareado novamente antes de poder se reconectar.</value>
   </data>
   <data name="NodesPage_Forget_Warning" xml:space="preserve">
-    <value>Active operator and chat sessions targeting this node will lose access immediately.</value>
+    <value>As sessões ativas do operador e do chat direcionadas a este Node perderão o acesso imediatamente.</value>
   </data>
   <data name="NodesPage_Forget_Primary" xml:space="preserve">
-    <value>Forget node</value>
+    <value>Esquecer Node</value>
   </data>
   <data name="NodesPage_Forget_Error_Generic" xml:space="preserve">
-    <value>Could not forget node: gateway not reachable or permission denied.</value>
+    <value>Não foi possível esquecer o Node: o Gateway não está acessível ou a permissão foi negada.</value>
   </data>
   <data name="NodesPage_Common_Cancel" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Cancelar</value>
   </data>
   <data name="PermissionsPage_TextBlock_8.Text" xml:space="preserve">
     <value>🔐 Permissions</value>
