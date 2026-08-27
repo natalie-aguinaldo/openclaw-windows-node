@@ -124,8 +124,7 @@
                                     <InfoBar.ActionButton>
                                         <HyperlinkButton x:Name="LocalAiUnavailableDetailsButton"
                                                          AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
-                                                         Content="See why" Padding="0"
-                                                         HorizontalAlignment="Left"
+                                                         Content="See why"
                                                          Click="LocalAiUnavailableDetails_Click" />
                                     </InfoBar.ActionButton>
                                 </InfoBar>

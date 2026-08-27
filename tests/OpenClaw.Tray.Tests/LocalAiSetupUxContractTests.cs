@@ -57,6 +57,7 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("Message=\"This PC does not meet one or more Local AI requirements.\"", infoBar);
         Assert.Contains("<InfoBar.ActionButton>", infoBar);
         Assert.DoesNotContain("<StackPanel", infoBar);
+        Assert.DoesNotContain("Padding=\"0\"", infoBar);
         AssertInOrder(
             xaml,
             "x:Name=\"LocalAiUnavailablePanel\"",
