@@ -1182,6 +1182,21 @@ public sealed class AppRefactorContractTests
     }
 
     [Fact]
+    public void SetupProgress_HidesEveryLocalAiOnlyGroupAndKeepsNonLocalPreviewActive()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var code = File.ReadAllText(Path.Combine(root, "src", "OpenClaw.SetupEngine.UI", "Pages", "ProgressPage.xaml.cs"));
+        var buildRows = ExtractMethod(code, "BuildStepRows");
+        var preview = ExtractMethod(code, "RenderProgressPreview");
+
+        Assert.Contains("IsLocalAiOnlyGroup(stepIds)", buildRows);
+        Assert.Contains("stepIds.All(stepId => stepId.Contains(\"local-ai\"", code);
+        Assert.Contains("localAiPreview ? \"local-ai-model\" : \"wsl-create\"", preview);
+        Assert.DoesNotContain("groupId.StartsWith(\"local-ai\"", buildRows);
+        Assert.DoesNotContain(": 3;", preview);
+    }
+
+    [Fact]
     public void SetupCompletion_PersistsStartupChoiceBeforeRestart()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
