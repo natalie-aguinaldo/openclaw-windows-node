@@ -89,16 +89,23 @@ public sealed class LocalAiSetupUxContractTests
             "OpenClaw.Tray.WinUI",
             "Pages",
             "LocalAiPage.xaml.cs"));
+        string infoBar = ExtractElement(xaml, "LocalAiUnavailableInfoBar", "</InfoBar>");
 
         AssertInOrder(
             xaml,
+            "<ScrollViewer VerticalScrollBarVisibility=\"Auto\">",
+            "<Grid HorizontalAlignment=\"Stretch\">",
+            "<StackPanel Padding=\"24\" Spacing=\"12\" HorizontalAlignment=\"Stretch\" MaxWidth=\"900\">",
             "x:Uid=\"LocalAiPage_Intro\"",
             "x:Name=\"LocalAiUnavailableInfoBar\"",
             "x:Name=\"LocalAiEngineOption\"");
         Assert.Contains("Title=\"Local AI is not available\"", xaml);
         Assert.Contains("AutomationProperties.LiveSetting=\"Polite\"", xaml);
-        Assert.Contains("x:Name=\"LocalAiUnavailableDetailsButton\"", xaml);
-        Assert.Contains("AutomationProperties.AutomationId=\"LocalAiUnavailableDetailsButton\"", xaml);
+        Assert.Contains("<InfoBar.ActionButton>", infoBar);
+        Assert.Contains("x:Name=\"LocalAiUnavailableDetailsButton\"", infoBar);
+        Assert.Contains("AutomationProperties.AutomationId=\"LocalAiUnavailableDetailsButton\"", infoBar);
+        Assert.DoesNotContain("Padding=\"0\"", infoBar);
+        Assert.DoesNotContain("HorizontalAlignment=\"Left\"", infoBar);
         Assert.Contains("x:Name=\"LocalAiUnavailableDetailsTip\"", xaml);
         Assert.Contains("Target=\"{x:Bind LocalAiUnavailableDetailsButton}\"", xaml);
         Assert.Contains("x:Name=\"LocalAiEngineOption\"", xaml);
