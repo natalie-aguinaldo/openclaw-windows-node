@@ -780,7 +780,7 @@ public class LocalizationValidationTests
     public void AllFiveLocaleDirectories_Exist()
     {
         var stringsDir = GetStringsDirectory();
-        string[] expected = ["en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw"];
+        string[] expected = ["en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br"];
 
         foreach (var locale in expected)
         {
