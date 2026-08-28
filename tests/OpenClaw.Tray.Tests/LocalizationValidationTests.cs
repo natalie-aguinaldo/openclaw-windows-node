@@ -603,6 +603,7 @@ public class LocalizationValidationTests
     {
         "fr-fr",
         "nl-nl",
+        "pt-br",
     };
 
     private static bool IsInvariantOrDeferred(string key, string value) =>

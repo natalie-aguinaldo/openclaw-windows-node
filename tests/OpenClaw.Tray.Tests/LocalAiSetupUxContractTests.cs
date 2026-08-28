@@ -53,7 +53,7 @@ public sealed class LocalAiSetupUxContractTests
             "SetupLocalization.GetString(\"Onboarding_Welcome_LocalAiAvailableBadge.Text\")", source);
         Assert.Contains("AutomationProperties.GetName(InstallChoice)", source);
 
-        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             string resources = File.ReadAllText(Path.Combine(
                 root, "src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
@@ -205,7 +205,7 @@ public sealed class LocalAiSetupUxContractTests
 
         Assert.Contains("x:Uid=\"Onboarding_LocalAi_RecheckAvailabilityButton\"", xaml);
 
-        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             string resources = File.ReadAllText(Path.Combine(
                 root,
@@ -279,7 +279,7 @@ public sealed class LocalAiSetupUxContractTests
             "Onboarding_LocalAi_UnavailableDetailsDialogTitle",
             "Onboarding_LocalAi_UnavailableDetailsDialogClose",
         ];
-        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             string resources = File.ReadAllText(Path.Combine(
                 root, "src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
@@ -344,7 +344,7 @@ public sealed class LocalAiSetupUxContractTests
 
         // A thrown probe failure and a successful-but-incomplete read both resolve to
         // HardwareFactsIncomplete: one shared message, no separate "probe failure" key.
-        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             string resources = File.ReadAllText(Path.Combine(
                 root, "src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
@@ -453,7 +453,7 @@ public sealed class LocalAiSetupUxContractTests
             "LocalAiPage_CheckingMessage",
             "LocalAiPage_UnavailableProbeTitle",
         ];
-        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             string resources = File.ReadAllText(Path.Combine(
                 root, "src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));

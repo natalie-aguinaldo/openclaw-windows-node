@@ -868,7 +868,7 @@ public sealed class AppRefactorContractTests
         };
         const string runtimeContractKey = "PermissionsPage_PatternsAreMatchedLeft.Text";
 
-        foreach (var locale in new[] { "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        foreach (var locale in new[] { "fr-fr", "nl-nl", "zh-cn", "zh-tw", "pt-br" })
         {
             var localized = ReadReswValues(Path.Combine(stringsRoot, locale, "Resources.resw"));
             foreach (var key in localizedKeys)

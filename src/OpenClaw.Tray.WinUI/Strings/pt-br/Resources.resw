@@ -143,7 +143,7 @@
     <value>PERMISSÕES</value>
   </data>
   <data name="StatusCostTrendHeader.Text" xml:space="preserve">
-    <value>TENDÊNCIA DE CUSTO — 30 DIAS</value>
+    <value>TENDÊNCIA DE CUSTO: 30 DIAS</value>
   </data>
   <data name="StatusExtensibilityHeader.Text" xml:space="preserve">
     <value>EXTENSIBILIDADE</value>
