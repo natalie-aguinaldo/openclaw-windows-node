@@ -285,9 +285,10 @@ public sealed partial class CapabilitiesPage : Page
         LocalInferenceEligibilityResult? eligibility = null;
         try
         {
-            _localAiHardware = await hardwareTask;
+            HostHardwareInfo hardware = await hardwareTask;
             if (!CanApplyLocalAiAvailability(checking.Generation, setupWindow))
                 return;
+            _localAiHardware = hardware;
             eligibility = LocalInferenceEligibility.Evaluate(
                 _localAiHardware,
                 _config!.LocalAi.SelectedModelId);
@@ -334,11 +335,12 @@ public sealed partial class CapabilitiesPage : Page
         string? wslNetworkingReason = null;
         try
         {
-            _localAiNetworkingStatus = forceNetworkingConsent
+            WslGlobalConfigStatus networkingStatus = forceNetworkingConsent
                 ? new(false, false)
                 : CreateWslGlobalConfigManager().Inspect();
             if (!CanApplyLocalAiAvailability(checking.Generation, setupWindow))
                 return;
+            _localAiNetworkingStatus = networkingStatus;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
         {
