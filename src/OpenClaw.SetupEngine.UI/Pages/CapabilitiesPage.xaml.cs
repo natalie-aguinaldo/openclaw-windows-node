@@ -418,7 +418,7 @@ public sealed partial class CapabilitiesPage : Page
         ApplyLocalAiAvailabilityChrome(snapshot);
         _localAiSelectionEligible = false;
         _suppressLocalAiToggle = true;
-        LocalAiToggle.IsOn = false;
+        LocalAiToggle.IsOn = _config!.LocalAi.Enabled;
         _suppressLocalAiToggle = false;
         LocalAiToggle.Visibility = Visibility.Visible;
         LocalAiDetailsPanel.Visibility = Visibility.Collapsed;
@@ -426,8 +426,6 @@ public sealed partial class CapabilitiesPage : Page
         SetLocalAiOptionAvailability(
             isAvailable: false,
             "OpenClaw is checking Local AI requirements.");
-        _config!.LocalAi.Enabled = false;
-        _config.SkipWizard = _skipWizardWithoutLocalAi;
         ApplySetupReviewSummary(_config);
         UpdatePrimaryButtonState();
     }

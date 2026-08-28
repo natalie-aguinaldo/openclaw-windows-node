@@ -94,6 +94,11 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("LocalAiNetworkingConsentCheckBox.IsEnabled = isAvailable", source);
         Assert.Contains("SetLocalAiOptionAvailability(isAvailable: false)", source);
         Assert.Contains("SetLocalAiOptionAvailability(isAvailable: true)", source);
+
+        string checkingMethod = ExtractMethod(source, "private void ShowLocalAiAvailabilityChecking");
+        Assert.Contains("LocalAiToggle.IsOn = _config!.LocalAi.Enabled;", checkingMethod);
+        Assert.DoesNotContain("_config!.LocalAi.Enabled = false;", checkingMethod);
+        Assert.DoesNotContain("_config.SkipWizard = _skipWizardWithoutLocalAi;", checkingMethod);
     }
 
     [Fact]
