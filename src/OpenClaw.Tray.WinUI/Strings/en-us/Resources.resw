@@ -7072,6 +7072,9 @@ Make sure the gateway is running.</value>
   <data name="LocalAiPage_UnavailableInfoBar.Title" xml:space="preserve"><value>Local AI is not available</value></data>
   <data name="LocalAiPage_UnavailableDetailsButton.Content" xml:space="preserve"><value>See why</value></data>
   <data name="LocalAiPage_UnavailableDetailsTip.Title" xml:space="preserve"><value>Why Local AI is unavailable</value></data>
+  <data name="LocalAiPage_RecheckAvailabilityButton.Content" xml:space="preserve"><value>Recheck</value></data>
+  <data name="LocalAiPage_UnavailableRequirementsMessage" xml:space="preserve"><value>This device does not meet one or more Local AI requirements.</value></data>
+  <data name="LocalAiPage_UnavailableProbeMessage" xml:space="preserve"><value>OpenClaw could not verify Local AI requirements right now. Recheck after confirming the NVIDIA driver is available.</value></data>
   <data name="LocalAiPage_EngineHeading.Text" xml:space="preserve"><value>llama-server</value></data>
   <data name="LocalAiPage_VersionLabel.Text" xml:space="preserve"><value>Version</value></data>
   <data name="LocalAiPage_EndpointLabel.Text" xml:space="preserve"><value>Endpoint</value></data>

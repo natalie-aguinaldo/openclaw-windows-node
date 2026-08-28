@@ -104,6 +104,8 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("<InfoBar.ActionButton>", infoBar);
         Assert.Contains("x:Name=\"LocalAiUnavailableDetailsButton\"", infoBar);
         Assert.Contains("AutomationProperties.AutomationId=\"LocalAiUnavailableDetailsButton\"", infoBar);
+        Assert.Contains("x:Name=\"LocalAiRecheckAvailabilityButton\"", xaml);
+        Assert.Contains("AutomationProperties.AutomationId=\"LocalAiRecheckAvailabilityButton\"", xaml);
         Assert.DoesNotContain("Padding=\"0\"", infoBar);
         Assert.DoesNotContain("HorizontalAlignment=\"Left\"", infoBar);
         Assert.Contains("x:Name=\"LocalAiUnavailableDetailsTip\"", xaml);
@@ -113,6 +115,9 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("x:Name=\"LocalAiGatewayOption\"", xaml);
         Assert.DoesNotContain("SetOptionAvailability(", source);
         Assert.DoesNotContain("option.IsEnabled = isAvailable", source);
+        Assert.Contains("ShowAvailabilityInfoBar", source);
+        Assert.Contains("CanRecheckAvailability", source);
+        Assert.Contains("LocalAiRecheckAvailability_Click", source);
         Assert.Contains("LocalAiUnavailableDetailsTip.IsOpen = !LocalAiUnavailableDetailsTip.IsOpen", source);
     }
 
