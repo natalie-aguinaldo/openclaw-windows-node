@@ -88,9 +88,17 @@ public sealed partial class LocalAiPage : Page
         EngineBusyIndicator.IsActive = _viewModel.IsBusy;
         EngineBusyIndicator.Visibility = _viewModel.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         LocalAiUnavailableInfoBar.Visibility =
-            _viewModel.IsAvailabilityKnown && !_viewModel.IsLocalAiAvailable
+            _viewModel.ShowAvailabilityInfoBar
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        LocalAiUnavailableInfoBar.Message = LocalizationHelper.GetString(
+            _viewModel.HasAvailabilityProbeError
+                ? "LocalAiPage_UnavailableProbeMessage"
+                : "LocalAiPage_UnavailableRequirementsMessage");
+        LocalAiRecheckAvailabilityButton.Visibility = _viewModel.HasAvailabilityProbeError
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        LocalAiRecheckAvailabilityButton.IsEnabled = _viewModel.CanRecheckAvailability;
         StartButton.IsEnabled = _viewModel.CanStart;
         StopButton.IsEnabled = _viewModel.CanStop;
         RestartButton.IsEnabled = _viewModel.CanRestart;
@@ -108,6 +116,7 @@ public sealed partial class LocalAiPage : Page
     private void OnRetrySetup(object sender, RoutedEventArgs e) => _viewModel?.RetrySetup();
     private void OnRepairConnection(object sender, RoutedEventArgs e) => _viewModel?.RepairConnection();
     private void OnOpenChat(object sender, RoutedEventArgs e) => _viewModel?.OpenChat();
+    private void LocalAiRecheckAvailability_Click(object sender, RoutedEventArgs e) => _viewModel?.RecheckAvailability();
     private void LocalAiUnavailableDetails_Click(object sender, RoutedEventArgs e)
     {
         LocalAiUnavailableReasonText.Text = _viewModel?.LocalAiUnavailableReason ?? string.Empty;

@@ -23,12 +23,19 @@
                      AutomationProperties.LiveSetting="Polite">
                 <InfoBar.ActionButton>
                     <HyperlinkButton x:Name="LocalAiUnavailableDetailsButton"
-                                    x:Uid="LocalAiPage_UnavailableDetailsButton"
-                                    Content="See why"
-                                    AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
-                                    Click="LocalAiUnavailableDetails_Click"/>
+                                     x:Uid="LocalAiPage_UnavailableDetailsButton"
+                                     Content="See why"
+                                     AutomationProperties.AutomationId="LocalAiUnavailableDetailsButton"
+                                     Click="LocalAiUnavailableDetails_Click"/>
                 </InfoBar.ActionButton>
             </InfoBar>
+            <HyperlinkButton x:Name="LocalAiRecheckAvailabilityButton"
+                             x:Uid="LocalAiPage_RecheckAvailabilityButton"
+                             Content="Recheck"
+                             HorizontalAlignment="Left"
+                             AutomationProperties.AutomationId="LocalAiRecheckAvailabilityButton"
+                             Click="LocalAiRecheckAvailability_Click"
+                             Visibility="Collapsed"/>
             <TeachingTip x:Name="LocalAiUnavailableDetailsTip"
                          x:Uid="LocalAiPage_UnavailableDetailsTip"
                          Title="Why Local AI is unavailable"

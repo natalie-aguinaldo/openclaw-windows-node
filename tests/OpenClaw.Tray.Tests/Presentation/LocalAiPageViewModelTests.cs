@@ -3,6 +3,7 @@ using OpenClaw.Connection.LocalAi;
 using OpenClaw.Shared.Inference;
 using OpenClaw.Shared.Inference.Catalog;
 using OpenClawTray.Presentation;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace OpenClaw.Tray.Tests.Presentation;
@@ -129,6 +130,79 @@ public sealed class LocalAiPageViewModelTests
     }
 
     [Fact]
+    public async Task ProbeFailure_UsesUnknownStateUntilRecheckSucceeds()
+    {
+        var runtime = new FakeLocalAiRuntime(LocalAiRuntimeSnapshot.Initial(
+            new Uri("http://127.0.0.1:18080"),
+            DateTimeOffset.UtcNow));
+        using var gatewaySource = new PermissionsPageRuntimeSource(new FakePermissionsPageRuntimeHost());
+        using var viewModel = new LocalAiPageViewModel(
+            runtime,
+            gatewaySource,
+            new FakeAppCommands(),
+            new RecordingUiDispatcher(),
+            new SequencedHardwareProbe(
+                () => throw new InvalidOperationException("probe failed"),
+                CreateQualifiedHardware));
+
+        Assert.False(viewModel.RecheckAvailability());
+
+        await ActivateAndWaitForAvailabilityResultAsync(viewModel);
+
+        Assert.False(viewModel.IsAvailabilityKnown);
+        Assert.False(viewModel.IsLocalAiAvailable);
+        Assert.True(viewModel.HasAvailabilityProbeError);
+        Assert.True(viewModel.ShowAvailabilityInfoBar);
+        Assert.True(viewModel.IsSetupAvailable);
+        Assert.True(viewModel.CanRetrySetup);
+        Assert.True(viewModel.CanRecheckAvailability);
+        Assert.Contains("could not read", viewModel.LocalAiUnavailableReason, StringComparison.OrdinalIgnoreCase);
+
+        Assert.True(viewModel.RecheckAvailability());
+        await WaitForAsync(viewModel, () => viewModel.IsAvailabilityKnown);
+
+        Assert.True(viewModel.IsAvailabilityKnown);
+        Assert.True(viewModel.IsLocalAiAvailable);
+        Assert.False(viewModel.HasAvailabilityProbeError);
+        Assert.False(viewModel.ShowAvailabilityInfoBar);
+        Assert.True(viewModel.IsSetupAvailable);
+        Assert.False(viewModel.CanRecheckAvailability);
+        Assert.Null(viewModel.LocalAiUnavailableReason);
+    }
+
+    [Fact]
+    public async Task ProbeFailure_PublishesChangeWhenRecheckBecomesAvailable()
+    {
+        var runtime = new FakeLocalAiRuntime(LocalAiRuntimeSnapshot.Initial(
+            new Uri("http://127.0.0.1:18080"),
+            DateTimeOffset.UtcNow));
+        using var gatewaySource = new PermissionsPageRuntimeSource(new FakePermissionsPageRuntimeHost());
+        using var viewModel = new LocalAiPageViewModel(
+            runtime,
+            gatewaySource,
+            new FakeAppCommands(),
+            new RecordingUiDispatcher(),
+            new SequencedHardwareProbe(
+                () => throw new InvalidOperationException("probe failed")));
+
+        var observed = new List<(bool HasError, bool CanRecheck)>();
+        var recheckAvailable = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        viewModel.PropertyChanged += (_, _) =>
+        {
+            var snapshot = (viewModel.HasAvailabilityProbeError, viewModel.CanRecheckAvailability);
+            observed.Add(snapshot);
+            if (snapshot is (true, true))
+                recheckAvailable.TrySetResult();
+        };
+
+        viewModel.Activate(null);
+        await recheckAvailable.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Contains(observed, state => state is (true, false));
+        Assert.Contains(observed, state => state is (true, true));
+    }
+
+    [Fact]
     public async Task QualifiedHardware_EnablesApplicableOptionsAndRoutesActions()
     {
         var runtime = new FakeLocalAiRuntime(CreateInstalledSnapshot());
@@ -165,16 +239,32 @@ public sealed class LocalAiPageViewModelTests
 
     private static async Task ActivateAndWaitForAvailabilityAsync(LocalAiPageViewModel viewModel)
     {
-        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        viewModel.PropertyChanged += (_, _) =>
-        {
-            if (viewModel.IsAvailabilityKnown)
-                completion.TrySetResult();
-        };
+        await ActivateAndWaitForAvailabilityResultAsync(viewModel);
+        await WaitForAsync(viewModel, () => viewModel.IsAvailabilityKnown);
+    }
 
+    private static async Task ActivateAndWaitForAvailabilityResultAsync(LocalAiPageViewModel viewModel)
+    {
         viewModel.Activate(null);
-        if (!viewModel.IsAvailabilityKnown)
-            await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WaitForAsync(viewModel, () => viewModel.IsAvailabilityKnown || viewModel.HasAvailabilityProbeError);
+    }
+
+    private static async Task WaitForAsync(LocalAiPageViewModel viewModel, Func<bool> condition)
+    {
+        if (condition())
+            return;
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        PropertyChangedEventHandler? handler = null;
+        handler = (_, _) =>
+        {
+            if (!condition())
+                return;
+            viewModel.PropertyChanged -= handler;
+            completion.TrySetResult();
+        };
+        viewModel.PropertyChanged += handler;
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     private static HostHardwareInfo CreateQualifiedHardware() =>
@@ -220,6 +310,18 @@ public sealed class LocalAiPageViewModelTests
     private sealed class FixedHardwareProbe(HostHardwareInfo hardware) : IHostHardwareProbe
     {
         public HostHardwareInfo Probe() => hardware;
+    }
+
+    private sealed class SequencedHardwareProbe(params Func<HostHardwareInfo>[] attempts) : IHostHardwareProbe
+    {
+        private readonly Queue<Func<HostHardwareInfo>> _attempts = new(attempts);
+
+        public HostHardwareInfo Probe()
+        {
+            if (_attempts.Count == 0)
+                throw new InvalidOperationException("No probe attempts configured.");
+            return _attempts.Dequeue().Invoke();
+        }
     }
 
     private sealed class FakeLocalAiRuntime(LocalAiRuntimeSnapshot snapshot) : ILocalAiRuntime

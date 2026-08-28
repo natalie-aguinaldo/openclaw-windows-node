@@ -30,6 +30,7 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
     private string? _actionError;
     private bool _isAvailabilityKnown;
     private bool _isLocalAiAvailable;
+    private bool _hasAvailabilityProbeError;
     private string? _localAiUnavailableReason;
 
     public LocalAiPageViewModel(
@@ -120,7 +121,10 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
     public bool IsBusy => _isBusy;
     public bool IsAvailabilityKnown => _isAvailabilityKnown;
     public bool IsLocalAiAvailable => _isAvailabilityKnown && _isLocalAiAvailable;
+    public bool HasAvailabilityProbeError => _hasAvailabilityProbeError;
+    public bool ShowAvailabilityInfoBar => (_isAvailabilityKnown && !_isLocalAiAvailable) || _hasAvailabilityProbeError;
     public bool IsSetupAvailable => !_isAvailabilityKnown || _isLocalAiAvailable;
+    public bool CanRecheckAvailability => _hasAvailabilityProbeError && _availabilityCancellation is null && !IsBusy;
     public string? LocalAiUnavailableReason => _localAiUnavailableReason;
     public bool CanStart => !IsBusy && HasManagedInstall &&
         _runtimeSnapshot.State is LocalAiRuntimeState.Stopped or LocalAiRuntimeState.Failed;
@@ -179,6 +183,14 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
     public bool RetrySetup() => RunCommand(CanRetrySetup, _appCommands.ShowOnboarding);
     public bool RepairConnection() => RunCommand(CanRepairConnection, _appCommands.Reconnect);
     public bool OpenChat() => RunCommand(CanOpenChat, _appCommands.ShowChat);
+    public bool RecheckAvailability()
+    {
+        ThrowIfDisposed();
+        if (!IsActive || _availabilityCancellation is not null)
+            return false;
+        StartAvailabilityRefresh();
+        return true;
+    }
 
     private static bool RunCommand(bool allowed, Action command)
     {
@@ -206,6 +218,11 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
     private void StartAvailabilityRefresh()
     {
         CancelAvailabilityRefresh();
+        _isAvailabilityKnown = false;
+        _isLocalAiAvailable = false;
+        _hasAvailabilityProbeError = false;
+        _localAiUnavailableReason = null;
+        OnPropertyChanged(null);
         var cancellation = new CancellationTokenSource();
         _availabilityCancellation = cancellation;
         _ = RefreshAvailabilityAsync(cancellation);
@@ -236,6 +253,7 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
             {
                 _isAvailabilityKnown = true;
                 _isLocalAiAvailable = isAvailable;
+                _hasAvailabilityProbeError = false;
                 _localAiUnavailableReason = unavailableReason;
                 OnPropertyChanged(null);
             });
@@ -250,16 +268,22 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
                 "Check the NVIDIA driver installation and try setup again.";
             ApplyOnUiThread(() =>
             {
-                _isAvailabilityKnown = true;
+                _isAvailabilityKnown = false;
                 _isLocalAiAvailable = false;
+                _hasAvailabilityProbeError = true;
                 _localAiUnavailableReason = unavailableReason;
                 OnPropertyChanged(null);
             });
         }
         finally
         {
-            if (ReferenceEquals(_availabilityCancellation, cancellation))
+            bool completedCurrentProbe = ReferenceEquals(_availabilityCancellation, cancellation);
+            if (completedCurrentProbe)
                 _availabilityCancellation = null;
+            if (completedCurrentProbe)
+            {
+                ApplyOnUiThread(() => OnPropertyChanged(nameof(CanRecheckAvailability)));
+            }
             cancellation.Dispose();
         }
     }
