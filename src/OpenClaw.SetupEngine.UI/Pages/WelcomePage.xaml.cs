@@ -1,5 +1,7 @@
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Navigation;
@@ -13,11 +15,10 @@ namespace OpenClaw.SetupEngine.UI.Pages;
 
 public sealed partial class WelcomePage : Page
 {
-    private const string InstallButtonText = "Install a local gateway (WSL)";
-    private const string CheckingButtonText = "Checking existing setup...";
     private SetupConfig? _config;
     private bool _installSelected = true; // default selection
     private bool _suppressSelectionWrite;
+    private string? _installChoiceBaseAutomationName;
 
     public WelcomePage()
     {
@@ -56,19 +57,36 @@ public sealed partial class WelcomePage : Page
         if (setupWindow is null || config is null)
             return;
 
+        WslViabilityResult wslViability = await setupWindow.GetWslViabilityAsync();
+        if (!IsLoaded || !ReferenceEquals(SetupWindow.Active, setupWindow))
+            return;
+        if (wslViability.BlocksSetup)
+            return;
+
         var hardware = await setupWindow.GetLocalAiHardwareAsync();
         if (!IsLoaded || !ReferenceEquals(SetupWindow.Active, setupWindow))
             return;
 
-        LocalInferenceEligibilityResult eligibility = LocalInferenceEligibility.Evaluate(
-            hardware,
-            config.LocalAi.SelectedModelId);
-        if (!eligibility.CanInstall || eligibility.SelectedGpu is not { } gpu)
+        LocalInferenceEligibilityResult eligibility = LocalInferenceEligibility.Evaluate(hardware);
+        if (!eligibility.CanInstall || eligibility.SelectedGpu is null)
             return;
 
-        LocalAiAvailabilityText.Text =
-            $"{gpu.Name} detected. Install a local gateway to use local AI inference on this PC.";
-        LocalAiAvailabilityPanel.Visibility = Visibility.Visible;
+        LocalAiAvailabilityBadge.Visibility = Visibility.Visible;
+        // Capture the control's base accessible name once, so repeated detections (e.g. the
+        // page is re-loaded after navigating back) rebuild the announcement from the same
+        // starting point instead of appending the badge suffix again on every call.
+        _installChoiceBaseAutomationName ??= AutomationProperties.GetName(InstallChoice);
+        AutomationProperties.SetName(
+            InstallChoice,
+            $"{_installChoiceBaseAutomationName}, " +
+            $"{SetupLocalization.GetString("Onboarding_Welcome_LocalAiAvailableBadge.Text")}");
+        // FromElement returns null until a screen reader (or other AT client) has already
+        // queried this element for a peer. This probe can complete before that happens, so the
+        // live-region announcement would otherwise be silently skipped; force peer creation so
+        // the event always has somewhere to go.
+        AutomationPeer automationPeer = FrameworkElementAutomationPeer.FromElement(InstallChoice)
+            ?? FrameworkElementAutomationPeer.CreatePeerForElement(InstallChoice);
+        automationPeer.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
 
     private void StartMascotBreatheAnimation()
@@ -143,44 +161,86 @@ public sealed partial class WelcomePage : Page
     {
         var config = _config ?? throw new InvalidOperationException("Setup configuration has not been loaded.");
         var setupWindow = SetupWindow.Active;
-        var dataDir = setupWindow?.DataDir ?? SetupContext.ResolveDataDir();
+        if (setupWindow is null)
+            return;
 
+        var dataDir = setupWindow.DataDir;
+
+        // The progress ring carries the checking state (its automation name is
+        // "Checking existing WSL setup"). Leave the option title alone: replacing it
+        // hides which option is being acted on for as long as the check runs.
         NextButton.IsEnabled = false;
-        InstallTitle.Text = CheckingButtonText;
         InstallCheckProgress.IsActive = true;
         InstallCheckProgress.Visibility = Visibility.Visible;
         var navigating = false;
         try
         {
-            ExistingConfigDetector.ExistingConfig existing;
-            try
+            while (true)
             {
-                existing = await Task.Run(() => ExistingConfigDetector.Detect(
-                    dataDir,
-                    config.DistroName,
-                    setupWindow?.LocalDataDir));
-            }
-            catch (InvalidOperationException ex)
-            {
-                var errorRoot = XamlRoot;
-                if (setupWindow is not null and { IsClosed: false } && errorRoot is not null)
+                WslViabilityResult wslViability =
+                    await setupWindow.GetWslViabilityAsync(refresh: true);
+                if (wslViability.BlocksSetup)
                 {
-                    await new ContentDialog
+                    var readinessRoot = XamlRoot;
+                    if (setupWindow.IsClosed || readinessRoot is null)
+                        return;
+
+                    var retry = await new ContentDialog
+                    {
+                        Title = "WSL2 is not ready",
+                        Content = wslViability.Description,
+                        PrimaryButtonText = "Try again",
+                        CloseButtonText = "Cancel",
+                        DefaultButton = ContentDialogButton.Primary,
+                        XamlRoot = readinessRoot,
+                    }.ShowAsync();
+
+                    if (retry != ContentDialogResult.Primary)
+                        return;
+                    continue;
+                }
+
+                break;
+            }
+
+            ExistingConfigDetector.ExistingConfig existing;
+            while (true)
+            {
+                try
+                {
+                    existing = await Task.Run(() => ExistingConfigDetector.Detect(
+                        dataDir,
+                        config.DistroName,
+                        setupWindow.LocalDataDir));
+                    break;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    var errorRoot = XamlRoot;
+                    if (setupWindow.IsClosed || errorRoot is null)
+                        return;
+
+                    // Inspection failure is usually transient, so offer a way forward
+                    // instead of ending the flow on the recommended option.
+                    var retry = await new ContentDialog
                     {
                         Title = "Could not inspect WSL",
                         Content = ex.Message,
-                        CloseButtonText = "Close",
+                        PrimaryButtonText = "Try again",
+                        CloseButtonText = "Cancel",
+                        DefaultButton = ContentDialogButton.Primary,
                         XamlRoot = errorRoot,
                     }.ShowAsync();
+
+                    if (retry != ContentDialogResult.Primary)
+                        return;
                 }
-                return;
             }
 
             var xamlRoot = XamlRoot;
-            if (setupWindow is null or { IsClosed: true } || xamlRoot is null)
+            if (setupWindow.IsClosed || xamlRoot is null)
                 return;
 
-            InstallTitle.Text = InstallButtonText;
             InstallCheckProgress.IsActive = false;
             InstallCheckProgress.Visibility = Visibility.Collapsed;
             var summary = ExistingConfigDetector.BuildReplacementSummary(existing);
@@ -216,9 +276,8 @@ public sealed partial class WelcomePage : Page
         }
         finally
         {
-            if (!navigating && setupWindow is { IsClosed: false })
+            if (!navigating && !setupWindow.IsClosed)
             {
-                InstallTitle.Text = InstallButtonText;
                 InstallCheckProgress.IsActive = false;
                 InstallCheckProgress.Visibility = Visibility.Collapsed;
                 NextButton.IsEnabled = true;

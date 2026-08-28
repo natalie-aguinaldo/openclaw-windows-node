@@ -570,16 +570,11 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
 
         if (!ownsMutex)
         {
-            // Forward deep link args to running instance (command-line or protocol activation)
-            var deepLink = _activationRouter.ResolveLaunchCandidate(new LaunchActivationInput(
+            await _activationRouter.ForwardLaunchToPrimaryAsync(new LaunchActivationInput(
                 protocolUri,
                 _startupArgs,
                 _postSetupLaunch,
-                SetupShownDuringStartup: false));
-            if (deepLink != null)
-            {
-                await _activationRouter.ForwardToPrimaryAsync(deepLink, CancellationToken.None);
-            }
+                SetupShownDuringStartup: false), CancellationToken.None);
             Exit();
             return;
         }
@@ -2760,14 +2755,15 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
         // Agent requested a notification via node.invoke system.notify
         try
         {
+            AppNotification notification = AppNotificationMapper.FromNodeSystemNotification(args);
             AppNotificationPublisher.Publish(
                 _appNotificationService,
                 _toastService,
                 new AppNotificationPublishRequest(
-                    AppNotificationMapper.FromNodeSystemNotification(args),
+                    notification,
                     new ToastContentBuilder()
-                        .AddText(args.Title)
-                        .AddText(args.Body)));
+                        .AddText(notification.Title)
+                        .AddText(notification.Message)));
         }
         catch (Exception ex)
         {
@@ -2983,11 +2979,16 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
         if (_settings?.ShowNotifications != true) return;
         if (!ShouldShowNotification(notification)) return;
 
+        AppNotification appNotification = AppNotificationMapper.FromGatewayNotification(
+            notification,
+            LocalizationHelper.GetString("AppNotification_ExecApprovalPending_OpenChatAction"));
+        if (notification.IsChat && string.IsNullOrWhiteSpace(appNotification.Message)) return;
+
         // Store in history
         NotificationHistoryService.AddNotification(new Services.GatewayNotification
         {
-            Title = notification.Title,
-            Message = notification.Message,
+            Title = appNotification.Title,
+            Message = appNotification.Message,
             Category = notification.Type
         });
 
@@ -2995,8 +2996,8 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
         try
         {
             var builder = new ToastContentBuilder()
-                .AddText(notification.Title ?? "OpenClaw")
-                .AddText(notification.Message);
+                .AddText(appNotification.Title)
+                .AddText(appNotification.Message);
 
             var logoPath = GetNotificationIcon(notification.Type);
             if (!string.IsNullOrEmpty(logoPath) && System.IO.File.Exists(logoPath))
@@ -3021,9 +3022,7 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
                 _appNotificationService,
                 _toastService,
                 new AppNotificationPublishRequest(
-                    AppNotificationMapper.FromGatewayNotification(
-                        notification,
-                        LocalizationHelper.GetString("AppNotification_ExecApprovalPending_OpenChatAction")),
+                    appNotification,
                     builder));
         }
         catch (Exception ex)
