@@ -58,12 +58,25 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("<InfoBar.ActionButton>", infoBar);
         Assert.DoesNotContain("<StackPanel", infoBar);
         Assert.DoesNotContain("Padding=\"0\"", infoBar);
+        Assert.Contains("x:Name=\"LocalAiAvailabilityRecoveryPanel\"", xaml);
+        Assert.Contains("x:Name=\"LocalAiAvailabilityProgressRing\"", xaml);
+        Assert.Contains("x:Name=\"LocalAiRecheckAvailabilityButton\"", xaml);
+        Assert.Contains("x:Uid=\"Onboarding_LocalAi_RecheckAvailabilityButton\"", xaml);
+        Assert.Contains("AutomationProperties.AutomationId=\"LocalAiRecheckAvailabilityButton\"", xaml);
         AssertInOrder(
             xaml,
             "x:Name=\"LocalAiUnavailablePanel\"",
             "x:Name=\"LocalAiUnavailableDetailsButton\"",
+            "x:Name=\"LocalAiAvailabilityRecoveryPanel\"",
+            "x:Name=\"LocalAiRecheckAvailabilityButton\"",
             "x:Name=\"LocalAiInstallReviewCard\"",
             "x:Name=\"LocalAiOptionContent\"");
+        Assert.Contains("LocalAiSetupAvailabilityCoordinator", source);
+        Assert.Contains("TryApplyProbeFailure", source);
+        Assert.Contains("ShowLocalAiProbeUnknown", source);
+        Assert.Contains("LocalAiRecheckAvailability_Click", source);
+        Assert.Contains("GetLocalAiHardwareAsync(forceRefresh: refreshHardwareProbe)", source);
+        Assert.Contains("CanApplyLocalAiAvailability(checking.Generation, setupWindow)", source);
         Assert.Contains("LocalAiOptionContent.IsHitTestVisible = isAvailable", source);
         Assert.Contains("LocalAiOptionContent.Opacity = isAvailable ? 1 : 0.55", source);
         Assert.Contains("LocalAiToggle.IsEnabled = isAvailable", source);
@@ -71,6 +84,50 @@ public sealed class LocalAiSetupUxContractTests
         Assert.Contains("LocalAiNetworkingConsentCheckBox.IsEnabled = isAvailable", source);
         Assert.Contains("SetLocalAiOptionAvailability(isAvailable: false)", source);
         Assert.Contains("SetLocalAiOptionAvailability(isAvailable: true)", source);
+    }
+
+    [Fact]
+    public void CapabilitiesReview_RecheckAffordance_HasLocalizedResourceKeys()
+    {
+        string root = TestRepositoryPaths.GetRepositoryRoot();
+        string xaml = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "OpenClaw.SetupEngine.UI",
+            "Pages",
+            "CapabilitiesPage.xaml"));
+
+        Assert.Contains("x:Uid=\"Onboarding_LocalAi_RecheckAvailabilityButton\"", xaml);
+
+        foreach (string locale in new[] { "en-us", "fr-fr", "nl-nl", "zh-cn", "zh-tw" })
+        {
+            string resources = File.ReadAllText(Path.Combine(
+                root,
+                "src",
+                "OpenClaw.Tray.WinUI",
+                "Strings",
+                locale,
+                "Resources.resw"));
+            Assert.Contains("Onboarding_LocalAi_RecheckAvailabilityButton.Content", resources);
+        }
+    }
+
+    [Fact]
+    public void SetupWindow_LocalAiHardwareProbeCache_CanRefreshAfterFault()
+    {
+        string root = TestRepositoryPaths.GetRepositoryRoot();
+        string source = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "OpenClaw.SetupEngine.UI",
+            "SetupWindow.xaml.cs"));
+        string method = ExtractMethod(source, "GetLocalAiHardwareAsync");
+
+        Assert.Contains("bool forceRefresh = false", method);
+        Assert.Contains("forceRefresh ||", method);
+        Assert.Contains("_localAiHardwareProbeTask.IsFaulted", method);
+        Assert.Contains("_localAiHardwareProbeTask.IsCanceled", method);
+        Assert.Contains("_localAiHardwareProbeTask = Task.Run", method);
     }
 
     [Fact]
@@ -139,5 +196,27 @@ public sealed class LocalAiSetupUxContractTests
             Assert.True(current > previous, $"Expected '{value}' after the previous value.");
             previous = current;
         }
+    }
+
+    private static string ExtractMethod(string source, string methodName)
+    {
+        int nameStart = source.IndexOf(methodName, StringComparison.Ordinal);
+        Assert.True(nameStart >= 0, $"Could not find method {methodName}.");
+        int brace = source.IndexOf('{', nameStart);
+        Assert.True(brace >= 0, $"Could not find body for method {methodName}.");
+        int depth = 0;
+        for (int index = brace; index < source.Length; index++)
+        {
+            if (source[index] == '{')
+                depth++;
+            else if (source[index] == '}')
+            {
+                depth--;
+                if (depth == 0)
+                    return source[nameStart..(index + 1)];
+            }
+        }
+
+        throw new InvalidOperationException($"Could not find end of method {methodName}.");
     }
 }

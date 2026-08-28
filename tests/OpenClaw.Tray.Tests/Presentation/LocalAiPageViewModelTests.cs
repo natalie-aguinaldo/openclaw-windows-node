@@ -237,6 +237,36 @@ public sealed class LocalAiPageViewModelTests
         Assert.Equal(1, commands.ShowChatCount);
     }
 
+    [Fact]
+    public async Task StaleAvailabilityProbe_DoesNotOverwriteNewerResult()
+    {
+        var runtime = new FakeLocalAiRuntime(LocalAiRuntimeSnapshot.Initial(
+            new Uri("http://127.0.0.1:18080"),
+            DateTimeOffset.UtcNow));
+        using var gatewaySource = new PermissionsPageRuntimeSource(new FakePermissionsPageRuntimeHost());
+        var probe = new BlockingFirstHardwareProbe(CreateQualifiedHardware);
+        using var viewModel = new LocalAiPageViewModel(
+            runtime,
+            gatewaySource,
+            new FakeAppCommands(),
+            new RecordingUiDispatcher(),
+            probe);
+
+        viewModel.Activate(null);
+        await probe.FirstProbeStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        viewModel.Deactivate();
+        viewModel.Activate(null);
+        await WaitForAsync(viewModel, () => viewModel.IsAvailabilityKnown && viewModel.IsLocalAiAvailable);
+
+        probe.ReleaseFirstProbe();
+        await Task.Delay(100);
+
+        Assert.True(viewModel.IsAvailabilityKnown);
+        Assert.True(viewModel.IsLocalAiAvailable);
+        Assert.False(viewModel.HasAvailabilityProbeError);
+        Assert.Null(viewModel.LocalAiUnavailableReason);
+    }
+
     private static async Task ActivateAndWaitForAvailabilityAsync(LocalAiPageViewModel viewModel)
     {
         await ActivateAndWaitForAvailabilityResultAsync(viewModel);
@@ -322,6 +352,31 @@ public sealed class LocalAiPageViewModelTests
                 throw new InvalidOperationException("No probe attempts configured.");
             return _attempts.Dequeue().Invoke();
         }
+    }
+
+    private sealed class BlockingFirstHardwareProbe(Func<HostHardwareInfo> secondAttempt) : IHostHardwareProbe
+    {
+        private readonly TaskCompletionSource _firstProbeStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _releaseFirstProbe =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _attempts;
+
+        public TaskCompletionSource FirstProbeStarted => _firstProbeStarted;
+
+        public HostHardwareInfo Probe()
+        {
+            if (Interlocked.Increment(ref _attempts) == 1)
+            {
+                _firstProbeStarted.TrySetResult();
+                _releaseFirstProbe.Task.GetAwaiter().GetResult();
+                return HostHardwareInfo.Unknown;
+            }
+
+            return secondAttempt();
+        }
+
+        public void ReleaseFirstProbe() => _releaseFirstProbe.TrySetResult();
     }
 
     private sealed class FakeLocalAiRuntime(LocalAiRuntimeSnapshot snapshot) : ILocalAiRuntime

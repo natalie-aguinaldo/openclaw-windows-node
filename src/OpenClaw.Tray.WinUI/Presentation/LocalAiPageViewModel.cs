@@ -4,6 +4,7 @@ using OpenClaw.Shared.Inference;
 using OpenClaw.Shared.Inference.Catalog;
 using OpenClawTray.Services;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace OpenClawTray.Presentation;
@@ -249,8 +250,12 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
             string? unavailableReason = isAvailable
                 ? null
                 : LocalInferenceEligibilityDiagnostics.DescribeUnavailable(eligibility);
+            if (!IsCurrentAvailabilityProbe(cancellation))
+                return;
             ApplyOnUiThread(() =>
             {
+                if (!IsCurrentAvailabilityProbe(cancellation))
+                    return;
                 _isAvailabilityKnown = true;
                 _isLocalAiAvailable = isAvailable;
                 _hasAvailabilityProbeError = false;
@@ -261,13 +266,18 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.WriteLine($"Local AI availability probe failed: {ex}");
             const string unavailableReason =
                 "OpenClaw could not read the NVIDIA GPU, driver, CUDA, or memory information. " +
                 "Check the NVIDIA driver installation and try setup again.";
+            if (!IsCurrentAvailabilityProbe(cancellation))
+                return;
             ApplyOnUiThread(() =>
             {
+                if (!IsCurrentAvailabilityProbe(cancellation))
+                    return;
                 _isAvailabilityKnown = false;
                 _isLocalAiAvailable = false;
                 _hasAvailabilityProbeError = true;
@@ -287,6 +297,9 @@ internal sealed class LocalAiPageViewModel : INavigationAware, IDisposable, INot
             cancellation.Dispose();
         }
     }
+
+    private bool IsCurrentAvailabilityProbe(CancellationTokenSource cancellation) =>
+        ReferenceEquals(_availabilityCancellation, cancellation);
 
     private async Task RefreshRuntimeSnapshotAsync(CancellationTokenSource cancellation)
     {

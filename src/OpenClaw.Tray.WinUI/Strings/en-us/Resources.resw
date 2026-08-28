@@ -1080,8 +1080,11 @@ Use one of these options:
   <data name="Onboarding_Connection_Later" xml:space="preserve">
     <value>Configure Later</value>
   </data>
+  <data name="Onboarding_LocalAi_RecheckAvailabilityButton.Content" xml:space="preserve">
+    <value>Recheck</value>
+  </data>
   <data name="Onboarding_Ready_Title" xml:space="preserve">
-    <value>All Set!</value>
+    <value>All set!</value>
   </data>
   <data name="Onboarding_Ready_Subtitle" xml:space="preserve">
     <value>OpenClaw is ready to go. Here are some things to try:</value>
