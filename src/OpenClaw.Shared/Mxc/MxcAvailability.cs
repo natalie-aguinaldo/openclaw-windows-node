@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
@@ -125,7 +126,7 @@ public sealed class MxcAvailability
     /// Probe the running environment. Designed to be called once at app startup
     /// and the result cached. Host support is determined by the native
     /// <c>wxc-exec --probe</c> command rather than a hardcoded build/UBR table,
-    /// so newer Windows builds light up automatically without a code change.
+    /// except for hosts where launching the probe is known not to work.
     /// </summary>
     public static MxcAvailability Probe(IOpenClawLogger? logger = null)
         => Probe(logger, probeRunner: null);
@@ -137,7 +138,8 @@ public sealed class MxcAvailability
     /// </summary>
     internal static MxcAvailability Probe(
         IOpenClawLogger? logger,
-        Func<string, WxcProbeInvocation>? probeRunner)
+        Func<string, WxcProbeInvocation>? probeRunner,
+        Func<bool?>? windowsServerProvider = null)
     {
         var log = logger ?? NullLogger.Instance;
         var reasons = new List<string>();
@@ -155,6 +157,13 @@ public sealed class MxcAvailability
         {
             reasons.Add($"wxc-exec.exe not found. Set {WxcExecOverrideEnvVar} or build the tray app to copy it into the output folder.");
             return new MxcAvailability(false, false, false, null, reasons);
+        }
+
+        if ((windowsServerProvider ?? DetectWindowsServerSku)() == true)
+        {
+            reasons.Add("Windows Server does not support MXC containment.");
+            log.Info($"[mxc] availability: supported=false outcome={MxcProbeOutcome.UnsupportedHost} Windows Server SKU; probe skipped");
+            return new MxcAvailability(false, false, true, wxcPath, reasons);
         }
 
         // Ask the native binary whether this host can run the sandbox and at what
@@ -201,6 +210,75 @@ public sealed class MxcAvailability
             probeErrored: probeErrored,
             isolationTier: probe.Tier,
             needsDaclAugmentation: probe.NeedsDaclAugmentation);
+    }
+
+    private static bool? DetectWindowsServerSku()
+    {
+        // Managed equivalent of VersionHelpers.h IsWindowsServer(). An unexpected
+        // API failure returns unknown so an indeterminate result never excludes
+        // a Windows client from the native MXC probe.
+        var versionInfo = new OsVersionInfoEx
+        {
+            OsVersionInfoSize = (uint)Marshal.SizeOf<OsVersionInfoEx>(),
+            ServicePack = string.Empty,
+            ProductType = NativeMethods.VerNtWorkstation,
+        };
+        var conditionMask = NativeMethods.VerSetConditionMask(
+            0,
+            NativeMethods.VerProductType,
+            NativeMethods.VerEqual);
+
+        if (NativeMethods.VerifyVersionInfo(
+                ref versionInfo,
+                NativeMethods.VerProductType,
+                conditionMask))
+        {
+            return false;
+        }
+
+        return Marshal.GetLastWin32Error() == NativeMethods.ErrorOldWinVersion
+            ? true
+            : null;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct OsVersionInfoEx
+    {
+        public uint OsVersionInfoSize;
+        public uint MajorVersion;
+        public uint MinorVersion;
+        public uint BuildNumber;
+        public uint PlatformId;
+
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string? ServicePack;
+
+        public ushort ServicePackMajor;
+        public ushort ServicePackMinor;
+        public ushort SuiteMask;
+        public byte ProductType;
+        public byte Reserved;
+    }
+
+    private static class NativeMethods
+    {
+        internal const uint VerProductType = 0x00000080;
+        internal const byte VerEqual = 1;
+        internal const byte VerNtWorkstation = 1;
+        internal const int ErrorOldWinVersion = 1150;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool VerifyVersionInfo(
+            ref OsVersionInfoEx versionInfo,
+            uint typeMask,
+            ulong conditionMask);
+
+        [DllImport("kernel32.dll")]
+        internal static extern ulong VerSetConditionMask(
+            ulong conditionMask,
+            uint typeMask,
+            byte condition);
     }
 
     /// <summary>

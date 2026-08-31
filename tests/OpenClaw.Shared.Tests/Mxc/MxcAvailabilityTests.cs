@@ -226,7 +226,7 @@ public class MxcAvailabilityTests
     }
 
     [Fact]
-    public void Probe_WhenProbeReportsTier_ReportsAvailable()
+    public void Probe_WindowsClientSku_RunsProbeAndReportsAvailable()
     {
         if (!OperatingSystem.IsWindows()) return;
 
@@ -238,7 +238,8 @@ public class MxcAvailabilityTests
 
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
-                _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 0, "{\"tier\":\"base-container\",\"warnings\":[]}", string.Empty));
+                _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 0, "{\"tier\":\"base-container\",\"warnings\":[]}", string.Empty),
+                () => false);
 
             Assert.True(availability.IsAppContainerAvailable);
             Assert.True(availability.IsWxcExecResolvable);
@@ -247,6 +248,45 @@ public class MxcAvailabilityTests
             Assert.False(availability.ProbeErrored);
             Assert.Equal("base-container", availability.IsolationTier);
             Assert.False(availability.IsDegradedContainment);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, null);
+            try { File.Delete(fakeExe); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public void Probe_WindowsServerSku_SkipsProbeAndReportsDefinitivelyUnavailable()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
+        File.WriteAllText(fakeExe, string.Empty);
+        try
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, fakeExe);
+            var probeCalled = false;
+
+            var availability = MxcAvailability.Probe(
+                NullLogger.Instance,
+                _ =>
+                {
+                    probeCalled = true;
+                    return new WxcProbeInvocation(
+                        WxcProbeStatus.Completed,
+                        0,
+                        "{\"tier\":\"base-container\",\"warnings\":[]}",
+                        string.Empty);
+                },
+                () => true);
+
+            Assert.False(probeCalled);
+            Assert.False(availability.HasAnyBackend);
+            Assert.False(availability.IsAppContainerAvailable);
+            Assert.True(availability.IsWxcExecResolvable);
+            Assert.False(availability.ProbeErrored);
+            Assert.Contains("Windows Server", Assert.Single(availability.UnsupportedReasons));
         }
         finally
         {
@@ -268,7 +308,8 @@ public class MxcAvailabilityTests
 
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
-                _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 1, string.Empty, "unsupported os build"));
+                _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 1, string.Empty, "unsupported os build"),
+                () => false);
 
             Assert.True(availability.IsWxcExecResolvable);
             Assert.False(availability.IsAppContainerAvailable);
@@ -297,7 +338,8 @@ public class MxcAvailabilityTests
             // TimedOut status → transient probe error.
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
-                _ => new WxcProbeInvocation(WxcProbeStatus.TimedOut, 0, string.Empty, "wxc-exec --probe timed out."));
+                _ => new WxcProbeInvocation(WxcProbeStatus.TimedOut, 0, string.Empty, "wxc-exec --probe timed out."),
+                () => false);
 
             Assert.True(availability.IsWxcExecResolvable);
             Assert.False(availability.IsAppContainerAvailable);
@@ -329,7 +371,8 @@ public class MxcAvailabilityTests
                     WxcProbeStatus.Completed,
                     0,
                     "{\"tier\":\"appcontainer-dacl\",\"needsDaclAugmentation\":true,\"warnings\":[\"fallback\"]}",
-                    string.Empty));
+                    string.Empty),
+                () => false);
 
             // Still contained (don't downgrade to uncontained), but flagged degraded.
             Assert.True(availability.IsAppContainerAvailable);
