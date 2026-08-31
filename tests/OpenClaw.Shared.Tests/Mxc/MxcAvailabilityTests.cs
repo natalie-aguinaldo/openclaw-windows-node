@@ -228,8 +228,6 @@ public class MxcAvailabilityTests
     [Fact]
     public void Probe_WindowsClientSku_RunsProbeAndReportsAvailable()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
         File.WriteAllText(fakeExe, string.Empty);
         try
@@ -239,7 +237,8 @@ public class MxcAvailabilityTests
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
                 _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 0, "{\"tier\":\"base-container\",\"warnings\":[]}", string.Empty),
-                () => false);
+                () => false,
+                () => true);
 
             Assert.True(availability.IsAppContainerAvailable);
             Assert.True(availability.IsWxcExecResolvable);
@@ -259,8 +258,6 @@ public class MxcAvailabilityTests
     [Fact]
     public void Probe_WindowsServerSku_SkipsProbeAndReportsDefinitivelyUnavailable()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
         File.WriteAllText(fakeExe, string.Empty);
         try
@@ -279,6 +276,7 @@ public class MxcAvailabilityTests
                         "{\"tier\":\"base-container\",\"warnings\":[]}",
                         string.Empty);
                 },
+                () => true,
                 () => true);
 
             Assert.False(probeCalled);
@@ -298,8 +296,6 @@ public class MxcAvailabilityTests
     [Fact]
     public void Probe_WhenProbeReportsNoTier_ReportsUnavailableWithReason()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
         File.WriteAllText(fakeExe, string.Empty);
         try
@@ -309,7 +305,8 @@ public class MxcAvailabilityTests
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
                 _ => new WxcProbeInvocation(WxcProbeStatus.Completed, 1, string.Empty, "unsupported os build"),
-                () => false);
+                () => false,
+                () => true);
 
             Assert.True(availability.IsWxcExecResolvable);
             Assert.False(availability.IsAppContainerAvailable);
@@ -327,8 +324,6 @@ public class MxcAvailabilityTests
     [Fact]
     public void Probe_WhenProbeTimesOut_ReportsProbeErrored()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
         File.WriteAllText(fakeExe, string.Empty);
         try
@@ -339,7 +334,8 @@ public class MxcAvailabilityTests
             var availability = MxcAvailability.Probe(
                 NullLogger.Instance,
                 _ => new WxcProbeInvocation(WxcProbeStatus.TimedOut, 0, string.Empty, "wxc-exec --probe timed out."),
-                () => false);
+                () => false,
+                () => true);
 
             Assert.True(availability.IsWxcExecResolvable);
             Assert.False(availability.IsAppContainerAvailable);
@@ -357,8 +353,6 @@ public class MxcAvailabilityTests
     [Fact]
     public void Probe_WhenProbeReportsDaclTier_ReportsDegraded()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
         File.WriteAllText(fakeExe, string.Empty);
         try
@@ -372,7 +366,8 @@ public class MxcAvailabilityTests
                     0,
                     "{\"tier\":\"appcontainer-dacl\",\"needsDaclAugmentation\":true,\"warnings\":[\"fallback\"]}",
                     string.Empty),
-                () => false);
+                () => false,
+                () => true);
 
             // Still contained (don't downgrade to uncontained), but flagged degraded.
             Assert.True(availability.IsAppContainerAvailable);

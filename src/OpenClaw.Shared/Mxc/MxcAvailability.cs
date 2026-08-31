@@ -139,12 +139,13 @@ public sealed class MxcAvailability
     internal static MxcAvailability Probe(
         IOpenClawLogger? logger,
         Func<string, WxcProbeInvocation>? probeRunner,
-        Func<bool?>? windowsServerProvider = null)
+        Func<bool?>? windowsServerProvider = null,
+        Func<bool>? windowsProvider = null)
     {
         var log = logger ?? NullLogger.Instance;
         var reasons = new List<string>();
 
-        if (!OperatingSystem.IsWindows())
+        if (!(windowsProvider?.Invoke() ?? OperatingSystem.IsWindows()))
         {
             reasons.Add("MXC requires Windows.");
             return new MxcAvailability(false, false, false, null, reasons);
