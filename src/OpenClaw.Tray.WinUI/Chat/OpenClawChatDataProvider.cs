@@ -78,6 +78,9 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     private readonly ChatHistoryLoader _historyLoader;
     private readonly Action<Action>? _post;
     private readonly Func<Func<Task>, Task> _deferredAbortScheduler;
+    private readonly object _publishGate = new();
+    private ChatDataSnapshot? _pendingPublishSnapshot;
+    private bool _publishScheduled;
 
     /// <summary>Whether any thread is in an aborted state (suppress TTS/notifications).</summary>
     public bool IsResponseSuppressed => _state.IsResponseSuppressed;
@@ -1809,14 +1812,51 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
     private void Publish(ChatDataSnapshot snapshot)
     {
-        var args = new ChatDataChangedEventArgs(snapshot);
         if (_post is null)
         {
-            Changed?.Invoke(this, args);
+            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
         }
         else
         {
-            _post(() => Changed?.Invoke(this, args));
+            // Coalesce bursts of Publish() calls (rapid tool-activity grouping
+            // updates, streaming tokens) into a single UI-thread dispatch per
+            // drain. Without this, a burst of N Publish() calls enqueues N
+            // separate Changed?.Invoke dispatches; when they arrive faster
+            // than the dispatcher drains them, the Reactor tree mutates
+            // repeatedly before WinUI3 settles a layout pass. That produced
+            // field crashes: Microsoft.UI.Xaml.LayoutCycleException
+            // ("Layout cycle detected" / "Element is already the child of
+            // another element") when tool-call Expander controls are re-keyed
+            // mid-burst (see ToolCallCardRenderer / ChatToolActivityPresentation
+            // grouping, whose row keys shift as new tool entries arrive
+            // faster than the UI can settle). Only the latest snapshot matters
+            // for rendering, so dropping superseded intermediate snapshots
+            // within one burst is safe and loses no information the UI would
+            // have shown anyway.
+            bool shouldSchedule;
+            lock (_publishGate)
+            {
+                _pendingPublishSnapshot = snapshot;
+                shouldSchedule = !_publishScheduled;
+                _publishScheduled = true;
+            }
+
+            if (shouldSchedule)
+            {
+                _post(() =>
+                {
+                    ChatDataSnapshot? toPublish;
+                    lock (_publishGate)
+                    {
+                        toPublish = _pendingPublishSnapshot;
+                        _pendingPublishSnapshot = null;
+                        _publishScheduled = false;
+                    }
+
+                    if (toPublish is not null)
+                        Changed?.Invoke(this, new ChatDataChangedEventArgs(toPublish));
+                });
+            }
         }
 
         // Debounce-save last-known UI state so the next launch can show
