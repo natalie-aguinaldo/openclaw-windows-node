@@ -81,6 +81,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     private readonly object _publishGate = new();
     private ChatDataSnapshot? _pendingPublishSnapshot;
     private bool _publishScheduled;
+    private bool _publishDisposed;
 
     /// <summary>Whether any thread is in an aborted state (suppress TTS/notifications).</summary>
     public bool IsResponseSuppressed => _state.IsResponseSuppressed;
@@ -1019,6 +1020,12 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         var transition = _state.DisposeState();
         if (!transition.IsFirstDispose)
             return ValueTask.CompletedTask;
+        lock (_publishGate)
+        {
+            _publishDisposed = true;
+            _pendingPublishSnapshot = null;
+            _publishScheduled = false;
+        }
         _telemetry.FinishAll(
             ChatTelemetryOutcome.Canceled,
             ChatTurnTelemetryReason.Disposed);
@@ -1814,55 +1821,100 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     {
         if (_post is null)
         {
+            lock (_publishGate)
+            {
+                if (_publishDisposed)
+                    return;
+            }
             Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
         }
         else
         {
-            // Coalesce bursts of Publish() calls (rapid tool-activity grouping
-            // updates, streaming tokens) into a single UI-thread dispatch per
-            // drain. Without this, a burst of N Publish() calls enqueues N
-            // separate Changed?.Invoke dispatches; when they arrive faster
-            // than the dispatcher drains them, the Reactor tree mutates
-            // repeatedly before WinUI3 settles a layout pass. That produced
-            // field crashes: Microsoft.UI.Xaml.LayoutCycleException
-            // ("Layout cycle detected" / "Element is already the child of
-            // another element") when tool-call Expander controls are re-keyed
-            // mid-burst (see ToolCallCardRenderer / ChatToolActivityPresentation
-            // grouping, whose row keys shift as new tool entries arrive
-            // faster than the UI can settle). Only the latest snapshot matters
-            // for rendering, so dropping superseded intermediate snapshots
-            // within one burst is safe and loses no information the UI would
-            // have shown anyway.
             bool shouldSchedule;
             lock (_publishGate)
             {
+                if (_publishDisposed)
+                    return;
+
                 _pendingPublishSnapshot = snapshot;
                 shouldSchedule = !_publishScheduled;
-                _publishScheduled = true;
+                if (shouldSchedule)
+                    _publishScheduled = true;
             }
 
             if (shouldSchedule)
-            {
-                _post(() =>
-                {
-                    ChatDataSnapshot? toPublish;
-                    lock (_publishGate)
-                    {
-                        toPublish = _pendingPublishSnapshot;
-                        _pendingPublishSnapshot = null;
-                        _publishScheduled = false;
-                    }
-
-                    if (toPublish is not null)
-                        Changed?.Invoke(this, new ChatDataChangedEventArgs(toPublish));
-                });
-            }
+                PostPublishDrain();
         }
 
         // Debounce-save last-known UI state so the next launch can show
         // meaningful labels while reconnecting instead of "Main session"/"model".
         if (snapshot.Threads.Length > 0 || snapshot.AvailableModels.Length > 0)
             _persistence.DebounceSnapshot(snapshot);
+    }
+
+    private void PostPublishDrain()
+    {
+        try
+        {
+            _post!(DrainPendingPublish);
+        }
+        catch
+        {
+            lock (_publishGate)
+                _publishScheduled = false;
+            throw;
+        }
+    }
+
+    private void DrainPendingPublish()
+    {
+        ChatDataSnapshot? snapshot;
+        lock (_publishGate)
+        {
+            if (_publishDisposed)
+            {
+                _pendingPublishSnapshot = null;
+                _publishScheduled = false;
+                return;
+            }
+
+            snapshot = _pendingPublishSnapshot;
+            _pendingPublishSnapshot = null;
+            if (snapshot is null)
+            {
+                _publishScheduled = false;
+                return;
+            }
+        }
+
+        try
+        {
+            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
+        }
+        finally
+        {
+            bool shouldSchedule;
+            lock (_publishGate)
+            {
+                if (_publishDisposed)
+                {
+                    _pendingPublishSnapshot = null;
+                    _publishScheduled = false;
+                    shouldSchedule = false;
+                }
+                else
+                {
+                    shouldSchedule = _pendingPublishSnapshot is not null;
+                    if (!shouldSchedule)
+                        _publishScheduled = false;
+                }
+            }
+
+            // Keep the current drain scheduled while callbacks run. Any number
+            // of callback-time publishes then need exactly one follow-up drain.
+            if (shouldSchedule)
+                PostPublishDrain();
+        }
     }
 
     // ── Last-chat-state cache ──────────────────────────────────────────
