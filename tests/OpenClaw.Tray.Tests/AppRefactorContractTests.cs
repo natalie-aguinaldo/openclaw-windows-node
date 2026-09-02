@@ -1344,6 +1344,19 @@ public sealed class AppRefactorContractTests
     }
 
     [Fact]
+    public void CapabilitiesPage_InstallerReviewCopyDoesNotAmplifyPipelineRetries()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var xaml = File.ReadAllText(
+            Path.Combine(root, "src", "OpenClaw.SetupEngine.UI", "Pages", "CapabilitiesPage.xaml"));
+
+        Assert.Contains("--connect-timeout 15 --max-time 60 --remove-on-error", xaml);
+        Assert.Contains("test -s $installer &amp;&amp; bash $installer", xaml);
+        Assert.DoesNotContain("--retry", xaml);
+        Assert.DoesNotContain("| bash", xaml);
+    }
+
+    [Fact]
     public void CapabilitiesPage_PermissionProbeFaultsShowInlineWarning()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
