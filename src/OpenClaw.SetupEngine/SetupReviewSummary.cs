@@ -59,8 +59,9 @@ public static class SetupReviewSummaryBuilder
             ? ""
             : $" --node-version {GatewayReleasePolicy.NodeVersion}";
         var installCommand =
-            $"set -euo pipefail; umask 077; installer=\"$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)\"; " +
-            $"trap 'rm -f \"$installer\"' EXIT; " +
+            $"set -euo pipefail; umask 077; installer_dir=/tmp/openclaw-installer-<random>; " +
+            $"mkdir -m 0700 \"$installer_dir\"; installer=\"$installer_dir/installer.sh\"; " +
+            $"trap 'rm -rf \"$installer_dir\"' EXIT; " +
             $"curl -fsSL --connect-timeout 15 --max-time {InstallCliStep.DownloadMaxTimeSeconds} --remove-on-error " +
             $"--proto '=https' --tlsv1.2 --output \"$installer\" <install-url>; " +
             $"test -s \"$installer\"; " +

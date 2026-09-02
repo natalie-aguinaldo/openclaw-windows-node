@@ -1792,8 +1792,10 @@ public class SetupStepsTests : IDisposable
 
         Assert.StartsWith("set -euo pipefail", command);
         Assert.Contains("umask 077", command);
-        Assert.Contains("installer=\"$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)\"", command);
-        Assert.Contains("trap 'rm -f \"$installer\"' EXIT", command);
+        Assert.Contains("installer_dir='/tmp/openclaw-installer-", command);
+        Assert.Contains("mkdir -m 0700 -- \"$installer_dir\"", command);
+        Assert.Contains("installer=\"$installer_dir/installer.sh\"", command);
+        Assert.Contains("trap 'rm -rf -- \"$installer_dir\"' EXIT", command);
         Assert.Contains("--connect-timeout 15", command);
         Assert.Contains("--max-time 60", command);
         Assert.Contains("--remove-on-error", command);
@@ -1838,7 +1840,9 @@ public class SetupStepsTests : IDisposable
             _ => Ok(),
             (_, command, _) => command.Contains("curl -fsSL", StringComparison.Ordinal)
                 ? new CommandResult(6, "", "curl: (6) Could not resolve host: openclaw.ai", TimeSpan.Zero, TimedOut: false)
-                : throw new InvalidOperationException($"Unexpected command: {command}"));
+                : command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}"));
         var config = new SetupConfig();
         GatewayReleasePolicy.ResolveAndApply(config);
         var ctx = CreateContext(config, commands);
@@ -1848,7 +1852,8 @@ public class SetupStepsTests : IDisposable
         Assert.Equal(StepOutcome.Failed, result.Outcome);
         Assert.Contains("exit 6", result.Message);
         Assert.Contains("Could not resolve host: openclaw.ai", result.Message);
-        Assert.True(Assert.Single(commands.WslCalls).InputViaStdin);
+        Assert.True(commands.WslCalls[0].InputViaStdin);
+        AssertCleanupRan(commands);
     }
 
     [Fact]
@@ -1876,6 +1881,8 @@ public class SetupStepsTests : IDisposable
                     return Ok($"v{GatewayReleasePolicy.NodeVersion}");
                 if (command.EndsWith("openclaw --version", StringComparison.Ordinal))
                     return Ok($"OpenClaw {GatewayReleasePolicy.RecommendedVersion}");
+                if (command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal))
+                    return Ok();
                 return Ok();
             });
         var config = new SetupConfig();
@@ -1909,7 +1916,9 @@ public class SetupStepsTests : IDisposable
                     "curl: (28) Operation timed out after 60000 milliseconds",
                     TimeSpan.FromSeconds(60),
                     TimedOut: false)
-                : throw new InvalidOperationException($"Unexpected command: {command}"));
+                : command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}"));
         var config = new SetupConfig();
         GatewayReleasePolicy.ResolveAndApply(config);
         var ctx = CreateContext(config, commands);
@@ -1919,6 +1928,7 @@ public class SetupStepsTests : IDisposable
         Assert.Equal(StepOutcome.Failed, result.Outcome);
         Assert.Contains("exit 28", result.Message);
         Assert.Contains("Operation timed out after 60000 milliseconds", result.Message);
+        AssertCleanupRan(commands);
     }
 
     [Fact]
@@ -1933,7 +1943,9 @@ public class SetupStepsTests : IDisposable
                     "last installer diagnostic",
                     InstallCliStep.InstallerCommandTimeout,
                     TimedOut: true)
-                : throw new InvalidOperationException($"Unexpected command: {command}"));
+                : command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}"));
         var config = new SetupConfig();
         GatewayReleasePolicy.ResolveAndApply(config);
         var ctx = CreateContext(config, commands);
@@ -1944,6 +1956,7 @@ public class SetupStepsTests : IDisposable
         Assert.Contains("timed out after 5 minutes", result.Message);
         Assert.Contains("last installer diagnostic", result.Message);
         Assert.DoesNotContain("exit -1", result.Message);
+        AssertCleanupRan(commands);
     }
 
     [Fact]
@@ -1958,7 +1971,9 @@ public class SetupStepsTests : IDisposable
                     "curl: (18) transfer closed with outstanding read data remaining",
                     TimeSpan.Zero,
                     TimedOut: false)
-                : throw new InvalidOperationException($"Unexpected command: {command}"));
+                : command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}"));
         var config = new SetupConfig();
         GatewayReleasePolicy.ResolveAndApply(config);
         var ctx = CreateContext(config, commands);
@@ -1968,7 +1983,7 @@ public class SetupStepsTests : IDisposable
         Assert.Equal(StepOutcome.Failed, result.Outcome);
         Assert.Contains("exit 18", result.Message);
         Assert.Contains("outstanding read data", result.Message);
-        Assert.Single(commands.WslCalls);
+        AssertCleanupRan(commands);
     }
 
     [Fact]
@@ -1983,7 +1998,9 @@ public class SetupStepsTests : IDisposable
                     "CLI installer download was empty.",
                     TimeSpan.Zero,
                     TimedOut: false)
-                : throw new InvalidOperationException($"Unexpected command: {command}"));
+                : command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}"));
         var config = new SetupConfig();
         GatewayReleasePolicy.ResolveAndApply(config);
         var ctx = CreateContext(config, commands);
@@ -1992,7 +2009,53 @@ public class SetupStepsTests : IDisposable
 
         Assert.Equal(StepOutcome.Failed, result.Outcome);
         Assert.Contains("download was empty", result.Message);
-        Assert.Single(commands.WslCalls);
+        AssertCleanupRan(commands);
+    }
+
+    [Fact]
+    public async Task InstallCli_CallerCancellationStillRunsIndependentCleanup()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) =>
+            {
+                if (command.Contains("curl -fsSL", StringComparison.Ordinal))
+                {
+                    cancellation.Cancel();
+                    throw new OperationCanceledException(cancellation.Token);
+                }
+
+                return command.StartsWith("rm -rf -- /tmp/openclaw-installer-", StringComparison.Ordinal)
+                    ? Ok()
+                    : throw new InvalidOperationException($"Unexpected command: {command}");
+            });
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => new InstallCliStep().ExecuteAsync(ctx, cancellation.Token));
+
+        var cleanup = AssertCleanupRan(commands);
+        Assert.NotEqual(cancellation.Token, cleanup.CancellationToken);
+        Assert.False(cleanup.CancellationToken.IsCancellationRequested);
+    }
+
+    private static (
+        string DistroName,
+        string Command,
+        TimeSpan Timeout,
+        string? User,
+        bool InputViaStdin,
+        CancellationToken CancellationToken) AssertCleanupRan(FakeCommandRunner commands)
+    {
+        Assert.Equal(2, commands.WslCalls.Count);
+        var cleanup = commands.WslCalls[1];
+        Assert.StartsWith("rm -rf -- /tmp/openclaw-installer-", cleanup.Command);
+        Assert.Equal(TimeSpan.FromSeconds(15), cleanup.Timeout);
+        Assert.False(cleanup.InputViaStdin);
+        return cleanup;
     }
 
     [Fact]

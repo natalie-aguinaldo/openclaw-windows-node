@@ -61,34 +61,57 @@ public sealed class InstallCliStep : SetupStep
         try
         {
             string installScript;
+            var installerTempDirectory =
+                $"/tmp/openclaw-installer-{Guid.NewGuid():N}";
             try
             {
                 installScript = BuildInstallCommand(
                     installUrl,
                     installVersion,
-                    officialInstaller ? GatewayReleasePolicy.NodeVersion : null);
+                    officialInstaller ? GatewayReleasePolicy.NodeVersion : null,
+                    installerTempDirectory);
             }
             catch (ArgumentException ex)
             {
                 return StepResult.Fail(ex.Message);
             }
 
-            var result = await ctx.Commands.RunInWslAsync(
-                distro,
-                installScript,
-                InstallerCommandTimeout,
-                ct: ct,
-                inputViaStdin: true);
+            CommandResult result;
+            string? cleanupError = null;
+            try
+            {
+                result = await ctx.Commands.RunInWslAsync(
+                    distro,
+                    installScript,
+                    InstallerCommandTimeout,
+                    ct: ct,
+                    inputViaStdin: true);
+            }
+            finally
+            {
+                cleanupError = await CleanupInstallerTempDirectoryAsync(
+                    ctx,
+                    distro,
+                    installerTempDirectory);
+            }
 
             if (result.TimedOut)
             {
                 var stderr = string.IsNullOrWhiteSpace(result.Stderr) ? "" : $" {result.Stderr.Trim()}";
+                var cleanup = FormatCleanupError(cleanupError);
                 return StepResult.Fail(
-                    $"CLI installer command timed out after {InstallerCommandTimeout.TotalMinutes:0} minutes.{stderr}");
+                    $"CLI installer command timed out after {InstallerCommandTimeout.TotalMinutes:0} minutes.{stderr}{cleanup}");
             }
 
             if (result.ExitCode != 0)
-                return StepResult.Fail($"CLI install failed (exit {result.ExitCode}): {result.Stderr}");
+            {
+                var cleanup = FormatCleanupError(cleanupError);
+                return StepResult.Fail(
+                    $"CLI install failed (exit {result.ExitCode}): {result.Stderr}{cleanup}");
+            }
+
+            if (cleanupError is not null)
+                return StepResult.Fail($"CLI installer cleanup failed: {cleanupError}");
 
             var verifyCommands = new (string Command, string? ExecutablePath)[]
             {
@@ -163,7 +186,8 @@ public sealed class InstallCliStep : SetupStep
     internal static string BuildInstallCommand(
         string installUrl,
         string? requestedVersion,
-        string? nodeVersion = null)
+        string? nodeVersion = null,
+        string? installerTempDirectory = null)
     {
         var escapedUrl = WslShellQuoting.EscapePosixSingleQuoteInner(installUrl);
         if (string.IsNullOrWhiteSpace(requestedVersion))
@@ -185,11 +209,24 @@ public sealed class InstallCliStep : SetupStep
             runtimeArgument = $" --node-version '{escapedNodeVersion}'";
         }
 
+        const string installerTempDirectoryPrefix = "/tmp/openclaw-installer-";
+        installerTempDirectory ??= $"{installerTempDirectoryPrefix}{Guid.NewGuid():N}";
+        if (!installerTempDirectory.StartsWith(installerTempDirectoryPrefix, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("CLI installer temporary directory is invalid.");
+        }
+
+        var suffix = installerTempDirectory[installerTempDirectoryPrefix.Length..];
+        if (suffix.Length != 32 || suffix.Any(character => !Uri.IsHexDigit(character)))
+            throw new ArgumentException("CLI installer temporary directory is invalid.");
+
         return $"""
             set -euo pipefail
             umask 077
-            installer="$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)"
-            trap 'rm -f "$installer"' EXIT
+            installer_dir='{installerTempDirectory}'
+            mkdir -m 0700 -- "$installer_dir"
+            installer="$installer_dir/installer.sh"
+            trap 'rm -rf -- "$installer_dir"' EXIT
             curl -fsSL \
               --connect-timeout 15 \
               --max-time {DownloadMaxTimeSeconds} \
@@ -205,6 +242,34 @@ public sealed class InstallCliStep : SetupStep
             bash -s -- --version '{escapedVersion}'{runtimeArgument} < "$installer"
             """;
     }
+
+    private static async Task<string?> CleanupInstallerTempDirectoryAsync(
+        SetupContext ctx,
+        string distro,
+        string installerTempDirectory)
+    {
+        using var cleanupCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            var cleanup = await ctx.Commands.RunInWslAsync(
+                distro,
+                $"rm -rf -- {installerTempDirectory}",
+                TimeSpan.FromSeconds(15),
+                ct: cleanupCts.Token);
+            return cleanup.ExitCode == 0 && !cleanup.TimedOut
+                ? null
+                : string.IsNullOrWhiteSpace(cleanup.Stderr)
+                    ? $"exit {cleanup.ExitCode}"
+                    : $"exit {cleanup.ExitCode}: {cleanup.Stderr.Trim()}";
+        }
+        catch (OperationCanceledException) when (cleanupCts.IsCancellationRequested)
+        {
+            return "timed out after 15 seconds";
+        }
+    }
+
+    private static string FormatCleanupError(string? cleanupError)
+        => cleanupError is null ? "" : $" Cleanup also failed: {cleanupError}";
 
     internal static bool TryValidateCandidatePackagePath(
         string candidatePackagePath,
