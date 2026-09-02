@@ -251,9 +251,12 @@ internal sealed class ChatStatePersistence : IDisposable
             _lastStateSaveVersion++;
             timer = _lastStateSaveTimer;
             _lastStateSaveTimer = null;
+            // SaveLastStateIfCurrent also writes under this gate. Keeping the
+            // final write serialized ensures an in-flight debounce callback
+            // cannot overwrite the authoritative shutdown snapshot afterward.
+            SaveLastChatState(state, _lastStatePath);
         }
         timer?.Dispose();
-        SaveLastChatState(state, _lastStatePath);
     }
 
     public void Dispose()
