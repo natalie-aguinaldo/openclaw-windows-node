@@ -829,6 +829,18 @@ Use uma destas opções:
   <data name="Toast_ScreenCapturedDetail" xml:space="preserve">
     <value>O agente do OpenClaw capturou sua tela</value>
   </data>
+  <data name="Toast_CameraCaptured" xml:space="preserve">
+    <value>📷 Capturando foto da webcam</value>
+  </data>
+  <data name="Toast_CameraCapturedDetail" xml:space="preserve">
+    <value>O agente do OpenClaw está capturando uma foto da sua câmera</value>
+  </data>
+  <data name="Toast_LocationRead" xml:space="preserve">
+    <value>📍 Acessando localização</value>
+  </data>
+  <data name="Toast_LocationReadDetail" xml:space="preserve">
+    <value>O agente do OpenClaw está acessando a localização do seu dispositivo</value>
+  </data>
   <data name="Toast_CameraBlocked" xml:space="preserve">
     <value>📷 Acesso à câmera bloqueado</value>
   </data>
@@ -876,11 +888,17 @@ Use uma destas opções:
   <data name="RecordingConsent_CameraTitle" xml:space="preserve">
     <value>Permitir gravação da câmera?</value>
   </data>
+  <data name="RecordingConsent_LocationTitle" xml:space="preserve">
+    <value>Permitir acesso à localização?</value>
+  </data>
   <data name="RecordingConsent_ScreenDescription" xml:space="preserve">
     <value>Um agente está solicitando permissão para gravar sua tela. Isso capturará vídeo da sua tela e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
   </data>
   <data name="RecordingConsent_CameraDescription" xml:space="preserve">
     <value>Um agente está solicitando permissão para gravar com sua câmera. Isso capturará vídeo da sua webcam e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
+  </data>
+  <data name="RecordingConsent_LocationDescription" xml:space="preserve">
+    <value>Um agente está solicitando acesso à localização do seu dispositivo. Isso enviará sua localização atual ao agente. Sua escolha será lembrada para solicitações futuras.</value>
   </data>
   <data name="RecordingConsent_Privacy" xml:space="preserve">
     <value>Você pode alterar isso posteriormente nas configurações.</value>
@@ -3788,6 +3806,9 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
   <data name="SettingsRow_CamRec_Header.Text" xml:space="preserve">
     <value>Permitir gravação de câmera</value>
   </data>
+  <data name="SettingsRow_Location_Header.Text" xml:space="preserve">
+    <value>Permitir acesso à localização</value>
+  </data>
   <data name="HubWindow_NavigationViewItem_Voice.Content" xml:space="preserve">
     <value>Voz e Áudio</value>
   </data>
@@ -4036,6 +4057,9 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
   </data>
   <data name="SettingsRow_CamRec_Description.Text" xml:space="preserve">
     <value>Lets agents capture the camera via camera.* commands.</value>
+  </data>
+  <data name="SettingsRow_Location_Description.Text" xml:space="preserve">
+    <value>Permite que agentes leiam a localização do dispositivo por meio de comandos location.*.</value>
   </data>
   <data name="VoiceSettingsPage_ElevenLabsVoiceIdBox.PlaceholderText" xml:space="preserve">
     <value>e.g. 21m00Tcm4TlvDq8ikWAM</value>
