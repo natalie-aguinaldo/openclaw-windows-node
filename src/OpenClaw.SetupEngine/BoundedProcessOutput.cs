@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 
 namespace OpenClaw.SetupEngine;
 
@@ -25,26 +26,29 @@ internal static class BoundedProcessOutput
         if (process is null)
             return (-1, string.Empty);
 
-        var stdoutTask = startInfo.RedirectStandardOutput
-            ? process.StandardOutput.ReadToEndAsync()
-            : Task.FromResult(string.Empty);
+        var stdout = startInfo.RedirectStandardOutput
+            ? new RedirectedOutputCapture(process.StandardOutput)
+            : null;
+        var stdoutTask = stdout?.Completion ?? Task.CompletedTask;
         var stderrTask = startInfo.RedirectStandardError
             ? process.StandardError.ReadToEndAsync()
             : null;
 
         try
         {
-            var output = await AwaitRedirectedOutputAsync(
+            var waitResult = await AwaitRedirectedOutputAsync(
                 process,
                 stdoutTask,
                 timeoutMs,
                 cancellationToken);
-            return output is not null && process.HasExited
-                ? (process.ExitCode, output)
+            return waitResult.ProcessExited && process.HasExited
+                ? (process.ExitCode, stdout?.Output ?? string.Empty)
                 : (-1, string.Empty);
         }
         finally
         {
+            if (!stdoutTask.IsCompleted)
+                DisposeQuietly(process.StandardOutput);
             ObserveQuietly(stdoutTask);
             if (stderrTask is not null)
             {
@@ -55,9 +59,9 @@ internal static class BoundedProcessOutput
         }
     }
 
-    internal static async Task<string?> AwaitRedirectedOutputAsync(
+    internal static async Task<RedirectedOutputWaitResult> AwaitRedirectedOutputAsync(
         Process process,
-        Task<string> readTask,
+        Task readTask,
         int timeoutMs,
         CancellationToken cancellationToken = default)
     {
@@ -67,25 +71,44 @@ internal static class BoundedProcessOutput
             throw new ArgumentOutOfRangeException(nameof(timeoutMs));
 
         var deadline = new MonotonicDeadline(TimeSpan.FromMilliseconds(timeoutMs));
-        var exitTask = process.WaitForExitAsync(CancellationToken.None);
+        using var exitSignalCancellation = new CancellationTokenSource();
+        var exitTask = WaitForProcessExitOnlyAsync(process, exitSignalCancellation.Token);
         try
         {
-            await WaitWithinDeadlineAsync(exitTask, deadline, cancellationToken);
-            await WaitWithinDeadlineAsync(readTask, deadline, cancellationToken);
-            return await readTask;
-        }
-        catch (TimeoutException)
-        {
-            StopAndAbandon(process, readTask);
-            return null;
-        }
-        catch (OperationCanceledException)
-        {
-            StopAndAbandon(process, readTask);
-            throw;
+            try
+            {
+                await WaitWithinDeadlineAsync(exitTask, deadline, cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                StopAndAbandon(process, readTask);
+                return new RedirectedOutputWaitResult(ProcessExited: false, OutputDrained: false);
+            }
+            catch (OperationCanceledException)
+            {
+                StopAndAbandon(process, readTask);
+                throw;
+            }
+
+            try
+            {
+                await WaitWithinDeadlineAsync(readTask, deadline, cancellationToken);
+                return new RedirectedOutputWaitResult(ProcessExited: true, OutputDrained: true);
+            }
+            catch (TimeoutException)
+            {
+                AbandonRead(process, readTask);
+                return new RedirectedOutputWaitResult(ProcessExited: true, OutputDrained: false);
+            }
+            catch (OperationCanceledException)
+            {
+                StopAndAbandon(process, readTask);
+                throw;
+            }
         }
         finally
         {
+            exitSignalCancellation.Cancel();
             ObserveQuietly(exitTask);
             ObserveQuietly(readTask);
         }
@@ -118,8 +141,33 @@ internal static class BoundedProcessOutput
             Trace.WriteLine($"BoundedProcessOutput.TryKillTree: {ex.GetType().Name}: {ex.Message}");
         }
 
+        AbandonRead(process, readTask);
+    }
+
+    private static void AbandonRead(Process process, Task readTask)
+    {
         if (!readTask.IsCompleted)
             DisposeQuietly(process.StandardOutput);
+    }
+
+    private static async Task WaitForProcessExitOnlyAsync(
+        Process process,
+        CancellationToken cancellationToken)
+    {
+        var exited = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnExited(object? sender, EventArgs e) => exited.TrySetResult();
+
+        process.EnableRaisingEvents = true;
+        process.Exited += OnExited;
+        try
+        {
+            if (!process.HasExited)
+                await exited.Task.WaitAsync(cancellationToken);
+        }
+        finally
+        {
+            process.Exited -= OnExited;
+        }
     }
 
     private static void DisposeQuietly(IDisposable disposable)
@@ -134,6 +182,44 @@ internal static class BoundedProcessOutput
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
+
+    internal readonly record struct RedirectedOutputWaitResult(
+        bool ProcessExited,
+        bool OutputDrained);
+
+    private sealed class RedirectedOutputCapture
+    {
+        private readonly StreamReader _reader;
+        private readonly Lock _lock = new();
+        private readonly StringBuilder _output = new();
+
+        internal RedirectedOutputCapture(StreamReader reader)
+        {
+            _reader = reader;
+            Completion = CaptureAsync();
+        }
+
+        internal Task Completion { get; }
+
+        internal string Output
+        {
+            get
+            {
+                lock (_lock)
+                    return _output.ToString();
+            }
+        }
+
+        private async Task CaptureAsync()
+        {
+            var buffer = new char[4_096];
+            while (await _reader.ReadAsync(buffer) is var count && count > 0)
+            {
+                lock (_lock)
+                    _output.Append(buffer, 0, count);
+            }
+        }
+    }
 
     private readonly struct MonotonicDeadline
     {

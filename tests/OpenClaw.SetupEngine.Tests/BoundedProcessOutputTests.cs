@@ -5,7 +5,7 @@ namespace OpenClaw.SetupEngine.Tests;
 public sealed class BoundedProcessOutputTests
 {
     [Fact]
-    public async Task AwaitRedirectedOutputAsync_ReturnsNullWhenStdoutNeverCloses()
+    public async Task AwaitRedirectedOutputAsync_ReportsUndrainedWhenStdoutNeverCloses()
     {
         using var process = StartExitingProcess();
         Assert.NotNull(process);
@@ -14,12 +14,13 @@ public sealed class BoundedProcessOutputTests
             TaskCreationOptions.RunContinuationsAsynchronously).Task;
         var stopwatch = Stopwatch.StartNew();
 
-        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
+        var result = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
             process,
             never,
             timeoutMs: 400);
 
-        Assert.Null(output);
+        Assert.True(result.ProcessExited);
+        Assert.False(result.OutputDrained);
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(900));
     }
 
@@ -39,12 +40,13 @@ public sealed class BoundedProcessOutputTests
 
         var readTask = process.StandardOutput.ReadToEndAsync();
         var stopwatch = Stopwatch.StartNew();
-        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
+        var result = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
             process,
             readTask,
             timeoutMs: 400);
 
-        Assert.Null(output);
+        Assert.False(result.ProcessExited);
+        Assert.False(result.OutputDrained);
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(900));
         Assert.True(
             SpinWait.SpinUntil(() => process.HasExited, TimeSpan.FromSeconds(2)),
@@ -71,7 +73,9 @@ public sealed class BoundedProcessOutputTests
         await Task.Delay(350);
         outputSource.SetResult("{\"BackendState\":\"Running\"}");
 
-        Assert.Equal("{\"BackendState\":\"Running\"}", await helper);
+        var result = await helper;
+        Assert.True(result.ProcessExited);
+        Assert.True(result.OutputDrained);
     }
 
     [Fact]
@@ -120,12 +124,13 @@ public sealed class BoundedProcessOutputTests
         Assert.False(readTask.IsCompleted, "The descendant did not retain the redirected output handle.");
         var stopwatch = Stopwatch.StartNew();
 
-        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
+        var result = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
             process,
             readTask,
             timeoutMs: 300);
 
-        Assert.Null(output);
+        Assert.True(result.ProcessExited);
+        Assert.False(result.OutputDrained);
         Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(800));
         _ = await Record.ExceptionAsync(() => readTask.WaitAsync(TimeSpan.FromSeconds(3)));
     }
@@ -146,6 +151,31 @@ public sealed class BoundedProcessOutputTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("status-ok", result.Output);
+    }
+
+    [Fact]
+    public async Task ReadAsync_PreservesValidStatusWhenDescendantRetainsOutputHandle()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        const string status = """
+            {"BackendState":"Running","Self":{"DNSName":"node.tailnet.ts.net."}}
+            """;
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await BoundedProcessOutput.ReadAsync(
+            InheritedHandleCommand(status, childSleepSeconds: 3),
+            timeoutMs: 2_500);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(status, result.Output, StringComparison.Ordinal);
+        Assert.True(TailscaleSetupPolicy.TryParseStatus(result.Output, out var parsedStatus));
+        Assert.True(parsedStatus.IsRunning);
+        Assert.InRange(
+            stopwatch.Elapsed,
+            TimeSpan.FromMilliseconds(500),
+            TimeSpan.FromSeconds(3));
     }
 
     [Fact]
@@ -175,7 +205,9 @@ public sealed class BoundedProcessOutputTests
             TimeSpan.FromMilliseconds(5_750));
     }
 
-    private static ProcessStartInfo InheritedHandleCommand()
+    private static ProcessStartInfo InheritedHandleCommand(
+        string output = "inherited-output",
+        int childSleepSeconds = 2)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -189,8 +221,8 @@ public sealed class BoundedProcessOutputTests
         startInfo.ArgumentList.Add("-Command");
         startInfo.ArgumentList.Add(
             "$null = Start-Process powershell.exe " +
-            "-ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds 2' " +
-            "-NoNewWindow -PassThru; Write-Output inherited-output");
+            $"-ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds {childSleepSeconds}' " +
+            $"-NoNewWindow -PassThru; Write-Output '{output.Replace("'", "''", StringComparison.Ordinal)}'");
         return startInfo;
     }
 
