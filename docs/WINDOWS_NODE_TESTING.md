@@ -177,6 +177,8 @@ Local MCP clients also see MCP-only `app.*` commands such as `app.navigate`, `ap
 - Sandbox integration tests are intended for local Windows development machines and may skip when the required local sandbox prerequisites are unavailable.
 - Build the tray app before running local sandbox validation so the required sandbox helper binaries are present in the app output.
 - For MXC-related merge validation, prefer the formal script below because it sets the required gates and fails if MXC is skipped.
+- Windows Server SKUs report MXC as unavailable without launching `wxc-exec --probe`. The sandbox-enabled setting remains enabled so normal mode continues through guarded host fallback and strict mode still denies execution.
+- To test a future Windows Server release that adds MXC support, set `OPENCLAW_MXC_FORCE_PROBE=1`. This explicit override is logged and bypasses only the Server SKU gate; the native probe remains authoritative.
 
   ```powershell
   .\scripts\validate-mxc-e2e.ps1

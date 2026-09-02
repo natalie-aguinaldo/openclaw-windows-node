@@ -306,9 +306,11 @@ public sealed partial class SandboxPage : Page
         // host itself doesn't support the sandbox (vs. a missing binary).
         var isWindowsIssue = !isProbeError
             && availability.IsWxcExecResolvable
-            && !availability.IsAppContainerAvailable;
+            && !availability.IsAppContainerAvailable
+            && availability.Outcome != OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku;
 
-        var isSetupIssue = !availability.IsWxcExecResolvable;
+        var isSetupIssue = availability.Outcome != OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku
+            && !availability.IsWxcExecResolvable;
         var blockHostFallback = sandboxEnabled
             && (CurrentApp.Settings?.SystemRunBlockHostFallbackWhenMxcUnavailable ?? false);
         var unavailableBehavior = L(blockHostFallback
@@ -353,7 +355,12 @@ public sealed partial class SandboxPage : Page
 
     private bool IsSandboxDefinitivelyUnavailable()
     {
-        return _cachedAvailability is { HasAnyBackend: false, ProbeErrored: false };
+        return _cachedAvailability is
+        {
+            HasAnyBackend: false,
+            ProbeErrored: false,
+            Outcome: not OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku,
+        };
     }
 
     private bool NormalizeSandboxToggleForAvailability()

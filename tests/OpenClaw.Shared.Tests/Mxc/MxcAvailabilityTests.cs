@@ -173,6 +173,9 @@ public class MxcAvailabilityTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("\"text\"")]
     [InlineData("{\"needsDaclAugmentation\":false}")]
     [InlineData("{\"tier\":\"\"}")]
     [InlineData("not json at all")]
@@ -245,6 +248,7 @@ public class MxcAvailabilityTests
             Assert.Equal(fakeExe, availability.WxcExecPath);
             Assert.Empty(availability.UnsupportedReasons);
             Assert.False(availability.ProbeErrored);
+            Assert.Equal(MxcAvailabilityOutcome.Supported, availability.Outcome);
             Assert.Equal("base-container", availability.IsolationTier);
             Assert.False(availability.IsDegradedContainment);
         }
@@ -264,9 +268,10 @@ public class MxcAvailabilityTests
         {
             Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, fakeExe);
             var probeCalled = false;
+            var logger = new CapturingLogger();
 
             var availability = MxcAvailability.Probe(
-                NullLogger.Instance,
+                logger,
                 _ =>
                 {
                     probeCalled = true;
@@ -282,15 +287,151 @@ public class MxcAvailabilityTests
             Assert.False(probeCalled);
             Assert.False(availability.HasAnyBackend);
             Assert.False(availability.IsAppContainerAvailable);
-            Assert.True(availability.IsWxcExecResolvable);
+            Assert.False(availability.IsWxcExecResolvable);
             Assert.False(availability.ProbeErrored);
+            Assert.Equal(MxcAvailabilityOutcome.UnsupportedSku, availability.Outcome);
             Assert.Contains("Windows Server", Assert.Single(availability.UnsupportedReasons));
+            Assert.Contains(
+                logger.Warnings,
+                message => message.Contains("outcome=UnsupportedSku", StringComparison.Ordinal)
+                    && message.Contains("probe=skipped", StringComparison.Ordinal)
+                    && message.Contains("hostFallback=policy_guarded", StringComparison.Ordinal));
         }
         finally
         {
             Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, null);
             try { File.Delete(fakeExe); } catch { /* best-effort */ }
         }
+    }
+
+    [Fact]
+    public void Probe_ForceProbeOverride_BypassesServerSkuGateAndLogsOutcome()
+    {
+        var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
+        File.WriteAllText(fakeExe, string.Empty);
+        try
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, fakeExe);
+            var logger = new CapturingLogger();
+            var probeCalled = false;
+
+            var availability = MxcAvailability.Probe(
+                logger,
+                _ =>
+                {
+                    probeCalled = true;
+                    return new WxcProbeInvocation(
+                        WxcProbeStatus.Completed,
+                        0,
+                        "{\"tier\":\"base-container\",\"warnings\":[]}",
+                        string.Empty);
+                },
+                () => true,
+                () => true,
+                () => true,
+                () => (true, fakeExe));
+
+            Assert.True(probeCalled);
+            Assert.True(availability.HasAnyBackend);
+            Assert.Equal(MxcAvailabilityOutcome.Supported, availability.Outcome);
+            Assert.Contains(
+                logger.Warnings,
+                message => message.Contains("outcome=force_probe_override", StringComparison.Ordinal)
+                    && message.Contains("skuGate=bypassed", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, null);
+            try { File.Delete(fakeExe); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public void Probe_WhenSkuDetectionThrows_ContinuesToProbeAndDoesNotThrow()
+    {
+        var fakeExe = Path.Combine(Path.GetTempPath(), $"wxc-fake-{Guid.NewGuid():N}.exe");
+        File.WriteAllText(fakeExe, string.Empty);
+        try
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, fakeExe);
+            var logger = new CapturingLogger();
+            var probeCalled = false;
+
+            var availability = MxcAvailability.Probe(
+                logger,
+                _ =>
+                {
+                    probeCalled = true;
+                    return new WxcProbeInvocation(
+                        WxcProbeStatus.Completed,
+                        0,
+                        "{\"tier\":\"base-container\",\"warnings\":[]}",
+                        string.Empty);
+                },
+                () => throw new EntryPointNotFoundException("test"),
+                () => true,
+                () => false,
+                () => (true, fakeExe));
+
+            Assert.True(probeCalled);
+            Assert.True(availability.HasAnyBackend);
+            Assert.Contains(
+                logger.Warnings,
+                message => message.Contains("outcome=sku_detection_error", StringComparison.Ordinal)
+                    && message.Contains("errorType=EntryPointNotFoundException", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(MxcAvailability.WxcExecOverrideEnvVar, null);
+            try { File.Delete(fakeExe); } catch { /* best-effort */ }
+        }
+    }
+
+    [Fact]
+    public void NativeSkuContract_OnWindows_HasExpectedStructAndProductType()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        Assert.Equal(284, MxcAvailability.NativeOsVersionInfoSize);
+        Assert.Equal(1, MxcAvailability.NativeWorkstationProductType);
+        Assert.NotNull(MxcAvailability.DetectWindowsServerSku());
+    }
+
+    [Fact]
+    public void Probe_WindowsServerSku_WithMissingHelperStillReturnsUnsupportedSku()
+    {
+        var logger = new CapturingLogger();
+        var resolverCalled = false;
+        var probeCalled = false;
+
+        var availability = MxcAvailability.Probe(
+            logger,
+            _ =>
+            {
+                probeCalled = true;
+                return new WxcProbeInvocation(
+                    WxcProbeStatus.Completed,
+                    0,
+                    "{\"tier\":\"base-container\",\"warnings\":[]}",
+                    string.Empty);
+            },
+            () => true,
+            () => true,
+            () => false,
+            () =>
+            {
+                resolverCalled = true;
+                return (false, null);
+            });
+
+        Assert.False(resolverCalled);
+        Assert.False(probeCalled);
+        Assert.Equal(MxcAvailabilityOutcome.UnsupportedSku, availability.Outcome);
+        Assert.False(availability.IsWxcExecResolvable);
+        Assert.Contains(
+            logger.Warnings,
+            message => message.Contains("outcome=UnsupportedSku", StringComparison.Ordinal)
+                && message.Contains("hostFallback=policy_guarded", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -384,4 +525,13 @@ public class MxcAvailabilityTests
         }
     }
 
+    private sealed class CapturingLogger : IOpenClawLogger
+    {
+        public List<string> Warnings { get; } = new();
+
+        public void Info(string message) { }
+        public void Debug(string message) { }
+        public void Warn(string message) => Warnings.Add(message);
+        public void Error(string message, Exception? ex = null) { }
+    }
 }

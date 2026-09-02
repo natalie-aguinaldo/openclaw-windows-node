@@ -29,6 +29,13 @@ public sealed class MxcAvailability
     public const string WxcExecOverrideEnvVar = "OPENCLAW_WXC_EXEC";
 
     /// <summary>
+    /// Explicit operator override that bypasses the Windows Server SKU gate and
+    /// runs the native probe. Set to <c>1</c> only to validate future Server
+    /// releases where MXC support may have been added.
+    /// </summary>
+    public const string ForceProbeEnvVar = "OPENCLAW_MXC_FORCE_PROBE";
+
+    /// <summary>
     /// Bound on how long we wait for <c>wxc-exec --probe</c> before treating the
     /// host as unable to run the sandbox.
     /// </summary>
@@ -45,6 +52,7 @@ public sealed class MxcAvailability
     public bool IsIsolationSessionAvailable { get; }
     public bool IsWxcExecResolvable { get; }
     public string? WxcExecPath { get; }
+    public MxcAvailabilityOutcome Outcome { get; }
 
     /// <summary>
     /// True when the availability verdict came from a <em>probe error</em>
@@ -110,7 +118,8 @@ public sealed class MxcAvailability
         IReadOnlyList<string> unsupportedReasons,
         bool probeErrored = false,
         string? isolationTier = null,
-        bool needsDaclAugmentation = false)
+        bool needsDaclAugmentation = false,
+        MxcAvailabilityOutcome? outcome = null)
     {
         IsAppContainerAvailable = isAppContainerAvailable;
         IsIsolationSessionAvailable = isIsolationSessionAvailable;
@@ -120,6 +129,11 @@ public sealed class MxcAvailability
         ProbeErrored = probeErrored;
         IsolationTier = isolationTier;
         NeedsDaclAugmentation = needsDaclAugmentation;
+        Outcome = outcome ?? (probeErrored
+            ? MxcAvailabilityOutcome.ProbeError
+            : HasAnyBackend
+                ? MxcAvailabilityOutcome.Supported
+                : MxcAvailabilityOutcome.UnsupportedHost);
     }
 
     /// <summary>
@@ -140,7 +154,9 @@ public sealed class MxcAvailability
         IOpenClawLogger? logger,
         Func<string, WxcProbeInvocation>? probeRunner,
         Func<bool?>? windowsServerProvider = null,
-        Func<bool>? windowsProvider = null)
+        Func<bool>? windowsProvider = null,
+        Func<bool>? forceProbeProvider = null,
+        Func<(bool Resolvable, string? Path)>? wxcResolver = null)
     {
         var log = logger ?? NullLogger.Instance;
         var reasons = new List<string>();
@@ -148,23 +164,68 @@ public sealed class MxcAvailability
         if (!(windowsProvider?.Invoke() ?? OperatingSystem.IsWindows()))
         {
             reasons.Add("MXC requires Windows.");
-            return new MxcAvailability(false, false, false, null, reasons);
+            return new MxcAvailability(
+                false, false, false, null, reasons,
+                outcome: MxcAvailabilityOutcome.UnsupportedPlatform);
         }
 
-        // wxc-exec is the source of truth for host support, so resolve it first.
-        // Without the binary we cannot probe and therefore report unavailable.
-        var (wxcResolvable, wxcPath) = ResolveWxcExec();
+        var forceProbe = forceProbeProvider?.Invoke()
+            ?? string.Equals(
+                Environment.GetEnvironmentVariable(ForceProbeEnvVar),
+                "1",
+                StringComparison.Ordinal);
+        if (forceProbe)
+        {
+            log.Warn(
+                "[mxc] availability: outcome=force_probe_override " +
+                "forceProbe=true skuGate=bypassed probe=required");
+        }
+
+        bool? isWindowsServer = null;
+        var skuDetectionWarningLogged = false;
+        if (!forceProbe)
+        {
+            try
+            {
+                isWindowsServer = (windowsServerProvider ?? DetectWindowsServerSku)();
+            }
+            catch (Exception ex)
+            {
+                log.Warn(
+                    "[mxc] availability: outcome=sku_detection_error " +
+                    $"sku=unknown probe=required errorType={ex.GetType().Name}");
+                skuDetectionWarningLogged = true;
+            }
+        }
+
+        if (isWindowsServer == true)
+        {
+            reasons.Add("Windows Server does not support MXC containment.");
+            log.Warn(
+                $"[mxc] availability: supported=false outcome={MxcAvailabilityOutcome.UnsupportedSku} " +
+                "sku=windows_server probe=skipped hostFallback=policy_guarded");
+            return new MxcAvailability(
+                false, false, false, null, reasons,
+                outcome: MxcAvailabilityOutcome.UnsupportedSku);
+        }
+
+        if (!forceProbe && isWindowsServer is null && !skuDetectionWarningLogged)
+        {
+            log.Warn(
+                "[mxc] availability: outcome=sku_detection_error " +
+                "sku=unknown probe=required");
+        }
+
+        // wxc-exec is the source of truth for host support once the SKU gate permits
+        // probing. Server must be classified before this check so a missing helper
+        // cannot turn the guarded fallback intent into a persisted sandbox opt-out.
+        var (wxcResolvable, wxcPath) = (wxcResolver ?? ResolveWxcExec)();
         if (!wxcResolvable || string.IsNullOrEmpty(wxcPath))
         {
             reasons.Add($"wxc-exec.exe not found. Set {WxcExecOverrideEnvVar} or build the tray app to copy it into the output folder.");
-            return new MxcAvailability(false, false, false, null, reasons);
-        }
-
-        if ((windowsServerProvider ?? DetectWindowsServerSku)() == true)
-        {
-            reasons.Add("Windows Server does not support MXC containment.");
-            log.Info($"[mxc] availability: supported=false outcome={MxcProbeOutcome.UnsupportedHost} Windows Server SKU; probe skipped");
-            return new MxcAvailability(false, false, true, wxcPath, reasons);
+            return new MxcAvailability(
+                false, false, false, null, reasons,
+                outcome: MxcAvailabilityOutcome.MissingComponents);
         }
 
         // Ask the native binary whether this host can run the sandbox and at what
@@ -210,37 +271,56 @@ public sealed class MxcAvailability
             reasons,
             probeErrored: probeErrored,
             isolationTier: probe.Tier,
-            needsDaclAugmentation: probe.NeedsDaclAugmentation);
+            needsDaclAugmentation: probe.NeedsDaclAugmentation,
+            outcome: probe.Outcome switch
+            {
+                MxcProbeOutcome.Supported => MxcAvailabilityOutcome.Supported,
+                MxcProbeOutcome.UnsupportedHost => MxcAvailabilityOutcome.UnsupportedHost,
+                _ => MxcAvailabilityOutcome.ProbeError,
+            });
     }
 
-    private static bool? DetectWindowsServerSku()
+    internal static bool? DetectWindowsServerSku()
     {
-        // Managed equivalent of VersionHelpers.h IsWindowsServer(). An unexpected
-        // API failure returns unknown so an indeterminate result never excludes
-        // a Windows client from the native MXC probe.
-        var versionInfo = new OsVersionInfoEx
+        try
         {
-            OsVersionInfoSize = (uint)Marshal.SizeOf<OsVersionInfoEx>(),
-            ServicePack = string.Empty,
-            ProductType = NativeMethods.VerNtWorkstation,
-        };
-        var conditionMask = NativeMethods.VerSetConditionMask(
-            0,
-            NativeMethods.VerProductType,
-            NativeMethods.VerEqual);
-
-        if (NativeMethods.VerifyVersionInfo(
-                ref versionInfo,
+            // Managed equivalent of VersionHelpers.h IsWindowsServer(). An unexpected
+            // API failure returns unknown so an indeterminate result never excludes
+            // a Windows client from the native MXC probe.
+            var versionInfo = new OsVersionInfoEx
+            {
+                OsVersionInfoSize = (uint)Marshal.SizeOf<OsVersionInfoEx>(),
+                ServicePack = string.Empty,
+                ProductType = NativeMethods.VerNtWorkstation,
+            };
+            var conditionMask = NativeMethods.VerSetConditionMask(
+                0,
                 NativeMethods.VerProductType,
-                conditionMask))
-        {
-            return false;
-        }
+                NativeMethods.VerEqual);
 
-        return Marshal.GetLastWin32Error() == NativeMethods.ErrorOldWinVersion
-            ? true
-            : null;
+            if (NativeMethods.VerifyVersionInfo(
+                    ref versionInfo,
+                    NativeMethods.VerProductType,
+                    conditionMask))
+            {
+                return false;
+            }
+
+            return Marshal.GetLastWin32Error() == NativeMethods.ErrorOldWinVersion
+                ? true
+                : null;
+        }
+        catch (Exception ex) when (ex is DllNotFoundException
+            or EntryPointNotFoundException
+            or BadImageFormatException
+            or MarshalDirectiveException)
+        {
+            return null;
+        }
     }
+
+    internal static int NativeOsVersionInfoSize => Marshal.SizeOf<OsVersionInfoEx>();
+    internal static byte NativeWorkstationProductType => NativeMethods.VerNtWorkstation;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct OsVersionInfoEx
@@ -316,6 +396,12 @@ public sealed class MxcAvailability
         {
             using var doc = JsonDocument.Parse(stdout);
             var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return Error(
+                    "Could not determine MXC sandbox support (wxc-exec --probe returned a non-object JSON result).");
+            }
+
             var warnings = ReadWarnings(root);
 
             if (TryGetString(root, "error") is { } error)
@@ -533,6 +619,17 @@ public sealed class MxcAvailability
         System.Runtime.InteropServices.Architecture.X64 => "x64",
         _ => "x64",
     };
+}
+
+/// <summary>Stable, low-cardinality classification of MXC availability.</summary>
+public enum MxcAvailabilityOutcome
+{
+    Supported,
+    UnsupportedPlatform,
+    MissingComponents,
+    UnsupportedHost,
+    UnsupportedSku,
+    ProbeError,
 }
 
 /// <summary>Outcome of attempting to run <c>wxc-exec --probe</c> (distinct from the

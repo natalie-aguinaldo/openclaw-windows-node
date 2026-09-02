@@ -1907,7 +1907,7 @@ public sealed class AppRefactorContractTests
     }
 
     [Fact]
-    public void SandboxPage_NormalizesDefinitiveUnavailableMxcOff()
+    public void SandboxPage_NormalizesDefinitiveUnavailableMxcOffExceptUnsupportedSku()
     {
         var source = ReadSandboxPageSource();
         var refresh = ExtractMethod(source, "RefreshAvailabilityAsync");
@@ -1928,6 +1928,9 @@ public sealed class AppRefactorContractTests
             "UpdateControlsEnabledState();");
         Assert.Contains("HasAnyBackend: false", definitiveUnavailable);
         Assert.Contains("ProbeErrored: false", definitiveUnavailable);
+        Assert.Contains(
+            "Outcome: not OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku",
+            definitiveUnavailable);
         AssertInOrder(
             normalize,
             "settings.SystemRunSandboxEnabled",
@@ -1936,6 +1939,24 @@ public sealed class AppRefactorContractTests
         Assert.Contains("settings.SystemRunSandboxEnabled = false", normalize);
         Assert.Contains("SandboxEnabledToggle.IsOn = false", normalize);
         Assert.Contains("Save();", normalize);
+    }
+
+    [Fact]
+    public void SandboxPage_UnsupportedSkuDoesNotOfferWindowsUpdate()
+    {
+        var source = ReadSandboxPageSource();
+        var actionBar = ExtractMethod(source, "UpdateUnavailableActionBar");
+
+        Assert.Contains(
+            "availability.Outcome != OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku",
+            actionBar);
+        Assert.Contains(
+            "var isSetupIssue = availability.Outcome != OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku",
+            actionBar);
+        AssertInOrder(
+            actionBar,
+            "availability.Outcome != OpenClaw.Shared.Mxc.MxcAvailabilityOutcome.UnsupportedSku",
+            "UnavailablePrimaryButton.Tag = \"windowsupdate\"");
     }
 
     [Fact]

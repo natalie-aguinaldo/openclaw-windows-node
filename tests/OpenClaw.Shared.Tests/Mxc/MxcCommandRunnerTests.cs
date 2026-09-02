@@ -353,6 +353,76 @@ public class MxcCommandRunnerTests
     }
 
     [Fact]
+    public async Task RunAsync_ServerSku_NormalApprovedModeUsesGuardedHostFallbackNotDirectHost()
+    {
+        var availability = new MxcAvailability(
+            false,
+            false,
+            true,
+            "C:\\fake\\wxc-exec.exe",
+            ["Windows Server does not support MXC containment."],
+            outcome: MxcAvailabilityOutcome.UnsupportedSku);
+        var settings = NewSettings(
+            sandboxEnabled: true,
+            blockHostFallbackWhenMxcUnavailable: false);
+        var fallback = new FakeCommandRunner
+        {
+            EffectiveShellForNull = "powershell",
+            Result = new CommandResult { ExitCode = 0, Stdout = "server-host" },
+        };
+        var runner = NewRunner(
+            new FakeSandboxExecutor(),
+            fallback,
+            settings,
+            sandboxAvailable: availability.HasAnyBackend);
+
+        var result = await runner.RunAsync(new CommandRequest
+        {
+            Command = "echo hi",
+            ApprovedEffectiveShell = "cmd",
+            ApprovedHostFallbackShell = "powershell",
+        });
+
+        Assert.True(settings.SystemRunSandboxEnabled);
+        Assert.Equal(NodeToolExecutionMode.HostFallback, result.ExecutionMode);
+        Assert.NotEqual(NodeToolExecutionMode.Host, result.ExecutionMode);
+        Assert.Equal("powershell", fallback.LastRequest?.Shell);
+    }
+
+    [Fact]
+    public async Task RunAsync_ServerSku_StrictModeDeniesWithoutHostExecution()
+    {
+        var availability = new MxcAvailability(
+            false,
+            false,
+            true,
+            "C:\\fake\\wxc-exec.exe",
+            ["Windows Server does not support MXC containment."],
+            outcome: MxcAvailabilityOutcome.UnsupportedSku);
+        var settings = NewSettings(
+            sandboxEnabled: true,
+            blockHostFallbackWhenMxcUnavailable: true);
+        var fallback = new FakeCommandRunner();
+        var runner = NewRunner(
+            new FakeSandboxExecutor(),
+            fallback,
+            settings,
+            sandboxAvailable: availability.HasAnyBackend);
+
+        var result = await runner.RunAsync(new CommandRequest
+        {
+            Command = "echo hi",
+            ApprovedEffectiveShell = "cmd",
+        });
+
+        Assert.True(settings.SystemRunSandboxEnabled);
+        Assert.Equal(NodeToolExecutionMode.Sandbox, result.ExecutionMode);
+        Assert.Equal(NodeToolErrorCategory.SandboxUnavailable, result.ErrorCategory);
+        Assert.Contains("host fallback is blocked", result.Stderr);
+        Assert.Null(fallback.LastRequest);
+    }
+
+    [Fact]
     public async Task RunAsync_Success_MapsSandboxResultIntoCommandResult()
     {
         var executor = new FakeSandboxExecutor
