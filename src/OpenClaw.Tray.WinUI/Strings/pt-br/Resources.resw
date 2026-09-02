@@ -39,7 +39,7 @@
     <value>ws://localhost:18789 ou https://host.tailnet.ts.net</value>
   </data>
   <data name="SettingsTokenTextBox.Header" xml:space="preserve">
-    <value>Token</value>
+    <value>Chave</value>
   </data>
   <data name="SettingsTokenTextBox.PlaceholderText" xml:space="preserve">
     <value>Seu token de API</value>
@@ -149,7 +149,7 @@
     <value>EXTENSIBILIDADE</value>
   </data>
   <data name="StatusNodesHeader.Text" xml:space="preserve">
-    <value>NODES</value>
+    <value>NÓS</value>
   </data>
   <data name="StatusRecentActivityHeader.Text" xml:space="preserve">
     <value>ATIVIDADE RECENTE</value>
@@ -187,7 +187,7 @@
     <value>Abra a configuração de canais para fluxos de autenticação orientados por esquema, QR, login e painel, quando disponíveis.</value>
   </data>
   <data name="StatusSkillsTitle.Text" xml:space="preserve">
-    <value>Skills</value>
+    <value>Habilidades</value>
   </data>
   <data name="StatusSkillsDescription.Text" xml:space="preserve">
     <value>Abra a configuração de Skills do Gateway quando o Gateway conectado oferecer suporte a esse recurso.</value>
@@ -263,7 +263,7 @@
     <value>Uso</value>
   </data>
   <data name="ActivityFilterNodes.Content" xml:space="preserve">
-    <value>Nodes</value>
+    <value>Nós</value>
   </data>
   <data name="ActivityFilterNotifications.Content" xml:space="preserve">
     <value>Notificações</value>
@@ -494,13 +494,13 @@
   </data>
   <!-- Tray menu dynamic text -->
   <data name="Menu_StatusFormat" xml:space="preserve">
-    <value>Status: {0}</value>
+    <value>Estado: {0}</value>
   </data>
   <data name="Menu_SessionsFormat" xml:space="preserve">
     <value>Sessões ({0})</value>
   </data>
   <data name="Menu_NodesFormat" xml:space="preserve">
-    <value>Nodes ({0})</value>
+    <value>Nós ({0})</value>
   </data>
   <data name="Menu_RecentActivityFormat" xml:space="preserve">
     <value>Atividade recente ({0})</value>
@@ -578,7 +578,7 @@
   </data>
   <!-- ==================== CanvasWindow.xaml ==================== -->
   <data name="WindowTitle_Canvas" xml:space="preserve">
-    <value>Canvas</value>
+    <value>Tela do Canvas</value>
   </data>
   <data name="CanvasErrorTitle.Text" xml:space="preserve">
     <value>❌ Erro do Canvas</value>
@@ -593,7 +593,7 @@
     <value>Aguardando conteúdo</value>
   </data>
   <data name="A2UI_CanvasTitle" xml:space="preserve">
-    <value>Canvas</value>
+    <value>Tela do Canvas</value>
   </data>
   <data name="A2UI_UnsupportedComponent" xml:space="preserve">
     <value>Componente não compatível: {0}</value>
@@ -937,10 +937,10 @@ Use uma destas opções:
     <value>Disponibiliza os mesmos recursos do Node (sistema, tela, câmera, microfone, alto-falantes e Canvas) para clientes MCP locais (Claude Desktop, Cursor, Claude Code).</value>
   </data>
   <data name="SettingsMcpEndpointLabel.Text" xml:space="preserve">
-    <value>Endpoint:</value>
+    <value>Ponto de extremidade:</value>
   </data>
   <data name="SettingsMcpStatusLabel.Text" xml:space="preserve">
-    <value>Status:</value>
+    <value>Estado:</value>
   </data>
   <data name="Mcp_Status_Disabled" xml:space="preserve">
     <value>Desativado</value>
@@ -1033,7 +1033,7 @@ Use uma destas opções:
     <value>Agente: {0}</value>
   </data>
   <data name="UrlApproval_HostFormat" xml:space="preserve">
-    <value>Host: {0}</value>
+    <value>Nome do host: {0}</value>
   </data>
   <data name="UrlApproval_ReasonsHeader" xml:space="preserve">
     <value>Motivos:</value>
@@ -1524,7 +1524,7 @@ Use uma destas opções:
     <value>Disponibiliza recursos para clientes MCP locais (ferramentas CLI e integrações) neste PC por HTTP.</value>
   </data>
   <data name="PermissionsPage_McpEndpointLabel.Text" xml:space="preserve">
-    <value>Endpoint:</value>
+    <value>Ponto de extremidade:</value>
   </data>
   <data name="CopyMcpTokenButton.Content" xml:space="preserve">
     <value>Copiar token</value>
@@ -1575,7 +1575,7 @@ Use uma destas opções:
     <value>Carregando configuração do Gateway...</value>
   </data>
   <data name="ConfigPage_EditorLabel.Text" xml:space="preserve">
-    <value>Editor</value>
+    <value>Editor de configuração</value>
   </data>
   <data name="ConfigSearchBox.PlaceholderText" xml:space="preserve">
     <value>Filtrar configurações</value>
@@ -1611,7 +1611,7 @@ Use uma destas opções:
     <value>Descartar alterações</value>
   </data>
   <data name="ConfigPage_TabViewItem_34.Text" xml:space="preserve">
-    <value>Editor</value>
+    <value>Editor de configuração</value>
   </data>
   <data name="DetailPath.Text" xml:space="preserve">
     <value>Selecione uma seção da configuração</value>
@@ -1629,16 +1629,16 @@ Use uma destas opções:
     <value>Abrir painel</value>
   </data>
   <data name="ConfigPage_ReconnectDialogTitle" xml:space="preserve">
-    <value>Salvando configuração</value>
+    <value>Saving configuration</value>
   </data>
   <data name="ConfigPage_ReconnectDialogBody" xml:space="preserve">
-    <value>O OpenClaw está aplicando suas alterações. O Gateway pode ser reiniciado brevemente e se reconectará automaticamente.</value>
+    <value>OpenClaw is applying your edits. The gateway may restart briefly and reconnect automatically.</value>
   </data>
   <data name="ConfigPage_ReconnectDialogAccepted" xml:space="preserve">
-    <value>O Gateway está reiniciando...</value>
+    <value>Gateway is restarting...</value>
   </data>
   <data name="ConfigPage_ReconnectDialogWaiting" xml:space="preserve">
-    <value>Reconectando...</value>
+    <value>Reconnecting...</value>
   </data>
   <data name="SaveButton.Content" xml:space="preserve">
     <value>Salvar alterações</value>
@@ -1713,13 +1713,13 @@ Use uma destas opções:
     <value>Usuário SSH</value>
   </data>
   <data name="SshUserBox.PlaceholderText" xml:space="preserve">
-    <value>usuário</value>
+    <value>user</value>
   </data>
   <data name="SshHostBox.Header" xml:space="preserve">
     <value>Host SSH</value>
   </data>
   <data name="SshHostBox.PlaceholderText" xml:space="preserve">
-    <value>nome-da-máquina</value>
+    <value>machine-name</value>
   </data>
   <data name="SshRemotePortBox.Header" xml:space="preserve">
     <value>Porta remota</value>
@@ -1776,7 +1776,7 @@ Use uma destas opções:
     <value>Ativado</value>
   </data>
   <data name="StorePathText.Text" xml:space="preserve">
-    <value>Armazenamento: ~/.openclaw/cron.db</value>
+    <value>Store: ~/.openclaw/cron.db</value>
   </data>
   <data name="NextWakeText.Text" xml:space="preserve">
     <value>Próxima execução: …</value>
@@ -1875,7 +1875,7 @@ Use uma destas opções:
     <value>Mais opções</value>
   </data>
   <data name="NodesPage_Label_Version" xml:space="preserve">
-    <value>Versão</value>
+    <value>Version</value>
   </data>
   <data name="NodesPage_Label_Hardware" xml:space="preserve">
     <value>Hardware</value>
@@ -2105,7 +2105,7 @@ Use uma destas opções:
     <value>Cancelar</value>
   </data>
   <data name="SkillsPage_TextBlock_10.Text" xml:space="preserve">
-    <value>🧩 Skills</value>
+    <value>🧩 Habilidades</value>
   </data>
   <data name="SkillsPage_ComboBoxItem_15.Content" xml:space="preserve">
     <value>Todos os agentes</value>
@@ -2123,7 +2123,7 @@ Use uma destas opções:
     <value>Solicitações</value>
   </data>
   <data name="UsagePage_TextBlock_45.Text" xml:space="preserve">
-    <value>Tokens</value>
+    <value>Tokens usados</value>
   </data>
   <data name="UsagePage_TextBlock_55.Text" xml:space="preserve">
     <value>Provedores</value>
@@ -2171,67 +2171,67 @@ Use uma destas opções:
     <value>Carregando conteúdo…</value>
   </data>
   <data name="WorkspacePage_SearchBox.PlaceholderText" xml:space="preserve">
-    <value>Pesquisar arquivos</value>
+    <value>Search files</value>
   </data>
   <data name="WorkspacePage_ParentFolderButton.Content" xml:space="preserve">
-    <value>Subir</value>
+    <value>Up</value>
   </data>
   <data name="WorkspacePage_OpenConnectionSettings.Content" xml:space="preserve">
-    <value>Abrir configurações de conexão</value>
+    <value>Open Connection settings</value>
   </data>
   <data name="WorkspacePage_NoSearchResults.Text" xml:space="preserve">
-    <value>Nenhum arquivo corresponde à sua pesquisa.</value>
+    <value>No files match your search.</value>
   </data>
   <data name="WorkspacePage_NoFolderResults" xml:space="preserve">
-    <value>Nenhum arquivo encontrado nesta pasta.</value>
+    <value>No files found in this folder.</value>
   </data>
   <data name="WorkspacePage_LoadErrorMessage" xml:space="preserve">
-    <value>Não foi possível carregar os arquivos do espaço de trabalho. Tente atualizar.</value>
+    <value>Couldn't load workspace files. Try refreshing.</value>
   </data>
   <data name="WorkspacePage_UnsupportedMessage" xml:space="preserve">
-    <value>Este Gateway não oferece suporte à listagem de arquivos do espaço de trabalho.</value>
+    <value>This gateway doesn't support listing workspace files.</value>
   </data>
   <data name="WorkspacePage_Badge_Missing" xml:space="preserve">
-    <value>Ausente</value>
+    <value>Missing</value>
   </data>
   <data name="WorkspacePage_Badge_Edited" xml:space="preserve">
-    <value>Editado</value>
+    <value>Edited</value>
   </data>
   <data name="WorkspacePage_Badge_Read" xml:space="preserve">
-    <value>Lido</value>
+    <value>Read</value>
   </data>
   <data name="WorkspacePage_FolderNote" xml:space="preserve">
-    <value>Esta é uma pasta.</value>
+    <value>This is a folder.</value>
   </data>
   <data name="WorkspacePage_FileUnavailable" xml:space="preserve">
-    <value>Não foi possível carregar este arquivo.</value>
+    <value>Couldn't load this file.</value>
   </data>
   <data name="WorkspacePage_BrowserOnlyFileNote" xml:space="preserve">
-    <value>Apenas arquivos lidos ou editados nesta sessão podem ser visualizados.</value>
+    <value>Only files read or edited in this session can be previewed.</value>
   </data>
   <data name="WorkspacePage_OpenFolder" xml:space="preserve">
-    <value>Abrir</value>
+    <value>Open</value>
   </data>
   <data name="WorkspacePage_CopyPath" xml:space="preserve">
-    <value>Copiar caminho</value>
+    <value>Copy path</value>
   </data>
   <data name="WorkspacePage_CopyPathFailed" xml:space="preserve">
-    <value>Não foi possível copiar o caminho.</value>
+    <value>Couldn't copy the path.</value>
   </data>
   <data name="WorkspacePage_FileType_File" xml:space="preserve">
-    <value>Arquivo</value>
+    <value>File</value>
   </data>
   <data name="WorkspacePage_FileType_Folder" xml:space="preserve">
-    <value>Pasta</value>
+    <value>Folder</value>
   </data>
   <data name="WorkspacePage_RootFolder" xml:space="preserve">
-    <value>Raiz</value>
+    <value>Root</value>
   </data>
   <data name="WorkspacePage_SearchResultsPath" xml:space="preserve">
-    <value>Resultados da pesquisa por "{0}"</value>
+    <value>Search results for "{0}"</value>
   </data>
   <data name="WorkspacePage_BrowserTruncated" xml:space="preserve">
-    <value>Alguns resultados foram omitidos. Restrinja sua pesquisa ou abra uma pasta.</value>
+    <value>Some results were omitted. Narrow your search or open a folder.</value>
   </data>
   <data name="WorkspacePage_MissingFile" xml:space="preserve">
     <value>(arquivo não encontrado no disco)</value>
@@ -2240,13 +2240,13 @@ Use uma destas opções:
     <value>Atualizar</value>
   </data>
   <data name="ChatWindow_TextBlock_29.Text" xml:space="preserve">
-    <value>Chat</value>
+    <value>Bate-papo</value>
   </data>
   <data name="ChatWindow_TextBlock_60.Text" xml:space="preserve">
     <value>Conecte-se ao Gateway para começar a conversar</value>
   </data>
   <data name="TitleText.Text" xml:space="preserve">
-    <value>Aplicativo complementar do OpenClaw para Windows</value>
+    <value>OpenClaw Windows Companion</value>
   </data>
   <data name="NavPaneToggleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Alternar painel de navegação</value>
@@ -2267,10 +2267,10 @@ Use uma destas opções:
     <value>Início</value>
   </data>
   <data name="HubWindow_NavigationViewItem_82.Content" xml:space="preserve">
-    <value>Chat</value>
+    <value>Bate-papo</value>
   </data>
   <data name="HubWindow_NavigationViewItemHeader_87.Content" xml:space="preserve">
-    <value>Gateway</value>
+    <value>Servidor gateway</value>
   </data>
   <data name="HubWindow_NavigationViewItem_88.Content" xml:space="preserve">
     <value>Conexão</value>
@@ -2285,13 +2285,13 @@ Use uma destas opções:
     <value>Fluxo de eventos</value>
   </data>
   <data name="HubWindow_NavigationViewItem_97.Content" xml:space="preserve">
-    <value>Skills</value>
+    <value>Habilidades</value>
   </data>
   <data name="AgentsNavItem.Content" xml:space="preserve">
     <value>Agentes</value>
   </data>
   <data name="DefaultAgentNavItem.Content" xml:space="preserve">
-    <value>principal</value>
+    <value>main</value>
   </data>
   <data name="HubWindow_NavigationViewItem_109.Content" xml:space="preserve">
     <value>Canais</value>
@@ -2309,7 +2309,7 @@ Use uma destas opções:
     <value>Uso</value>
   </data>
   <data name="HubWindow_NavigationViewItem_124.Content" xml:space="preserve">
-    <value>Cron</value>
+    <value>Agendamentos</value>
   </data>
   <data name="HubWindow_NavigationViewItemHeader_129.Content" xml:space="preserve">
     <value>Este computador</value>
@@ -2453,7 +2453,7 @@ Use uma destas opções:
     <value>Arquivos do workspace</value>
   </data>
   <data name="ChatWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>Chat do OpenClaw</value>
+    <value>OpenClaw Chat</value>
   </data>
   <data name="SearchBox.PlaceholderText" xml:space="preserve">
     <value>Digite um comando...</value>
@@ -2465,10 +2465,10 @@ Use uma destas opções:
     <value>Pesquisar… (Ctrl+E)</value>
   </data>
   <data name="CanvasWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>Canvas do OpenClaw</value>
+    <value>OpenClaw Canvas</value>
   </data>
   <data name="CanvasWindow_TextBlock_31.Text" xml:space="preserve">
-    <value>Canvas do OpenClaw</value>
+    <value>OpenClaw Canvas</value>
   </data>
   <data name="CanvasWindowReloadToolTip.Content" xml:space="preserve">
     <value>Recarregar</value>
@@ -2477,7 +2477,7 @@ Use uma destas opções:
     <value>Recarregar Canvas</value>
   </data>
   <data name="TrayMenuWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>Menu do OpenClaw</value>
+    <value>OpenClaw Menu</value>
   </data>
   <data name="UsagePage_TextBlock_10.Text" xml:space="preserve">
     <value>Uso e Custo</value>
@@ -2834,7 +2834,7 @@ Use uma destas opções:
     <value>Nenhum áudio foi recebido. Verifique se o microfone está conectado e selecionado como dispositivo de entrada do Windows, depois tente novamente.</value>
   </data>
   <data name="VoiceOverlayWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>Voz do Companion</value>
+    <value>Companion Voice</value>
   </data>
   <data name="VoiceOverlayWindow_BadgeReady" xml:space="preserve">
     <value>Pronto</value>
@@ -2999,7 +2999,7 @@ Use uma destas opções:
     <value>Não conectado</value>
   </data>
   <data name="Chat_Composer_Placeholder_IncompatibleGateway" xml:space="preserve">
-    <value>Atualização do Gateway necessária: versão incompatível</value>
+    <value>Gateway update required: incompatible version</value>
   </data>
   <data name="Chat_Composer_Tooltip_Attach" xml:space="preserve">
     <value>Anexar</value>
@@ -3113,7 +3113,7 @@ Use uma destas opções:
     <value>Abrir chat</value>
   </data>
   <data name="AppNotification_ExecApprovalPending_UnknownChatLabel" xml:space="preserve">
-    <value>chat</value>
+    <value>conversa</value>
   </data>
   <data name="AppNotification_ExecApprovalPending_MainSessionLabel" xml:space="preserve">
     <value>Principal</value>
@@ -3128,7 +3128,7 @@ Use uma destas opções:
     <value>{0} / {1}</value>
   </data>
   <data name="AppNotification_RepeatedBadgeFormat" xml:space="preserve">
-    <value>{0}x</value>
+    <value>{0}×</value>
   </data>
   <data name="AppNotification_ShowMore" xml:space="preserve">
     <value>Mostrar mais</value>
@@ -3213,7 +3213,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>O Gateway rejeitou a solicitação cron.run.</value>
   </data>
   <data name="AppNotification_CronRunFailed_MessageFormat" xml:space="preserve">
-    <value>{0}: {1}</value>
+    <value>Falha ao executar {0}: {1}</value>
   </data>
   <data name="NotificationsPage_Title.Text" xml:space="preserve">
     <value>Notificações</value>
@@ -3258,7 +3258,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Cron</value>
   </data>
   <data name="NotificationsPage_MetadataGateway" xml:space="preserve">
-    <value>Gateway</value>
+    <value>Servidor gateway</value>
   </data>
   <data name="NotificationsPage_MetadataJobs" xml:space="preserve">
     <value>Tarefas</value>
@@ -3273,19 +3273,19 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Gateway local</value>
   </data>
   <data name="NotificationsPage_MetadataNode" xml:space="preserve">
-    <value>Node</value>
+    <value>Nó</value>
   </data>
   <data name="NotificationsPage_MetadataPairing" xml:space="preserve">
     <value>Pareamento</value>
   </data>
   <data name="NotificationsPage_MetadataSandbox" xml:space="preserve">
-    <value>Sandbox</value>
+    <value>Ambiente restrito</value>
   </data>
   <data name="NotificationsPage_MetadataSettings" xml:space="preserve">
     <value>Configurações</value>
   </data>
   <data name="NotificationsPage_MetadataStatus" xml:space="preserve">
-    <value>Status</value>
+    <value>Estado</value>
   </data>
   <data name="NotificationsPage_MetadataSystemRun" xml:space="preserve">
     <value>system.run</value>
@@ -3342,70 +3342,76 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Testar entrada de voz</value>
   </data>
   <data name="PermissionsPage_FeaturesDescription_Enabled" xml:space="preserve">
-    <value>Ative ou desative funcionalidades individuais que os agentes podem solicitar deste PC.</value>
+    <value>Toggle individual features that agents may request from this PC.</value>
   </data>
   <data name="PermissionsPage_FeaturesDescription_Disabled" xml:space="preserve">
-    <value>Ative o Modo Node acima para habilitar estas funcionalidades.</value>
+    <value>Turn on Node Mode above to enable these features.</value>
   </data>
   <data name="PermissionsPage_Cap_Browser_Label" xml:space="preserve">
-    <value>Controle do navegador</value>
+    <value>Browser control</value>
   </data>
   <data name="PermissionsPage_Cap_Browser_Description" xml:space="preserve">
-    <value>Permite que agentes controlem um navegador Chromium neste PC: abrir páginas, clicar e ler conteúdo.</value>
+    <value>Lets agents drive a Chromium browser on this PC: open pages, click, and read content.</value>
   </data>
   <data name="PermissionsPage_Cap_Camera_Label" xml:space="preserve">
-    <value>Câmera</value>
+    <value>Camera</value>
   </data>
   <data name="PermissionsPage_Cap_Camera_Description" xml:space="preserve">
-    <value>Permite que agentes capturem imagens estáticas e clipes curtos da câmera deste PC.</value>
+    <value>Lets agents capture still images and short clips from this PC's camera.</value>
   </data>
   <data name="PermissionsPage_Cap_Canvas_Label" xml:space="preserve">
     <value>Canvas</value>
   </data>
   <data name="PermissionsPage_Cap_Canvas_Description" xml:space="preserve">
-    <value>Permite que agentes renderizem e interajam com um canvas visual compartilhado hospedado neste PC.</value>
+    <value>Lets agents render and interact with a shared visual canvas hosted on this PC.</value>
   </data>
   <data name="PermissionsPage_Cap_Screen_Label" xml:space="preserve">
-    <value>Captura de tela</value>
+    <value>Screen capture</value>
   </data>
   <data name="PermissionsPage_Cap_Screen_Description" xml:space="preserve">
-    <value>Permite que agentes tirem capturas de tela e gravações curtas de tela deste PC.</value>
+    <value>Lets agents take screenshots and short screen recordings of this PC.</value>
   </data>
   <data name="PermissionsPage_Cap_Location_Label" xml:space="preserve">
-    <value>Localização</value>
+    <value>Location</value>
   </data>
   <data name="PermissionsPage_Cap_Location_Description" xml:space="preserve">
-    <value>Permite que agentes leiam a localização aproximada deste PC.</value>
+    <value>Lets agents read this PC's approximate location.</value>
   </data>
   <data name="PermissionsPage_Cap_Tts_Label" xml:space="preserve">
-    <value>Texto em fala</value>
+    <value>Text-to-speech</value>
   </data>
   <data name="PermissionsPage_Cap_Tts_Description" xml:space="preserve">
-    <value>Permite que agentes falem texto em voz alta pelos alto-falantes deste PC.</value>
+    <value>Lets agents speak text aloud through this PC's speakers.</value>
   </data>
   <data name="PermissionsPage_Cap_Stt_Label" xml:space="preserve">
-    <value>Fala em texto</value>
+    <value>Speech-to-text</value>
   </data>
   <data name="PermissionsPage_Cap_Stt_Description" xml:space="preserve">
-    <value>Permite que agentes transcrevam áudio do microfone localmente. Baixe um modelo de fala nas configurações de Voz e Áudio antes do primeiro uso.</value>
+    <value>Lets agents transcribe microphone audio locally. Download a speech model in Voice &amp; Audio settings before first use.</value>
+  </data>
+  <data name="PermissionsPage_Cap_Ollama_Label" xml:space="preserve">
+    <value>Share Windows Ollama</value>
+  </data>
+  <data name="PermissionsPage_Cap_Ollama_Description" xml:space="preserve">
+    <value>Let agents connected through the active local or remote gateway use Ollama models running separately on this PC. This does not change the app-managed Local AI gateway provider.</value>
   </data>
   <data name="PermissionsPage_Cap_SystemRun_Label" xml:space="preserve">
-    <value>Ferramentas do sistema</value>
+    <value>System tools</value>
   </data>
   <data name="PermissionsPage_Cap_SystemRun_Description" xml:space="preserve">
-    <value>Permite que agentes executem comandos de shell e scripts neste PC. Desative isso para bloquear toda execução de comandos.</value>
+    <value>Lets agents run shell commands and scripts on this PC. Turn this off to block all command execution.</value>
   </data>
   <data name="PermissionsPage_NodeStatus_Disabled" xml:space="preserve">
-    <value>Modo Node desativado</value>
+    <value>Node mode disabled</value>
   </data>
   <data name="PermissionsPage_NodeStatus_DisabledDetails" xml:space="preserve">
-    <value>Ative o Modo Node para fornecer capacidades do dispositivo aos agentes.</value>
+    <value>Enable Node Mode to provide device capabilities to agents.</value>
   </data>
   <data name="PermissionsPage_NodeStatus_Active" xml:space="preserve">
-    <value>Node ativo</value>
+    <value>Node active</value>
   </data>
   <data name="PermissionsPage_NodeStatus_ActiveDetailsFormat" xml:space="preserve">
-    <value>Fornecendo {0} capacidades: {1}</value>
+    <value>Providing {0} capabilities: {1}</value>
   </data>
   <data name="PermissionsPage_NodeStatus_McpOnly" xml:space="preserve">
     <value>Somente MCP local</value>
@@ -3420,28 +3426,28 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Falha ao iniciar o servidor MCP local</value>
   </data>
   <data name="PermissionsPage_NodeStatus_NoCapabilities" xml:space="preserve">
-    <value>Nenhuma capacidade ativada.</value>
+    <value>No capabilities enabled.</value>
   </data>
   <data name="PermissionsPage_NodeStatus_NotConnected" xml:space="preserve">
-    <value>Modo Node ativado, não conectado</value>
+    <value>Node mode enabled, not connected</value>
   </data>
   <data name="PermissionsPage_NodeStatus_NotConnectedDetails" xml:space="preserve">
-    <value>Conecte-se a um Gateway para começar a fornecer capacidades do dispositivo.</value>
+    <value>Connect to a gateway to start providing device capabilities.</value>
   </data>
   <data name="PermissionsPage_McpStatus_TokenReady" xml:space="preserve">
-    <value>Servidor ativado: token pronto</value>
+    <value>Server enabled: token ready</value>
   </data>
   <data name="PermissionsPage_McpStatus_TokenPending" xml:space="preserve">
-    <value>Servidor ativado: o token será criado na próxima inicialização</value>
+    <value>Server enabled: token will be created on next start</value>
   </data>
   <data name="PermissionsPage_McpStatus_TokenCopied" xml:space="preserve">
-    <value>Token copiado para a área de transferência</value>
+    <value>Token copied to clipboard</value>
   </data>
   <data name="PermissionsPage_McpStatus_TokenNotFound" xml:space="preserve">
-    <value>Arquivo de token não encontrado: inicie o servidor MCP primeiro</value>
+    <value>Token file not found: start the MCP server first</value>
   </data>
   <data name="PermissionsPage_McpStatus_UrlCopied" xml:space="preserve">
-    <value>URL copiada para a área de transferência</value>
+    <value>URL copied to clipboard</value>
   </data>
   <data name="PermissionsPage_RulesCount_None" xml:space="preserve">
     <value>Nenhuma entrada</value>
@@ -3453,115 +3459,115 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>{0} entradas</value>
   </data>
   <data name="PermissionsPage_Allowlist_NoConfig" xml:space="preserve">
-    <value>Nenhum dado de lista de permissões disponível. Conecte-se a um Gateway primeiro.</value>
+    <value>No allowlist data available. Connect to a gateway first.</value>
   </data>
   <data name="PermissionsPage_Allowlist_NoCommands" xml:space="preserve">
-    <value>Nenhum comando permitido configurado no Gateway.</value>
+    <value>No allowed commands configured in gateway.</value>
   </data>
   <data name="PermissionsPage_Allowlist_ParseFailed" xml:space="preserve">
-    <value>Falha ao processar a lista de permissões da configuração.</value>
+    <value>Failed to parse allowlist from config.</value>
   </data>
   <data name="PermissionsPage_McpStatus_TokenReadFailedFormat" xml:space="preserve">
-    <value>Falha ao ler o token: {0}</value>
+    <value>Failed to read token: {0}</value>
   </data>
   <data name="InstancesPage_Title.Text" xml:space="preserve">
-    <value>Instâncias</value>
+    <value>Instances</value>
   </data>
   <data name="InstancesPage_Subtitle.Text" xml:space="preserve">
-    <value>Últimos sinais de presença dos Nodes do OpenClaw.</value>
+    <value>Latest presence beacons from OpenClaw nodes.</value>
   </data>
   <data name="InstancesPage_ConnectionWarning.Title" xml:space="preserve">
-    <value>Não conectado</value>
+    <value>Not connected</value>
   </data>
   <data name="InstancesPage_ConnectionWarning.Message" xml:space="preserve">
-    <value>Conecte-se a um Gateway para ver os dados de instância em tempo real.</value>
+    <value>Connect to a gateway to see live instance data.</value>
   </data>
   <data name="InstancesPage_EmptyTitle.Text" xml:space="preserve">
-    <value>Nenhuma instância reportada ainda.</value>
+    <value>No instances reported yet.</value>
   </data>
   <data name="InstancesPage_ContextMenu_CopyDebug" xml:space="preserve">
-    <value>Copiar resumo de depuração</value>
+    <value>Copy debug summary</value>
   </data>
   <data name="InstancesPage_Status_Active" xml:space="preserve">
-    <value>Ativo</value>
+    <value>Active</value>
   </data>
   <data name="InstancesPage_Status_Idle" xml:space="preserve">
-    <value>Ocioso</value>
+    <value>Idle</value>
   </data>
   <data name="InstancesPage_Status_Disconnected" xml:space="preserve">
-    <value>Desconectado</value>
+    <value>Disconnected</value>
   </data>
   <data name="InstancesPage_Reason_Self" xml:space="preserve">
-    <value>Próprio</value>
+    <value>Self</value>
   </data>
   <data name="InstancesPage_Reason_Connect" xml:space="preserve">
-    <value>Conectar</value>
+    <value>Connect</value>
   </data>
   <data name="InstancesPage_Reason_Disconnect" xml:space="preserve">
-    <value>Desconexão</value>
+    <value>Disconnect</value>
   </data>
   <data name="InstancesPage_Reason_NodeConnect" xml:space="preserve">
-    <value>Conexão do Node</value>
+    <value>Node connect</value>
   </data>
   <data name="InstancesPage_Reason_NodeDisconnect" xml:space="preserve">
-    <value>Desconexão do Node</value>
+    <value>Node disconnect</value>
   </data>
   <data name="InstancesPage_Reason_Launch" xml:space="preserve">
-    <value>Inicialização</value>
+    <value>Launch</value>
   </data>
   <data name="InstancesPage_Reason_Heartbeat" xml:space="preserve">
     <value>Heartbeat</value>
   </data>
   <data name="InstancesPage_Reason_Refresh" xml:space="preserve">
-    <value>Atualização de instâncias</value>
+    <value>Instances refresh</value>
   </data>
   <data name="InstancesPage_Reason_Resync" xml:space="preserve">
-    <value>Ressincronização</value>
+    <value>Resync</value>
   </data>
   <data name="ConnectionPage_NodePairing_Title.Text" xml:space="preserve">
-    <value>🔗 Pareamento de Operador/Node pendente</value>
+    <value>🔗 Pending Operator/Node Pairing</value>
   </data>
   <data name="ConnectionPage_NodePairing_Subtitle.Text" xml:space="preserve">
-    <value>Operadores e Nodes do Windows aguardando aprovação para se conectar a este Gateway.</value>
+    <value>Operators and Windows nodes waiting for approval to connect to this gateway.</value>
   </data>
   <data name="InstancesPage_RefreshLabel.Text" xml:space="preserve">
-    <value>Atualizar</value>
+    <value>Refresh</value>
   </data>
   <data name="InstancesPage_CapabilitiesCount_Format" xml:space="preserve">
-    <value>{0} capacidades</value>
+    <value>{0} capabilities</value>
   </data>
   <data name="InstancesPage_CommandsCount_Format" xml:space="preserve">
-    <value>{0} comandos</value>
+    <value>{0} commands</value>
   </data>
   <data name="InstancesPage_Presence_AccessibilityFormat" xml:space="preserve">
-    <value>Presença de {0}</value>
+    <value>{0} presence</value>
   </data>
   <data name="InstancesPage_UpdateReason_Tooltip_Format" xml:space="preserve">
-    <value>Por que esta entrada de presença foi atualizada pela última vez (marcador de depuração). Bruto: {0}</value>
+    <value>Why this presence entry was last updated (debug marker). Raw: {0}</value>
   </data>
   <data name="InstancesPage_UpdateReason_Tooltip_NoReason" xml:space="preserve">
-    <value>Por que esta entrada de presença foi atualizada pela última vez (marcador de depuração).</value>
+    <value>Why this presence entry was last updated (debug marker).</value>
   </data>
   <data name="InstancesPage_StatusTooltip_Disconnected" xml:space="preserve">
-    <value>Desconectado: sem presença ativa</value>
+    <value>Disconnected: no active presence</value>
   </data>
   <data name="InstancesPage_StatusTooltip_Active_Format" xml:space="preserve">
-    <value>Ativo: visto pela última vez {0}</value>
+    <value>Active: last seen {0}</value>
   </data>
   <data name="InstancesPage_StatusTooltip_Idle_Format" xml:space="preserve">
-    <value>Ocioso: visto pela última vez {0}</value>
+    <value>Idle: last seen {0}</value>
   </data>
   <data name="InstancesPage_Status_Inactive" xml:space="preserve">
-    <value>Inativo</value>
+    <value>Inactive</value>
   </data>
   <data name="InstancesPage_StatusTooltip_Inactive_Format" xml:space="preserve">
-    <value>Inativo: visto pela última vez {0}</value>
+    <value>Inactive: last seen {0}</value>
   </data>
   <data name="InstancesPage_Role_AccessibilityFormat" xml:space="preserve">
-    <value>Função: {0}</value>
+    <value>Role: {0}</value>
   </data>
   <data name="InstanceManage_CopyNodeId_AccessibilityName" xml:space="preserve">
-    <value>Copiar ID do node</value>
+    <value>Copy node ID</value>
   </data>
   <data name="InstancesPage_TimeAgo_Seconds_Format" xml:space="preserve">
     <value>há {0}s</value>
@@ -3576,166 +3582,166 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>há {0}d</value>
   </data>
   <data name="V2_Window_Title" xml:space="preserve">
-    <value>Configuração do OpenClaw</value>
+    <value>OpenClaw Setup</value>
   </data>
   <data name="V2_Nav_Back" xml:space="preserve">
-    <value>Voltar</value>
+    <value>Back</value>
   </data>
   <data name="V2_Nav_Next" xml:space="preserve">
-    <value>Avançar</value>
+    <value>Next</value>
   </data>
   <data name="V2_Nav_Finish" xml:space="preserve">
-    <value>Concluir</value>
+    <value>Finish</value>
   </data>
   <data name="V2_Welcome_Title" xml:space="preserve">
-    <value>Comece a usar o OpenClaw</value>
+    <value>Get started with OpenClaw</value>
   </data>
   <data name="V2_Welcome_Body" xml:space="preserve">
-    <value>O OpenClaw permite que agentes executem comandos, leiam e escrevam arquivos e capturem screenshots neste PC. Configure-o apenas em um computador em que você confia.</value>
+    <value>OpenClaw lets agents run commands, read and write files, and capture screenshots on this PC. Only set it up on a computer you trust.</value>
   </data>
   <data name="V2_Welcome_InfoCard" xml:space="preserve">
-    <value>Esta configuração local instala uma pequena instância WSL Linux dedicada ao OpenClaw. Se preferir se conectar a um Gateway existente ou remoto, escolha Configuração avançada.</value>
+    <value>This local setup installs a small WSL Linux instance dedicated to OpenClaw. If you'd rather connect to an existing or remote gateway, choose Advanced setup.</value>
   </data>
   <data name="V2_Welcome_PrimaryButton" xml:space="preserve">
-    <value>Configurar localmente</value>
+    <value>Set up locally</value>
   </data>
   <data name="V2_Welcome_PrimaryButton_InstallNewWslGateway" xml:space="preserve">
-    <value>Instalar novo Gateway WSL</value>
+    <value>Install new WSL Gateway</value>
   </data>
   <data name="V2_Welcome_AdvancedLink" xml:space="preserve">
-    <value>Configuração avançada</value>
+    <value>Advanced setup</value>
   </data>
   <data name="V2_Welcome_LocalReplaceDialog_Title" xml:space="preserve">
-    <value>Instalar um novo Gateway WSL?</value>
+    <value>Install a new WSL gateway?</value>
   </data>
   <data name="V2_Welcome_LocalReplaceDialog_Body" xml:space="preserve">
-    <value>Seu Gateway WSL atual do OpenClaw e sua distro OpenClawGateway serão excluídos. A configuração então instalará e se conectará a um novo Gateway WSL local.</value>
+    <value>Your current OpenClaw WSL gateway and its OpenClawGateway distro will be deleted. Setup will then install and connect to a new local WSL gateway.</value>
   </data>
   <data name="V2_Welcome_ExternalDialog_Title" xml:space="preserve">
-    <value>Instalar um Gateway WSL local?</value>
+    <value>Install a local WSL gateway?</value>
   </data>
   <data name="V2_Welcome_ExternalDialog_Body" xml:space="preserve">
-    <value>A configuração instalará e se conectará a um novo Gateway WSL local. Sua conexão existente com o Gateway externo permanecerá disponível na página Conexões.</value>
+    <value>Setup will install and connect to a new local WSL gateway. Your existing external gateway connection will stay available from the Connections page.</value>
   </data>
   <data name="V2_Welcome_SetupWarning_Confirm" xml:space="preserve">
-    <value>Continuar</value>
+    <value>Continue</value>
   </data>
   <data name="V2_Welcome_SetupWarning_Cancel" xml:space="preserve">
-    <value>Cancelar</value>
+    <value>Cancel</value>
   </data>
   <data name="V2_Progress_Title" xml:space="preserve">
-    <value>Configurando localmente</value>
+    <value>Setting up locally</value>
   </data>
   <data name="V2_Progress_Subtitle" xml:space="preserve">
-    <value>Criando instância WSL do OpenClaw Gateway</value>
+    <value>Creating OpenClaw Gateway WSL instance</value>
   </data>
   <data name="V2_Progress_Stage_RemovingExistingGateway" xml:space="preserve">
-    <value>Removendo Gateway existente</value>
+    <value>Removing existing gateway</value>
   </data>
   <data name="V2_Progress_Stage_CheckSystem" xml:space="preserve">
-    <value>Verificando sistema</value>
+    <value>Check system</value>
   </data>
   <data name="V2_Progress_Stage_InstallingUbuntu" xml:space="preserve">
-    <value>Instalando Ubuntu</value>
+    <value>Installing Ubuntu</value>
   </data>
   <data name="V2_Progress_Stage_ConfiguringInstance" xml:space="preserve">
-    <value>Configurando instância</value>
+    <value>Configuring instance</value>
   </data>
   <data name="V2_Progress_Stage_InstallingOpenClaw" xml:space="preserve">
-    <value>Instalando OpenClaw</value>
+    <value>Installing OpenClaw</value>
   </data>
   <data name="V2_Progress_Stage_PreparingGateway" xml:space="preserve">
-    <value>Preparando Gateway</value>
+    <value>Preparing gateway</value>
   </data>
   <data name="V2_Progress_Stage_StartingGateway" xml:space="preserve">
-    <value>Iniciando Gateway</value>
+    <value>Starting gateway</value>
   </data>
   <data name="V2_Progress_Stage_GeneratingSetupCode" xml:space="preserve">
-    <value>Gerando código de configuração</value>
+    <value>Generating setup code</value>
   </data>
   <data name="V2_Progress_TryAgain" xml:space="preserve">
-    <value>Tentar novamente</value>
+    <value>Try again</value>
   </data>
   <data name="V2_Gateway_Title" xml:space="preserve">
-    <value>Configurando Gateway</value>
+    <value>Configuring gateway</value>
   </data>
   <data name="V2_Gateway_CardHeader" xml:space="preserve">
-    <value>Bem-vindo ao Gateway do OpenClaw</value>
+    <value>Welcome to OpenClaw gateway</value>
   </data>
   <data name="V2_Gateway_CardBody1" xml:space="preserve">
-    <value>Seu Gateway local do OpenClaw está em execução em http://localhost:18789. Acesse-o para adicionar seu primeiro provedor de IA e configurar seu agente.</value>
+    <value>Your local OpenClaw gateway is running at http://localhost:18789. Visit it to add your first AI provider and configure your agent.</value>
   </data>
   <data name="V2_Gateway_CardBody2" xml:space="preserve">
-    <value>Todas as solicitações são processadas neste PC. Seus dados permanecem locais.</value>
+    <value>All requests are processed on this PC. Your data stays local.</value>
   </data>
   <data name="V2_Gateway_OpenInBrowser" xml:space="preserve">
-    <value>Abrir http://localhost:18789 no navegador</value>
+    <value>Open http://localhost:18789 in browser</value>
   </data>
   <data name="V2_Permissions_Title" xml:space="preserve">
-    <value>Conceder permissões</value>
+    <value>Grant permissions</value>
   </data>
   <data name="V2_Permissions_Body" xml:space="preserve">
-    <value>O OpenClaw funciona melhor quando pode enviar notificações, acessar sua câmera e microfone, capturar sua tela e saber sua localização. Conceda as permissões abaixo.</value>
+    <value>OpenClaw works best when it can send notifications, access your camera and microphone, capture your screen, and know your location. Grant permissions below.</value>
   </data>
   <data name="V2_Permissions_Row_Notifications" xml:space="preserve">
-    <value>Notificações</value>
+    <value>Notifications</value>
   </data>
   <data name="V2_Permissions_Row_Camera" xml:space="preserve">
-    <value>Câmera</value>
+    <value>Camera</value>
   </data>
   <data name="V2_Permissions_Row_Microphone" xml:space="preserve">
-    <value>Microfone</value>
+    <value>Microphone</value>
   </data>
   <data name="V2_Permissions_Row_Location" xml:space="preserve">
-    <value>Localização (opcional)</value>
+    <value>Location (optional)</value>
   </data>
   <data name="V2_Permissions_Row_ScreenCapture" xml:space="preserve">
-    <value>Captura de tela</value>
+    <value>Screen Capture</value>
   </data>
   <data name="V2_Permissions_OpenSettings" xml:space="preserve">
-    <value>Abrir configurações</value>
+    <value>Open Settings</value>
   </data>
   <data name="V2_Permissions_Refresh" xml:space="preserve">
-    <value>Atualizar status</value>
+    <value>Refresh status</value>
   </data>
   <data name="V2_Permissions_Status_Enabled" xml:space="preserve">
-    <value>Ativado</value>
+    <value>Enabled</value>
   </data>
   <data name="V2_Permissions_Status_Available" xml:space="preserve">
-    <value>Disponível – usa seletor a cada captura</value>
+    <value>Available – uses picker per capture</value>
   </data>
   <data name="V2_AllSet_Title" xml:space="preserve">
-    <value>Tudo pronto!</value>
+    <value>All set!</value>
   </data>
   <data name="V2_AllSet_Subtitle" xml:space="preserve">
-    <value>O OpenClaw está pronto para uso</value>
+    <value>OpenClaw is ready to go</value>
   </data>
   <data name="V2_AllSet_NodeMode_Title" xml:space="preserve">
-    <value>Modo Node ativo</value>
+    <value>Node Mode Active</value>
   </data>
   <data name="V2_AllSet_NodeMode_Body" xml:space="preserve">
-    <value>Este PC operará como um Node de computação remoto. O Gateway pode acionar captura de tela, câmera e comandos do sistema nesta máquina.</value>
+    <value>This PC will operate as a remote compute node. The gateway can invoke screen capture, camera, and system commands on this machine.</value>
   </data>
   <data name="V2_AllSet_StartupQuestion" xml:space="preserve">
-    <value>Iniciar o OpenClaw na inicialização?</value>
+    <value>Launch OpenClaw at startup?</value>
   </data>
   <data name="V2_AllSet_On" xml:space="preserve">
-    <value>Ativado</value>
+    <value>On</value>
   </data>
   <data name="V2_AllSet_Off" xml:space="preserve">
-    <value>Desativado</value>
+    <value>Off</value>
   </data>
   <data name="V2_Welcome_Replace_Heading" xml:space="preserve">
-    <value>Configuração existente detectada</value>
+    <value>Existing setup detected</value>
   </data>
   <data name="V2_Welcome_Replace_Body" xml:space="preserve">
-    <value>Configurar localmente substituirá sua configuração existente do OpenClaw.</value>
+    <value>Setting up locally will overwrite your existing OpenClaw configuration.</value>
   </data>
   <data name="V2_Welcome_Replace_Confirm" xml:space="preserve">
-    <value>Substituir minha configuração</value>
+    <value>Replace my setup</value>
   </data>
   <data name="V2_Welcome_Replace_Keep" xml:space="preserve">
-    <value>Manter minha configuração</value>
+    <value>Keep my setup</value>
   </data>
   <data name="FilterAllButton.Text" xml:space="preserve">
     <value>Todas</value>
@@ -3786,37 +3792,37 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Voz e Áudio</value>
   </data>
   <data name="HubWindow_NavigationViewItem_Sandbox.Content" xml:space="preserve">
-    <value>Sandbox</value>
+    <value>Ambiente restrito</value>
   </data>
 <data name="ChannelsPage_GuideBar.Title" xml:space="preserve">
-    <value>Seu Gateway não listou nenhum canal</value>
+    <value>Your gateway didn't list any channels</value>
   </data>
   <data name="ChannelsPage_GuideBar.Message" xml:space="preserve">
-    <value>Os canais são configurados no seu Gateway. Para adicionar um, expanda-o abaixo e preencha suas credenciais. O formulário salva diretamente na configuração do seu Gateway. O guia de configuração explica cada canal do início ao fim.</value>
+    <value>Channels are configured on your gateway. To add one, expand it below and fill in its credentials. The form saves directly to your gateway's config. The setup guide walks through each channel end-to-end.</value>
   </data>
   <data name="ChannelsPage_DocsLink.Content" xml:space="preserve">
-    <value>Ler o guia de canais</value>
+    <value>Read the channels guide</value>
   </data>
   <data name="ChannelsPage_NotConnected.Title" xml:space="preserve">
-    <value>Não conectado</value>
+    <value>Not connected</value>
   </data>
   <data name="ChannelsPage_NotConnected.Message" xml:space="preserve">
-    <value>Conecte-se a um Gateway para gerenciar canais.</value>
+    <value>Connect to a gateway to manage channels.</value>
   </data>
   <data name="ChannelsPage_EmptyTitle.Text" xml:space="preserve">
-    <value>Nenhum canal disponível</value>
+    <value>No channels available</value>
   </data>
   <data name="ChannelsPage_EmptySubtitle.Text" xml:space="preserve">
-    <value>O Gateway não reportou nenhum canal. Instale plugins de canal no Gateway e atualize.</value>
+    <value>The gateway didn't report any channels. Install channel plugins on the gateway and refresh.</value>
   </data>
   <data name="DiagnosticsPage_Title.Text" xml:space="preserve">
-    <value>Diagnóstico</value>
+    <value>Diagnostics</value>
   </data>
   <data name="DiagnosticsPage_Subtitle.Text" xml:space="preserve">
-    <value>Inspecione, exporte e solucione problemas da sua instalação do OpenClaw.</value>
+    <value>Inspect, export, and troubleshoot your OpenClaw installation.</value>
   </data>
   <data name="DiagnosticsPage_ManageOnConnection.Content" xml:space="preserve">
-    <value>Gerenciar na página Conexão</value>
+    <value>Manage on Connection page</value>
   </data>
   <data name="DiagnosticsPage_Section_Gateway.Text" xml:space="preserve">
     <value>Gateway</value>
@@ -3828,31 +3834,31 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Abre um terminal e executa openclaw doctor para verificar problemas no Gateway local.</value>
   </data>
   <data name="DiagnosticsPage_Section_Share.Text" xml:space="preserve">
-    <value>Compartilhar diagnóstico com o suporte</value>
+    <value>Share diagnostics with support</value>
   </data>
   <data name="DiagnosticsPage_Card_Bundle.Header" xml:space="preserve">
-    <value>Criar pacote de diagnóstico</value>
+    <value>Create diagnostics bundle</value>
   </data>
   <data name="DiagnosticsPage_Card_Bundle.Description" xml:space="preserve">
-    <value>Inclui conexão, Gateway, portas, capacidades, trecho final do log e resumo do dispositivo. Visualize antes de compartilhar.</value>
+    <value>Includes connection, gateway, ports, capabilities, log tail, and device summary. Preview before sharing.</value>
   </data>
   <data name="DiagnosticsPage_Card_OpenDiagnosticsFolder.Header" xml:space="preserve">
-    <value>Abrir pasta de diagnóstico</value>
+    <value>Open diagnostics folder</value>
   </data>
   <data name="DiagnosticsPage_Card_OpenDiagnosticsFolder.Description" xml:space="preserve">
-    <value>Os logs e o diagnóstico estruturado (.jsonl) ficam aqui.</value>
+    <value>Logs and structured diagnostics (.jsonl) live here.</value>
   </data>
   <data name="DiagnosticsPage_Expander_SpecificCopies.Header" xml:space="preserve">
-    <value>Copiar texto de diagnóstico específico</value>
+    <value>Copy specific diagnostic text</value>
   </data>
   <data name="DiagnosticsPage_Expander_SpecificCopies.Description" xml:space="preserve">
-    <value>Envie apenas uma parte do contexto.</value>
+    <value>Send just one piece of context.</value>
   </data>
   <data name="DiagnosticsPage_Card_CopySupport.Header" xml:space="preserve">
-    <value>Copiar contexto de suporte</value>
+    <value>Copy support context</value>
   </data>
   <data name="DiagnosticsPage_Card_CopySupport.Description" xml:space="preserve">
-    <value>Estado da conexão, URL do Gateway, runtime, túnel.</value>
+    <value>Connection state, gateway URL, runtime, tunnel.</value>
   </data>
   <data name="DiagnosticsPage_Card_CopyDebugBundle.Header" xml:space="preserve">
     <value>Copiar pacote de depuração resumido</value>
@@ -3861,82 +3867,82 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Apenas resumos gerados; exclui trechos de log. Use Criar pacote de diagnóstico para revisar os logs antes de compartilhar.</value>
   </data>
   <data name="DiagnosticsPage_Card_CopyBrowserSetup.Header" xml:space="preserve">
-    <value>Copiar orientação de configuração do navegador</value>
+    <value>Copy browser setup guidance</value>
   </data>
   <data name="DiagnosticsPage_Card_CopyPortDiagnostics.Header" xml:space="preserve">
-    <value>Copiar diagnóstico de portas</value>
+    <value>Copy port diagnostics</value>
   </data>
   <data name="DiagnosticsPage_Card_CopyCapabilityDiagnostics.Header" xml:space="preserve">
-    <value>Copiar diagnóstico de capacidades</value>
+    <value>Copy capability diagnostics</value>
   </data>
   <data name="DiagnosticsPage_Section_Inspect.Text" xml:space="preserve">
-    <value>Inspecionar diagnóstico local</value>
+    <value>Inspect local diagnostics</value>
   </data>
   <data name="DiagnosticsPage_Card_EventTimeline.Header" xml:space="preserve">
-    <value>Linha do tempo de eventos de conexão</value>
+    <value>Connection event timeline</value>
   </data>
   <data name="DiagnosticsPage_Card_EventTimeline.Description" xml:space="preserve">
-    <value>Eventos de máquina de estados em tempo real, frames de websocket, resolução de credenciais e handshakes de pareamento.</value>
+    <value>Live state-machine events, websocket frames, credential resolution, and pairing handshakes.</value>
   </data>
   <data name="DiagnosticsPage_OpenEventTimelineButton.Content" xml:space="preserve">
-    <value>Abrir</value>
+    <value>Open</value>
   </data>
   <data name="DiagnosticsPage_Card_RecentLog.Header" xml:space="preserve">
-    <value>Log recente</value>
+    <value>Recent log</value>
   </data>
   <data name="DiagnosticsPage_Card_RecentLog.Description" xml:space="preserve">
-    <value>Últimas 200 linhas de openclaw-tray.log, com coloração por severidade.</value>
+    <value>Last 200 lines of openclaw-tray.log, with severity coloring.</value>
   </data>
   <data name="DiagnosticsPage_Expander_Identity.Header" xml:space="preserve">
-    <value>Identidade do dispositivo</value>
+    <value>Device identity</value>
   </data>
   <data name="DiagnosticsPage_Expander_Identity.Description" xml:space="preserve">
-    <value>Identificadores criptográficos locais deste dispositivo.</value>
+    <value>Local cryptographic identifiers for this device.</value>
   </data>
   <data name="DiagnosticsPage_Card_DeviceId.Header" xml:space="preserve">
-    <value>ID do dispositivo</value>
+    <value>Device ID</value>
   </data>
   <data name="DiagnosticsPage_Card_PublicKey.Header" xml:space="preserve">
-    <value>Chave pública</value>
+    <value>Public key</value>
   </data>
   <data name="DiagnosticsPage_Section_Developer.Text" xml:space="preserve">
-    <value>Ferramentas de desenvolvedor</value>
+    <value>Developer tools</value>
   </data>
   <data name="DiagnosticsPage_DeveloperWarning.Title" xml:space="preserve">
-    <value>Para engenheiros</value>
+    <value>For engineers</value>
   </data>
   <data name="DiagnosticsPage_DeveloperWarning.Message" xml:space="preserve">
-    <value>Estas ferramentas podem alterar o comportamento do aplicativo, reiniciá-lo ou abrir interfaces experimentais.</value>
+    <value>These tools may change app behavior, restart the app, or open experimental UI.</value>
   </data>
   <data name="DiagnosticsPage_Expander_OpenTelemetry.Header" xml:space="preserve">
-    <value>Conexão OpenTelemetry</value>
+    <value>OpenTelemetry connection</value>
   </data>
   <data name="DiagnosticsPage_Expander_OpenTelemetry.Description" xml:space="preserve">
-    <value>Envia uma pequena sondagem de diagnóstico apenas para o endpoint do coletor OTLP que você configurar.</value>
+    <value>Sends a small diagnostic probe only to the OTLP collector endpoint you configure.</value>
   </data>
   <data name="DiagnosticsPage_Card_OpenTelemetryEndpoint.Header" xml:space="preserve">
-    <value>Endpoint OTel</value>
+    <value>OTel endpoint</value>
   </data>
   <data name="DiagnosticsPage_Card_OpenTelemetryEndpoint.Description" xml:space="preserve">
-    <value>URL do coletor usada pela telemetria do OpenClaw.</value>
+    <value>Collector URL used by OpenClaw telemetry.</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetrySummary.Text" xml:space="preserve">
-    <value>Não configurado</value>
+    <value>Not configured</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetrySummary_NotConfigured" xml:space="preserve">
-    <value>Não configurado</value>
+    <value>Not configured</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetrySummary_Configured" xml:space="preserve">
-    <value>Configurado</value>
+    <value>Configured</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointBox.Header" xml:space="preserve">
-    <value>URL do endpoint</value>
+    <value>Endpoint URL</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointBox.PlaceholderText" xml:space="preserve">
     <value>http://localhost:4317</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryProtocolLabel.Text" xml:space="preserve">
-    <value>Protocolo</value>
+    <value>Protocol</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryProtocolGrpc.Content" xml:space="preserve">
     <value>OTLP/gRPC</value>
@@ -3945,100 +3951,100 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>OTLP/HTTP</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus.Title" xml:space="preserve">
-    <value>Nenhum endpoint de telemetria</value>
+    <value>No telemetry endpoint</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus.Message" xml:space="preserve">
-    <value>Nenhum endpoint configurado.</value>
+    <value>No endpoint configured.</value>
   </data>
   <data name="DiagnosticsPage_SaveOpenTelemetryEndpointButton.Content" xml:space="preserve">
-    <value>Salvar conexão</value>
+    <value>Save connection</value>
   </data>
   <data name="DiagnosticsPage_ResendOpenTelemetryProbeButton.Content" xml:space="preserve">
-    <value>Enviar sondagem novamente</value>
+    <value>Send probe again</value>
   </data>
   <data name="DiagnosticsPage_ClearOpenTelemetryEndpointButton.Content" xml:space="preserve">
-    <value>Limpar</value>
+    <value>Clear</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_InvalidTitle" xml:space="preserve">
-    <value>O endpoint precisa de atenção</value>
+    <value>Endpoint needs attention</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_InvalidMessage" xml:space="preserve">
-    <value>Informe uma URL absoluta HTTP ou HTTPS de coletor OTLP, por exemplo http://localhost:4317.</value>
+    <value>Enter an absolute HTTP or HTTPS OTLP collector URL, for example http://localhost:4317.</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_ClearedTitle" xml:space="preserve">
-    <value>Endpoint limpo</value>
+    <value>Endpoint cleared</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_OffTitle" xml:space="preserve">
-    <value>Nenhum endpoint de telemetria</value>
+    <value>No telemetry endpoint</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_OffMessage" xml:space="preserve">
-    <value>Nenhum endpoint configurado.</value>
+    <value>No endpoint configured.</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_SavedTitle" xml:space="preserve">
-    <value>Endpoint salvo</value>
+    <value>Endpoint saved</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_SavedMessageFormat" xml:space="preserve">
-    <value>Endpoint de telemetria: {0}</value>
+    <value>Telemetry endpoint: {0}</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_ConfiguredTitle" xml:space="preserve">
-    <value>Endpoint configurado</value>
+    <value>Endpoint configured</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_ConfiguredMessageFormat" xml:space="preserve">
-    <value>Endpoint de telemetria: {0}</value>
+    <value>Telemetry endpoint: {0}</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_UnsavedMessage" xml:space="preserve">
-    <value>Salve para aplicar esta conexão.</value>
+    <value>Save to apply this connection.</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_ProbeFlushedMessage" xml:space="preserve">
-    <value>Sondagem enviada localmente; a confirmação de recebimento pelo coletor não foi verificada.</value>
+    <value>Probe flushed locally; collector receipt is not confirmed.</value>
   </data>
   <data name="DiagnosticsPage_OpenTelemetryEndpointStatus_ProbeFailedMessage" xml:space="preserve">
-    <value>A sondagem não foi concluída para o endpoint salvo. Verifique as configurações e tente novamente.</value>
+    <value>Probe did not finish for the saved endpoint. Verify the settings and try again.</value>
   </data>
   <data name="DiagnosticsPage_Expander_ChatOverrides.Header" xml:space="preserve">
-    <value>Substituições da interface de chat</value>
+    <value>Chat surface overrides</value>
   </data>
   <data name="DiagnosticsPage_Expander_ChatOverrides.Description" xml:space="preserve">
-    <value>Substituição por superfície da UI de chat. Reinicia quando o OpenClaw é reiniciado.</value>
+    <value>Per-surface override of the chat UI. Resets when OpenClaw restarts.</value>
   </data>
   <data name="DiagnosticsPage_Card_HubChat.Header" xml:space="preserve">
-    <value>Aba de chat do Hub</value>
+    <value>Hub chat tab</value>
   </data>
   <data name="DiagnosticsPage_Card_TrayChat.Header" xml:space="preserve">
-    <value>Popup de chat da bandeja</value>
+    <value>Tray chat popup</value>
   </data>
 <data name="DiagnosticsPage_DetailBack.Text" xml:space="preserve">
-    <value>Voltar para Diagnóstico</value>
+    <value>Back to Diagnostics</value>
   </data>
   <data name="SettingsRow_AutoStart_Description.Text" xml:space="preserve">
-    <value>Inicia o OpenClaw automaticamente quando você entra no Windows.</value>
+    <value>Launch OpenClaw automatically when you sign in.</value>
   </data>
   <data name="SettingsRow_GlobalHotkey_Description.Text" xml:space="preserve">
-    <value>Ativa atalhos globais (Ctrl+Alt+Shift+V para voz, Ctrl+Alt+; para configurações).</value>
+    <value>Enable global hotkeys (Ctrl+Alt+Shift+V for voice, Ctrl+Alt+; for settings).</value>
   </data>
   <data name="SettingsRow_LegacyChat_Description.Text" xml:space="preserve">
-    <value>Quando ativado, o Chat hospeda o chat web do Gateway em vez da experiência nativa do Windows.</value>
+    <value>When on, Chat hosts the gateway's web chat instead of the native Windows experience.</value>
   </data>
   <data name="SettingsRow_Notifications_Description.Text" xml:space="preserve">
-    <value>Mostra notificações toast para os eventos que você assinou abaixo.</value>
+    <value>Show toast notifications for events you've subscribed to below.</value>
   </data>
   <data name="SettingsRow_NotifSound_Description.Text" xml:space="preserve">
-    <value>Som de notificação reproduzido junto com o toast.</value>
+    <value>Notification sound played alongside the toast.</value>
   </data>
   <data name="SettingsRow_ScreenRec_Description.Text" xml:space="preserve">
-    <value>Permite que agentes capturem a tela via comandos screen.*.</value>
+    <value>Lets agents capture the screen via screen.* commands.</value>
   </data>
   <data name="SettingsRow_CamRec_Description.Text" xml:space="preserve">
-    <value>Permite que agentes capturem a câmera via comandos camera.*.</value>
+    <value>Lets agents capture the camera via camera.* commands.</value>
   </data>
   <data name="VoiceSettingsPage_ElevenLabsVoiceIdBox.PlaceholderText" xml:space="preserve">
-    <value>ex.: 21m00Tcm4TlvDq8ikWAM</value>
+    <value>e.g. 21m00Tcm4TlvDq8ikWAM</value>
   </data>
   <data name="VoiceSettingsPage_ElevenLabsModelBox.PlaceholderText" xml:space="preserve">
-    <value>ex.: eleven_turbo_v2</value>
+    <value>e.g. eleven_turbo_v2</value>
   </data>
   <data name="ConnectionStatusWindow.Title" xml:space="preserve">
-    <value>Status da Conexão</value>
+    <value>Connection Status</value>
   </data>
   <data name="BindingsPage_GatewayDisconnected.Title" xml:space="preserve">
     <value>Gateway desconectado</value>
@@ -4131,7 +4137,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Gateways salvos</value>
   </data>
   <data name="ConnectionPage_Gateways.Text" xml:space="preserve">
-    <value>Gateways</value>
+    <value>Lista de gateways</value>
   </data>
   <data name="ConnectionPage_Scan.Text" xml:space="preserve">
     <value>Procurar</value>
@@ -4164,7 +4170,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Direto</value>
   </data>
   <data name="ConnectionPage_URLToken.Text" xml:space="preserve">
-    <value>URL + token</value>
+    <value>URL e token</value>
   </data>
   <data name="ConnectionPage_SetupCode.Text" xml:space="preserve">
     <value>Código de configuração</value>
@@ -4242,13 +4248,13 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Usuário SSH</value>
   </data>
   <data name="ConnectionPage_SSHUser.PlaceholderText" xml:space="preserve">
-    <value>usuário</value>
+    <value>user</value>
   </data>
   <data name="ConnectionPage_SSHHost.Header" xml:space="preserve">
     <value>Host SSH</value>
   </data>
   <data name="ConnectionPage_SSHHost.PlaceholderText" xml:space="preserve">
-    <value>nome-da-máquina</value>
+    <value>machine-name</value>
   </data>
   <data name="ConnectionPage_SshServerPort.Header" xml:space="preserve">
     <value>Porta SSH</value>
@@ -4383,7 +4389,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Excluir tarefa após a execução</value>
   </data>
   <data name="CronPage_PROMPTPAYLOAD.Text" xml:space="preserve">
-    <value>PROMPT / PAYLOAD</value>
+    <value>PROMPT / CARGA</value>
   </data>
   <data name="CronPage_WhatShouldTheAgent.PlaceholderText" xml:space="preserve">
     <value>O que o agente deve fazer?</value>
@@ -4440,7 +4446,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>As tarefas Cron aparecerão aqui quando configuradas via o Gateway.</value>
   </data>
   <data name="DebugPage_Status.Title" xml:space="preserve">
-    <value>Status</value>
+    <value>Estado</value>
   </data>
   <data name="DebugPage_Copied.Title" xml:space="preserve">
     <value>Copiado</value>
@@ -4602,7 +4608,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Leitura e gravação</value>
   </data>
   <data name="SandboxPage_Downloads.Text" xml:space="preserve">
-    <value>Downloads</value>
+    <value>Pasta de Downloads</value>
   </data>
   <data name="SandboxPage_Blocked2.Content" xml:space="preserve">
     <value>Bloqueado</value>
@@ -4765,7 +4771,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
   <data name="SessionTitle_ChannelGeneric" xml:space="preserve"><value>Conversa em canal</value></data>
   <data name="SessionTitle_ThreadGeneric" xml:space="preserve"><value>Tópico</value></data>
   <data name="SessionTitle_Cron" xml:space="preserve"><value>Tarefa agendada</value></data>
-  <data name="SessionTitle_Heartbeat" xml:space="preserve"><value>Heartbeat</value></data>
+  <data name="SessionTitle_Heartbeat" xml:space="preserve"><value>Pulsão</value></data>
   <data name="SessionTitle_Subagent" xml:space="preserve"><value>Subagente</value></data>
   <data name="SessionTitle_Acp" xml:space="preserve"><value>Sessão ACP</value></data>
   <data name="SessionTitle_Dashboard" xml:space="preserve"><value>Nova sessão</value></data>
@@ -4777,7 +4783,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
   <data name="SessionTitle_System" xml:space="preserve"><value>Tarefa em segundo plano</value></data>
   <data name="SessionSubtitle_Account" xml:space="preserve"><value>conta {0}</value></data>
   <data name="SessionSubtitle_Agent" xml:space="preserve"><value>agente {0}</value></data>
-  <data name="SessionSubtitle_Node" xml:space="preserve"><value>node {0}</value></data>
+  <data name="SessionSubtitle_Node" xml:space="preserve"><value>nó {0}</value></data>
   <data name="SessionsPage_GatewayDisconnected.Title" xml:space="preserve">
     <value>Gateway desconectado</value>
   </data>
@@ -4800,7 +4806,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Compactar</value>
   </data>
   <data name="SessionsPage_Checkpoints.Text" xml:space="preserve">
-    <value>Checkpoints</value>
+    <value>Pontos de controle</value>
   </data>
   <data name="SessionsPage_Checkpoints.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Ver, ramificar ou restaurar checkpoints de compactação</value>
@@ -4878,7 +4884,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Notificações</value>
   </data>
   <data name="SettingsPage_Chat.Text" xml:space="preserve">
-    <value>Chat</value>
+    <value>Bate-papo</value>
   </data>
   <data name="SettingsRow_ShowToolCalls_Header.Text" xml:space="preserve">
     <value>Mostrar chamadas de ferramentas e uso</value>
@@ -4911,7 +4917,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Abrir configuração</value>
   </data>
   <data name="SettingsPage_OnboardWizard_Header.Text" xml:space="preserve">
-    <value>Configuração do OpenClaw</value>
+    <value>OpenClaw Onboard</value>
   </data>
   <data name="SettingsPage_OnboardWizard_Description.Text" xml:space="preserve">
     <value>Abra o processo de integração do OpenClaw em um Gateway local instalado. Pula a instalação do WSL e vai direto para a configuração.</value>
@@ -4935,7 +4941,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Salvo</value>
   </data>
   <data name="SkillsPage_Skills.Text" xml:space="preserve">
-    <value>🧩 Skills</value>
+    <value>🧩 Habilidades</value>
   </data>
   <data name="SkillsPage_AllAgents.Content" xml:space="preserve">
     <value>Todos os agentes</value>
@@ -5010,7 +5016,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Erro</value>
   </data>
   <data name="ConnectionStatusWindow_NODE.Text" xml:space="preserve">
-    <value>NODE</value>
+    <value>NÓ</value>
   </data>
   <data name="ConnectionStatusWindow_Off2.Text" xml:space="preserve">
     <value>Desligado</value>
@@ -5028,7 +5034,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Erro</value>
   </data>
   <data name="ConnectionStatusWindow_GATEWAYS.Text" xml:space="preserve">
-    <value>GATEWAYS</value>
+    <value>GATEWAYS SALVOS</value>
   </data>
   <data name="ConnectionStatusWindow_CREDENTIALS.Text" xml:space="preserve">
     <value>CREDENCIAIS</value>
@@ -5067,7 +5073,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Token compartilhado do Gateway</value>
   </data>
   <data name="ConnectionStatusWindow_SharedGatewayToken.Header" xml:space="preserve">
-    <value>Token</value>
+    <value>Chave</value>
   </data>
   <data name="ConnectionStatusWindow_Connect2.Content" xml:space="preserve">
     <value>Conectar</value>
@@ -5079,7 +5085,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Usuário SSH</value>
   </data>
   <data name="ConnectionStatusWindow_SSHUser.PlaceholderText" xml:space="preserve">
-    <value>usuário</value>
+    <value>user</value>
   </data>
   <data name="ConnectionStatusWindow_SSHHost.Header" xml:space="preserve">
     <value>Host SSH</value>
@@ -5364,13 +5370,13 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>via túnel SSH</value>
   </data>
   <data name="ConnectionPage_TopologyLocal" xml:space="preserve">
-    <value>Local</value>
+    <value>Localhost</value>
   </data>
   <data name="ConnectionPage_TopologyTailscale" xml:space="preserve">
     <value>Tailscale</value>
   </data>
   <data name="ConnectionPage_TopologyLAN" xml:space="preserve">
-    <value>LAN</value>
+    <value>Rede local</value>
   </data>
   <data name="ConnectionPage_TopologyRemote" xml:space="preserve">
     <value>Remoto</value>
@@ -5631,7 +5637,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Erro desconhecido</value>
   </data>
   <data name="ConnectionPage_PreviewGateway" xml:space="preserve">
-    <value>Gateway: {0}</value>
+    <value>Gateway atual: {0}</value>
   </data>
   <data name="ConnectionPage_PreviewGatewayNotSpecified" xml:space="preserve">
     <value>(não especificado)</value>
@@ -5640,7 +5646,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>(sem token)</value>
   </data>
   <data name="ConnectionPage_PreviewToken" xml:space="preserve">
-    <value>Token: {0}</value>
+    <value>Token atual: {0}</value>
   </data>
   <data name="ConnectionPage_PressScan" xml:space="preserve">
     <value>Pressione Iniciar busca para procurar Gateways na sua rede.</value>
@@ -5691,7 +5697,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Dispositivo · {0}</value>
   </data>
   <data name="ConnectionPage_NodeLabel" xml:space="preserve">
-    <value>Node · {0}</value>
+    <value>Nó · {0}</value>
   </data>
   <data name="ConnectionPage_RepairRequest" xml:space="preserve">
     <value>⚠️ Solicitação de reparo</value>
@@ -5943,7 +5949,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Tokens OAuth do seu app do Slack.</value>
   </data>
   <data name="ChannelsPage_HelpSlackSigningSecret" xml:space="preserve">
-    <value>Basic Information → App Credentials.</value>
+    <value>Informações Básicas → Credenciais do Aplicativo.</value>
   </data>
   <data name="ChannelsPage_HelpRelayUrls" xml:space="preserve">
     <value>Uma por linha.</value>
@@ -6018,7 +6024,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Abra um shell ou gerencie o serviço de Gateway local no WSL.</value>
   </data>
   <data name="ConnectionPage_GatewayHostTerminalLabel.Text" xml:space="preserve">
-    <value>Terminal</value>
+    <value>Janela de terminal</value>
   </data>
   <data name="ConnectionPage_GatewayHostStartButton.Content" xml:space="preserve">
     <value>Iniciar</value>
@@ -6075,58 +6081,58 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Ao vivo</value>
   </data>
   <data name="AgentEventsPage_Status_Offline" xml:space="preserve">
-    <value>Offline</value>
+    <value>Desconectado</value>
   </data>
   <data name="BindingsPage_CouldNotLoadBindings" xml:space="preserve">
-    <value>Não foi possível carregar as vinculações</value>
+    <value>Could not load bindings</value>
   </data>
   <data name="Command_GoToAgentEvents_Subtitle" xml:space="preserve">
-    <value>Log de eventos do agente</value>
+    <value>Agent event log</value>
   </data>
   <data name="Command_GoToAgentEvents_Title" xml:space="preserve">
-    <value>Ir para Eventos do Agente</value>
+    <value>Go to Agent Events</value>
   </data>
   <data name="Command_GoToBindings_Subtitle" xml:space="preserve">
-    <value>Vinculações do Gateway</value>
+    <value>Gateway bindings</value>
   </data>
   <data name="Command_GoToBindings_Title" xml:space="preserve">
-    <value>Ir para Vinculações</value>
+    <value>Go to Bindings</value>
   </data>
   <data name="Command_GoToChannels_Subtitle" xml:space="preserve">
-    <value>Canais do Gateway</value>
+    <value>Gateway channels</value>
   </data>
   <data name="Command_GoToChannels_Title" xml:space="preserve">
-    <value>Ir para Canais</value>
+    <value>Go to Channels</value>
   </data>
   <data name="Command_GoToChat_Subtitle" xml:space="preserve">
-    <value>Abrir chat</value>
+    <value>Open chat</value>
   </data>
   <data name="Command_GoToChat_Title" xml:space="preserve">
-    <value>Ir para Chat</value>
+    <value>Go to Chat</value>
   </data>
   <data name="Command_GoToConfig_Subtitle" xml:space="preserve">
-    <value>Configuração do Gateway</value>
+    <value>Gateway configuration</value>
   </data>
   <data name="Command_GoToConfig_Title" xml:space="preserve">
-    <value>Ir para Configuração</value>
+    <value>Go to Config</value>
   </data>
   <data name="Command_GoToConnection_Subtitle" xml:space="preserve">
-    <value>Gateway, node, gateways salvos</value>
+    <value>Gateway, node, saved gateways</value>
   </data>
   <data name="Command_GoToConnection_Title" xml:space="preserve">
-    <value>Ir para Conexão</value>
+    <value>Go to Connection</value>
   </data>
   <data name="Command_GoToCron_Subtitle" xml:space="preserve">
-    <value>Tarefas agendadas</value>
+    <value>Scheduled tasks</value>
   </data>
   <data name="Command_GoToCron_Title" xml:space="preserve">
-    <value>Ir para Cron ({0})</value>
+    <value>Go to Cron ({0})</value>
   </data>
   <data name="Command_GoToDiagnostics_Subtitle" xml:space="preserve">
-    <value>Logs, pacote de suporte, identidade do dispositivo, ferramentas de desenvolvedor</value>
+    <value>Logs, support bundle, device identity, developer tools</value>
   </data>
   <data name="Command_GoToDiagnostics_Title" xml:space="preserve">
-    <value>Ir para Diagnósticos</value>
+    <value>Go to Diagnostics</value>
   </data>
   <data name="Command_GoToNotifications_Subtitle" xml:space="preserve">
     <value>Revisar notificações ativas do aplicativo</value>
@@ -6135,124 +6141,124 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Ir para Notificações</value>
   </data>
 <data name="Command_GoToInstances_Subtitle" xml:space="preserve">
-    <value>Instâncias do Gateway</value>
+    <value>Gateway instances</value>
   </data>
   <data name="Command_GoToInstances_Title" xml:space="preserve">
-    <value>Ir para Instâncias</value>
+    <value>Go to Instances</value>
   </data>
   <data name="Command_GoToPermissions_Subtitle" xml:space="preserve">
-    <value>Capacidades, política de execução e listas de permissões</value>
+    <value>Capabilities, exec policy &amp; allowlists</value>
   </data>
   <data name="Command_GoToPermissions_Title" xml:space="preserve">
-    <value>Ir para Permissões</value>
+    <value>Go to Permissions</value>
   </data>
   <data name="Command_GoToSessions_Subtitle" xml:space="preserve">
-    <value>Todas as sessões</value>
+    <value>All sessions</value>
   </data>
   <data name="Command_GoToSessions_Title" xml:space="preserve">
-    <value>Ir para Sessões</value>
+    <value>Go to Sessions</value>
   </data>
   <data name="Command_GoToSettings_Subtitle" xml:space="preserve">
-    <value>Configurações do aplicativo</value>
+    <value>Application settings</value>
   </data>
   <data name="Command_GoToSettings_Title" xml:space="preserve">
-    <value>Ir para Configurações</value>
+    <value>Go to Settings</value>
   </data>
   <data name="Command_GoToSkills_Subtitle" xml:space="preserve">
-    <value>Skills registradas</value>
+    <value>Registered skills</value>
   </data>
   <data name="Command_GoToSkills_Title" xml:space="preserve">
-    <value>Ir para Skills</value>
+    <value>Go to Skills</value>
   </data>
   <data name="Command_GoToUsage_Subtitle" xml:space="preserve">
-    <value>Estatísticas de uso</value>
+    <value>Usage statistics</value>
   </data>
   <data name="Command_GoToUsage_Title" xml:space="preserve">
-    <value>Ir para Uso</value>
+    <value>Go to Usage</value>
   </data>
   <data name="Command_GoToWorkspace_Subtitle" xml:space="preserve">
-    <value>Arquivos do espaço de trabalho</value>
+    <value>Workspace files</value>
   </data>
   <data name="Command_GoToWorkspace_Title" xml:space="preserve">
-    <value>Ir para Workspace ({0})</value>
+    <value>Go to Workspace ({0})</value>
   </data>
   <data name="Command_OpenChatWindow_Subtitle" xml:space="preserve">
-    <value>Abrir chat independente</value>
+    <value>Open standalone chat</value>
   </data>
   <data name="Command_OpenChatWindow_Title" xml:space="preserve">
-    <value>Abrir janela de Chat</value>
+    <value>Open Chat Window</value>
   </data>
   <data name="Command_OpenDashboard_Subtitle" xml:space="preserve">
-    <value>Abrir painel web</value>
+    <value>Open web dashboard</value>
   </data>
   <data name="Command_OpenDashboard_Title" xml:space="preserve">
-    <value>Abrir painel</value>
+    <value>Open Dashboard</value>
   </data>
   <data name="Command_Subtitle_CurrentlyOff" xml:space="preserve">
-    <value>Atualmente DESATIVADO</value>
+    <value>Currently OFF</value>
   </data>
   <data name="Command_Subtitle_CurrentlyOn" xml:space="preserve">
-    <value>Atualmente ATIVADO</value>
+    <value>Currently ON</value>
   </data>
   <data name="Command_ToggleBrowserControl_Title" xml:space="preserve">
-    <value>Alternar Controle do Navegador</value>
+    <value>Toggle Browser Control</value>
   </data>
   <data name="Command_ToggleCamera_Title" xml:space="preserve">
-    <value>Alternar câmera</value>
+    <value>Toggle Camera</value>
   </data>
   <data name="Command_ToggleCanvas_Title" xml:space="preserve">
-    <value>Alternar Canvas</value>
+    <value>Toggle Canvas</value>
   </data>
   <data name="Command_ToggleNodeMode_Title" xml:space="preserve">
-    <value>Alternar modo Node</value>
+    <value>Toggle Node Mode</value>
   </data>
   <data name="Command_ToggleScreenCapture_Title" xml:space="preserve">
-    <value>Alternar captura de tela</value>
+    <value>Toggle Screen Capture</value>
   </data>
   <data name="CommandCenter_AuthFailed" xml:space="preserve">
-    <value>Falha na autenticação do Gateway</value>
+    <value>Gateway authentication failed</value>
   </data>
   <data name="CommandCenter_BrowserProxyAuthMayNeed" xml:space="preserve">
-    <value>O controle do navegador precisa de um token compartilhado do Gateway</value>
+    <value>Browser control needs a gateway shared token</value>
   </data>
   <data name="CommandCenter_BrowserProxyHostNotDetected" xml:space="preserve">
-    <value>Host do proxy do navegador não detectado</value>
+    <value>Browser proxy host not detected</value>
   </data>
   <data name="CommandCenter_BrowserProxySshForwardNotListening" xml:space="preserve">
-    <value>O encaminhamento SSH do proxy do navegador não está escutando</value>
+    <value>Browser proxy SSH forward is not listening</value>
   </data>
   <data name="CommandCenter_GatewayConnectionError" xml:space="preserve">
-    <value>Erro de conexão com o Gateway</value>
+    <value>Gateway connection error</value>
   </data>
   <data name="CommandCenter_GatewayHealthStale" xml:space="preserve">
-    <value>O status de saúde do Gateway está desatualizado</value>
+    <value>Gateway health is stale</value>
   </data>
   <data name="CommandCenter_GatewayNotConnected" xml:space="preserve">
-    <value>O Gateway não está conectado</value>
+    <value>Gateway is not connected</value>
   </data>
   <data name="CommandCenter_NoChannelsReported" xml:space="preserve">
-    <value>Nenhum canal informado</value>
+    <value>No channels reported</value>
   </data>
   <data name="CommandCenter_NoChannelsRunning" xml:space="preserve">
-    <value>Nenhum canal em execução no momento</value>
+    <value>No channels are currently running</value>
   </data>
   <data name="CommandCenter_NodePendingApproval" xml:space="preserve">
-    <value>O Node está aguardando aprovação</value>
+    <value>Node is waiting for approval</value>
   </data>
   <data name="CommandCenter_NoLocalGatewayListener" xml:space="preserve">
-    <value>Nenhum listener de Gateway local detectado</value>
+    <value>No local gateway listener detected</value>
   </data>
   <data name="CommandCenter_NoNodesReported" xml:space="preserve">
-    <value>Nenhum Node informado</value>
+    <value>No nodes reported</value>
   </data>
   <data name="CommandCenter_SshTunnelPortNotListening" xml:space="preserve">
-    <value>A porta do túnel SSH não está escutando</value>
+    <value>SSH tunnel port is not listening</value>
   </data>
   <data name="CommandCenter_UsageCostsMissing" xml:space="preserve">
-    <value>Alguns custos de uso estão faltando</value>
+    <value>Some usage costs are missing</value>
   </data>
   <data name="CommandCenter_WaitingForGatewayHealth" xml:space="preserve">
-    <value>Aguardando o status de saúde do Gateway</value>
+    <value>Waiting for gateway health</value>
   </data>
   <data name="ConfigPage_CheckingConfigPermissions" xml:space="preserve">
     <value>Verificando permissões de configuração</value>
@@ -6294,7 +6300,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Corrija os erros de validação</value>
   </data>
   <data name="ConfigPage_StatusValidationErrorMessageFormat" xml:space="preserve">
-    <value>{0}: {1}</value>
+    <value>Erro de validação em {0}: {1}</value>
   </data>
   <data name="ConfigPage_StatusNotConnectedTitle" xml:space="preserve">
     <value>Não conectado</value>
@@ -6468,7 +6474,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>Último gateway: {0}. Veja a linha do tempo de eventos.</value>
   </data>
   <data name="DebugPage_StatusGatewayFormat" xml:space="preserve">
-    <value>Gateway: {0}.</value>
+    <value>Estado do gateway: {0}.</value>
   </data>
   <data name="DebugPage_RecentLogTitle" xml:space="preserve">
     <value>Log recente</value>
@@ -6609,13 +6615,13 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Falha na navegação: {0}</value>
   </data>
   <data name="ConnectionPage_GatewayHostControlsDescription_Format" xml:space="preserve">
-    <value>Abra um shell ou gerencie o serviço de Gateway local em {0}.</value>
+    <value>Open a shell or manage the local gateway service in {0}.</value>
   </data>
   <data name="CronPage_JobCompleted" xml:space="preserve">
-    <value>Tarefa concluída</value>
+    <value>Job completed</value>
   </data>
   <data name="CronPage_JobCompletedRanSuccessfully" xml:space="preserve">
-    <value>&quot;{0}&quot; foi executada com sucesso e removida.</value>
+    <value>&quot;{0}&quot; ran successfully and was removed.</value>
   </data>
   <data name="CronPage_RunNotStarted" xml:space="preserve">
     <value>Execução não iniciada</value>
@@ -6627,28 +6633,28 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>{0} não foi iniciada: {1}</value>
   </data>
   <data name="GatewayHostAccess_NoTerminalAccess" xml:space="preserve">
-    <value>Este Gateway não tem acesso a terminal WSL ou SSH.</value>
+    <value>This gateway does not have WSL or SSH terminal access.</value>
   </data>
   <data name="GatewayHostAccess_NoWslOrSshDisabled" xml:space="preserve">
-    <value>Este Gateway não foi criado com WSL e não tem túnel SSH.</value>
+    <value>This gateway was not created with WSL and does not have an SSH tunnel.</value>
   </data>
   <data name="GatewayHostAccess_OpenSshTerminalLabel" xml:space="preserve">
-    <value>Abrir terminal SSH</value>
+    <value>Open SSH terminal</value>
   </data>
   <data name="GatewayHostAccess_OpenSshTerminalTooltip_Format" xml:space="preserve">
-    <value>Abrir um terminal SSH para {0}@{1}.</value>
+    <value>Open an SSH terminal to {0}@{1}.</value>
   </data>
   <data name="GatewayHostAccess_OpenTerminalInWslTooltip_Format" xml:space="preserve">
-    <value>Abrir um terminal no Gateway WSL {0}.</value>
+    <value>Open a terminal in the {0} WSL gateway.</value>
   </data>
   <data name="GatewayHostAccess_OpenTerminalLabel" xml:space="preserve">
-    <value>Abrir terminal</value>
+    <value>Open terminal</value>
   </data>
   <data name="SessionsPage_OpenChatButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Abrir no chat</value>
+    <value>Open in chat</value>
   </data>
   <data name="SessionsPage_OpenChatButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Abrir esta sessão no Chat</value>
+    <value>Open this session in Chat</value>
   </data>
   <data name="SkillsPage_BadgeDisabled" xml:space="preserve">
     <value>Desativado</value>
@@ -6666,70 +6672,70 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Ativadas ({0})</value>
   </data>
   <data name="ConnectionPage_CopyTrustApproval.Content" xml:space="preserve">
-    <value>Copiar</value>
+    <value>Copy</value>
   </data>
   <data name="ConnectionPage_NodeApprovalRequired" xml:space="preserve">
-    <value>É necessária a aprovação do Node</value>
+    <value>Node approval required</value>
   </data>
   <data name="ConnectionPage_NodeReapprovalRequired" xml:space="preserve">
-    <value>Nova aprovação do Node necessária</value>
+    <value>Node reapproval required</value>
   </data>
   <data name="ConnectionPage_NodeBodyApprovalRequired" xml:space="preserve">
-    <value>As declarações pendentes não entram em vigor até que esta solicitação seja aprovada e o Node se reconecte.</value>
+    <value>Pending declarations are not effective until this request is approved and the node reconnects.</value>
   </data>
   <data name="ConnectionPage_NodeBodyReapprovalRequired" xml:space="preserve">
-    <value>O acesso atualmente aprovado permanece em vigor. Aprove as alterações de declaração pendentes e, em seguida, reconecte.</value>
+    <value>Current approved access remains effective. Approve the pending declaration changes, then reconnect.</value>
   </data>
   <data name="ConnectionPage_NodeTrustApprovalHelp" xml:space="preserve">
-    <value>Execute este comando no host do Gateway para aprovar as declarações pendentes. A bandeja não aprovará automaticamente.</value>
+    <value>Run this command on the gateway host to approve the pending declarations. The tray will not approve automatically.</value>
   </data>
   <data name="ConnectionPage_NodeTrustDiscoveryHelp" xml:space="preserve">
-    <value>Execute este comando no host do Gateway para listar as solicitações pendentes. Em seguida, aprove explicitamente uma solicitação válida. Este comando não aprova nada.</value>
+    <value>Run this command on the gateway host to list pending requests. Then approve a valid request explicitly. This command does not approve anything.</value>
   </data>
   <data name="ConnectionPage_NodeReconnectAfterApproval" xml:space="preserve">
-    <value>Reconectar após a aprovação</value>
+    <value>Reconnect after approval</value>
   </data>
   <data name="ConnectionPage_NodeSurfaceNone" xml:space="preserve">
-    <value>nenhum</value>
+    <value>none</value>
   </data>
   <data name="ConnectionPage_NodeTechnicalDetails.Text" xml:space="preserve">
-    <value>Mostrar detalhes técnicos</value>
+    <value>Show technical details</value>
   </data>
   <data name="ConnectionPage_NodePillState_Active" xml:space="preserve">
-    <value>Compartilhando agora</value>
+    <value>Sharing now</value>
   </data>
   <data name="ConnectionPage_NodePillState_Pending" xml:space="preserve">
-    <value>Ativado, ainda não está ativo</value>
+    <value>Enabled, not active yet</value>
   </data>
   <data name="ConnectionPage_NodePillState_NeedsGatewayToken" xml:space="preserve">
-    <value>Requer token compartilhado do Gateway</value>
+    <value>Needs gateway shared token</value>
   </data>
   <data name="ConnectionPage_NodePillState_Off" xml:space="preserve">
-    <value>Desativado</value>
+    <value>Off</value>
   </data>
   <data name="ConnectionPage_NodeCap_Device" xml:space="preserve">
-    <value>Informações do dispositivo</value>
+    <value>Device info</value>
   </data>
   <data name="ConnectionPage_NodeCap_System" xml:space="preserve">
-    <value>Acesso ao sistema</value>
+    <value>System access</value>
   </data>
   <data name="ConnectionPage_NodeEffectiveCapabilities" xml:space="preserve">
-    <value>Recursos aprovados/efetivos: {0}</value>
+    <value>Approved/effective capabilities: {0}</value>
   </data>
   <data name="ConnectionPage_NodeEffectiveCommands" xml:space="preserve">
-    <value>Comandos aprovados/efetivos: {0}</value>
+    <value>Approved/effective commands: {0}</value>
   </data>
   <data name="ConnectionPage_NodeEffectivePermissions" xml:space="preserve">
-    <value>Permissões aprovadas/efetivas: {0}</value>
+    <value>Approved/effective permissions: {0}</value>
   </data>
   <data name="ConnectionPage_NodePendingDeclaredCapabilities" xml:space="preserve">
-    <value>Recursos declarados pendentes: {0}</value>
+    <value>Pending declared capabilities: {0}</value>
   </data>
   <data name="ConnectionPage_NodePendingDeclaredCommands" xml:space="preserve">
-    <value>Comandos declarados pendentes: {0}</value>
+    <value>Pending declared commands: {0}</value>
   </data>
   <data name="ConnectionPage_NodePendingDeclaredPermissions" xml:space="preserve">
-    <value>Permissões declaradas pendentes: {0}</value>
+    <value>Pending declared permissions: {0}</value>
   </data>
   <data name="ConnectionPage_AdviceCleartextTitle" xml:space="preserve">
     <value>Conexão não criptografada</value>
@@ -6819,73 +6825,73 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Autenticação</value>
   </data>
   <data name="HubWindow_StatusFlyout_Title.Text" xml:space="preserve">
-    <value>Conexão</value>
+    <value>Connection</value>
   </data>
   <data name="HubWindow_StatusFlyout_OpenConnection.Content" xml:space="preserve">
-    <value>Abrir conexão</value>
+    <value>Open Connection</value>
   </data>
   <data name="HubWindow_StatusFlyout_GatewayLabel.Text" xml:space="preserve">
     <value>Gateway</value>
   </data>
   <data name="HubWindow_StatusFlyout_Reconnect.Content" xml:space="preserve">
-    <value>Reconectar</value>
+    <value>Reconnect</value>
   </data>
   <data name="HubWindow_StatusFlyout_OperatorLabel.Text" xml:space="preserve">
-    <value>Operador</value>
+    <value>Operator</value>
   </data>
   <data name="HubWindow_StatusFlyout_NodeLabel.Text" xml:space="preserve">
     <value>Node</value>
   </data>
   <data name="HubWindow_StatusFlyout_Approve.Content" xml:space="preserve">
-    <value>Aprovar…</value>
+    <value>Approve…</value>
   </data>
   <data name="HubWindow_StatusPill_Tooltip" xml:space="preserve">
-    <value>Status da conexão</value>
+    <value>Connection status</value>
   </data>
   <data name="HubWindow_Bell_Tooltip" xml:space="preserve">
-    <value>Notificações</value>
+    <value>Notifications</value>
   </data>
   <data name="HubWindow_Pill_Ready" xml:space="preserve">
-    <value>Pronto</value>
+    <value>Ready</value>
   </data>
   <data name="HubWindow_Pill_PairingRequired" xml:space="preserve">
-    <value>Pareamento necessário</value>
+    <value>Pairing required</value>
   </data>
   <data name="HubWindow_Pill_Degraded" xml:space="preserve">
-    <value>Degradado</value>
+    <value>Degraded</value>
   </data>
   <data name="HubWindow_Role_Off" xml:space="preserve">
-    <value>Desligado</value>
+    <value>Off</value>
   </data>
   <data name="HubWindow_Role_PairingRequired" xml:space="preserve">
-    <value>Pareamento necessário</value>
+    <value>Pairing required</value>
   </data>
   <data name="HubWindow_Role_PairingRejected" xml:space="preserve">
-    <value>Pareamento rejeitado</value>
+    <value>Pairing rejected</value>
   </data>
   <data name="HubWindow_Role_RateLimited" xml:space="preserve">
-    <value>Limite de taxa atingido</value>
+    <value>Rate limited</value>
   </data>
   <data name="HubWindow_Role_Disabled" xml:space="preserve">
-    <value>Desativado</value>
+    <value>Disabled</value>
   </data>
   <data name="NotificationsFlyout_ClearAll.Content" xml:space="preserve">
-    <value>Limpar tudo</value>
+    <value>Clear all</value>
   </data>
   <data name="NotificationsFlyout_EmptyTitle.Text" xml:space="preserve">
-    <value>Nenhuma notificação</value>
+    <value>No notifications</value>
   </data>
   <data name="NotificationsFlyout_OpenPage.Content" xml:space="preserve">
-    <value>Abrir notificações</value>
+    <value>Open notifications</value>
   </data>
   <data name="NotificationsFlyout_ActiveCountFormat" xml:space="preserve">
-    <value>{0} ativas</value>
+    <value>{0} active</value>
   </data>
   <data name="HubWindow_Role_PermissionsIncomplete" xml:space="preserve">
-    <value>Permissões incompletas</value>
+    <value>Permissions incomplete</value>
   </data>
   <data name="SettingsPage_About.Text" xml:space="preserve">
-    <value>Sobre</value>
+    <value>About</value>
   </data>
   <data name="SettingsPage_AppInfoExpander.Header" xml:space="preserve">
     <value>Informações do aplicativo</value>
@@ -6909,7 +6915,7 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Arquitetura</value>
   </data>
   <data name="SettingsPage_AppInfoLabel_Windows.Text" xml:space="preserve">
-    <value>Windows</value>
+    <value>Versão do Windows</value>
   </data>
   <data name="SettingsPage_AppInfoLabel_UpdateChannel.Text" xml:space="preserve">
     <value>Canal de atualização</value>
@@ -6930,19 +6936,19 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Painel</value>
   </data>
   <data name="SettingsPage_GatewayInfoExpander.Header" xml:space="preserve">
-    <value>Informações do Gateway</value>
+    <value>Gateway info</value>
   </data>
   <data name="SettingsPage_GatewayInfoLabel_Version.Text" xml:space="preserve">
-    <value>Versão</value>
+    <value>Version</value>
   </data>
   <data name="SettingsPage_GatewayInfoLabel_Protocol.Text" xml:space="preserve">
-    <value>Protocolo</value>
+    <value>Protocol</value>
   </data>
   <data name="SettingsPage_GatewayInfoLabel_AuthMode.Text" xml:space="preserve">
-    <value>Modo de autenticação</value>
+    <value>Auth mode</value>
   </data>
   <data name="SettingsPage_GatewayInfoLabel_Uptime.Text" xml:space="preserve">
-    <value>Tempo em execução</value>
+    <value>Uptime</value>
   </data>
   <data name="SandboxPage_UnavailablePrimaryButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Ação do sandbox</value>
@@ -7054,7 +7060,7 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="LocalAiPage_Intro.Text" xml:space="preserve"><value>Execute o llama-server nativo verificado de forma privada neste computador. Os modelos são carregados apenas quando solicitados.</value></data>
   <data name="LocalAiPage_EngineHeading.Text" xml:space="preserve"><value>llama-server</value></data>
   <data name="LocalAiPage_VersionLabel.Text" xml:space="preserve"><value>Versão</value></data>
-  <data name="LocalAiPage_EndpointLabel.Text" xml:space="preserve"><value>Endpoint</value></data>
+  <data name="LocalAiPage_EndpointLabel.Text" xml:space="preserve"><value>Ponto de extremidade</value></data>
   <data name="LocalAiPage_ProcessLabel.Text" xml:space="preserve"><value>Processo</value></data>
   <data name="LocalAiPage_StartButton.Content" xml:space="preserve"><value>Iniciar roteador</value></data>
   <data name="LocalAiPage_StopButton.Content" xml:space="preserve"><value>Parar</value></data>
@@ -7127,9 +7133,9 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="VoiceSettingsPage_MiniMaxApiKeyBox.Header" xml:space="preserve"><value>Chave da API</value></data>
   <data name="VoiceSettingsPage_MiniMaxModelBox.Header" xml:space="preserve"><value>Modelo</value></data>
   <data name="VoiceSettingsPage_MiniMaxModelBox.PlaceholderText" xml:space="preserve"><value>speech-2.8-hd</value></data>
-  <data name="VoiceSettingsPage_MiniMaxRegionChina.Content" xml:space="preserve"><value>China</value></data>
+  <data name="VoiceSettingsPage_MiniMaxRegionChina.Content" xml:space="preserve"><value>China continental</value></data>
   <data name="VoiceSettingsPage_MiniMaxRegionCombo.Header" xml:space="preserve"><value>Região</value></data>
-  <data name="VoiceSettingsPage_MiniMaxRegionGlobal.Content" xml:space="preserve"><value>Global</value></data>
+  <data name="VoiceSettingsPage_MiniMaxRegionGlobal.Content" xml:space="preserve"><value>Internacional</value></data>
   <data name="VoiceSettingsPage_MiniMaxVoiceIdBox.Header" xml:space="preserve"><value>ID da voz</value></data>
   <data name="VoiceSettingsPage_MiniMaxVoiceIdBox.PlaceholderText" xml:space="preserve"><value>por exemplo, male-qn-qingse</value></data>
   <data name="VoiceSettingsPage_TtsMiniMax.Content" xml:space="preserve"><value>MiniMax (nuvem, requer chave da API)</value></data>
