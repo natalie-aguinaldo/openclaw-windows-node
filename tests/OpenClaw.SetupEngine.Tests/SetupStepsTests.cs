@@ -1825,6 +1825,46 @@ public class SetupStepsTests : IDisposable
     }
 
     [Fact]
+    public void InstallCli_BuildInstallCommandPreviewUsesProductionInvocationShape()
+    {
+        const string installerDirectory =
+            "/tmp/openclaw-installer-0123456789abcdef0123456789abcdef";
+        var production = InstallCliStep.BuildInstallCommand(
+            "https://openclaw.ai/install-cli.sh",
+            "2026.5.22",
+            GatewayReleasePolicy.NodeVersion,
+            installerDirectory);
+
+        var preview = InstallCliStep.BuildInstallCommandPreview(
+            "https://openclaw.ai/install-cli.sh",
+            "2026.5.22",
+            GatewayReleasePolicy.NodeVersion);
+
+        Assert.Equal(
+            production.Replace(
+                installerDirectory,
+                InstallCliStep.InstallerTempDirectoryPreview,
+                StringComparison.Ordinal),
+            preview);
+    }
+
+    [Fact]
+    public void InstallCli_BuildInstallCommandPreviewDoesNotRewriteCustomInstallerUrl()
+    {
+        const string installUrl =
+            "https://example.test/00000000000000000000000000000000/install.sh";
+
+        var preview = InstallCliStep.BuildInstallCommandPreview(
+            installUrl,
+            "2026.5.22");
+
+        Assert.Contains($"'{installUrl}'", preview);
+        Assert.Contains(
+            $"installer_dir='{InstallCliStep.InstallerTempDirectoryPreview}'",
+            preview);
+    }
+
+    [Fact]
     public void InstallCli_BuildInstallCommand_EscapesSingleQuotesInUrlAndVersion()
     {
         var command = InstallCliStep.BuildInstallCommand("https://openclaw.ai/install-cli's.sh", "2026.5.22'a");

@@ -18,8 +18,13 @@ public sealed class InstallCliStep : SetupStep
 {
     internal const int DownloadMaxTimeSeconds = 60;
     internal static readonly TimeSpan InstallerCommandTimeout = TimeSpan.FromMinutes(5);
+    internal const string InstallerTempDirectoryPreview =
+        "/tmp/openclaw-installer-<32-hex-random>";
     internal const string StagedValidationPackageReference =
         "file:/var/lib/openclaw/setup-package/openclaw-current.tgz";
+    private const string InstallerTempDirectoryPrefix = "/tmp/openclaw-installer-";
+    private const string InstallerTempDirectoryPreviewSource =
+        "/tmp/openclaw-installer-00000000000000000000000000000000";
     private const string StagedValidationPackageDirectory = "/var/lib/openclaw/setup-package";
 
     public override string Id => "install-cli";
@@ -209,14 +214,13 @@ public sealed class InstallCliStep : SetupStep
             runtimeArgument = $" --node-version '{escapedNodeVersion}'";
         }
 
-        const string installerTempDirectoryPrefix = "/tmp/openclaw-installer-";
-        installerTempDirectory ??= $"{installerTempDirectoryPrefix}{Guid.NewGuid():N}";
-        if (!installerTempDirectory.StartsWith(installerTempDirectoryPrefix, StringComparison.Ordinal))
+        installerTempDirectory ??= $"{InstallerTempDirectoryPrefix}{Guid.NewGuid():N}";
+        if (!installerTempDirectory.StartsWith(InstallerTempDirectoryPrefix, StringComparison.Ordinal))
         {
             throw new ArgumentException("CLI installer temporary directory is invalid.");
         }
 
-        var suffix = installerTempDirectory[installerTempDirectoryPrefix.Length..];
+        var suffix = installerTempDirectory[InstallerTempDirectoryPrefix.Length..];
         if (suffix.Length != 32 || suffix.Any(character => !Uri.IsHexDigit(character)))
             throw new ArgumentException("CLI installer temporary directory is invalid.");
 
@@ -241,6 +245,27 @@ public sealed class InstallCliStep : SetupStep
             fi
             bash -s -- --version '{escapedVersion}'{runtimeArgument} < "$installer"
             """;
+    }
+
+    internal static string BuildInstallCommandPreview(
+        string installUrl,
+        string requestedVersion,
+        string? nodeVersion = null)
+    {
+        var command = BuildInstallCommand(
+            installUrl,
+            requestedVersion,
+            nodeVersion,
+            InstallerTempDirectoryPreviewSource);
+        var assignment = $"installer_dir='{InstallerTempDirectoryPreviewSource}'";
+        var assignmentIndex = command.IndexOf(assignment, StringComparison.Ordinal);
+        if (assignmentIndex < 0)
+            throw new InvalidOperationException("CLI installer preview could not locate the temporary directory.");
+
+        return string.Concat(
+            command.AsSpan(0, assignmentIndex),
+            $"installer_dir='{InstallerTempDirectoryPreview}'",
+            command.AsSpan(assignmentIndex + assignment.Length));
     }
 
     private static async Task<string?> CleanupInstallerTempDirectoryAsync(

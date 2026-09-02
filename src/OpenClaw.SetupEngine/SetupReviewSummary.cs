@@ -55,17 +55,12 @@ public static class SetupReviewSummaryBuilder
             ? tailscaleEndpoint
             : isLanBind ? $"LAN:{gatewayPort}" : $"127.0.0.1:{gatewayPort}";
         var wslCommand = "wsl " + string.Join(' ', WslInstallSupport.BuildDirectInstallArgs(baseDistro, distroName, installPath));
-        var runtimeArgument = release.IsCustomInstaller
-            ? ""
-            : $" --node-version {GatewayReleasePolicy.NodeVersion}";
-        var installCommand =
-            $"set -euo pipefail; umask 077; installer_dir=/tmp/openclaw-installer-<random>; " +
-            $"mkdir -m 0700 \"$installer_dir\"; installer=\"$installer_dir/installer.sh\"; " +
-            $"trap 'rm -rf \"$installer_dir\"' EXIT; " +
-            $"curl -fsSL --connect-timeout 15 --max-time {InstallCliStep.DownloadMaxTimeSeconds} --remove-on-error " +
-            $"--proto '=https' --tlsv1.2 --output \"$installer\" <install-url>; " +
-            $"test -s \"$installer\"; " +
-            $"bash -s -- --version {release.Version}{runtimeArgument} < \"$installer\"";
+        var installCommand = installerHost is null
+            ? "setup stops before CLI download: installer URL must use HTTPS"
+            : InstallCliStep.BuildInstallCommandPreview(
+                installUrl,
+                release.Version,
+                release.IsCustomInstaller ? null : GatewayReleasePolicy.NodeVersion);
         LocalModelInfo localAiModel =
             LocalModelCatalog.Find(config.LocalAi.SelectedModelId) ?? LocalModelCatalog.Default;
         string[] localAiCommands = config.LocalAi.Enabled

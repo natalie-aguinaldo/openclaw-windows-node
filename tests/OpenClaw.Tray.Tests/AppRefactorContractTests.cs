@@ -1344,14 +1344,17 @@ public sealed class AppRefactorContractTests
     }
 
     [Fact]
-    public void CapabilitiesPage_InstallerReviewCopyDoesNotAmplifyPipelineRetries()
+    public void CapabilitiesPage_InstallerReviewUsesGeneratedExactCommands()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
         var xaml = File.ReadAllText(
             Path.Combine(root, "src", "OpenClaw.SetupEngine.UI", "Pages", "CapabilitiesPage.xaml"));
+        var source = File.ReadAllText(
+            Path.Combine(root, "src", "OpenClaw.SetupEngine.UI", "Pages", "CapabilitiesPage.xaml.cs"));
 
-        Assert.Contains("--connect-timeout 15 --max-time 60 --remove-on-error", xaml);
-        Assert.Contains("test -s $installer &amp;&amp; bash $installer", xaml);
+        Assert.Contains("x:Name=\"ExactCommandsText\"", xaml);
+        Assert.Contains("ExactCommandsText.Text = summary.ExactCommands", source);
+        Assert.DoesNotContain("test -s", xaml);
         Assert.DoesNotContain("--retry", xaml);
         Assert.DoesNotContain("| bash", xaml);
     }
