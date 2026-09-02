@@ -39,7 +39,7 @@
     <value>ws://localhost:18789 ou https://host.tailnet.ts.net</value>
   </data>
   <data name="SettingsTokenTextBox.Header" xml:space="preserve">
-    <value>Chave</value>
+    <value>Token de acesso</value>
   </data>
   <data name="SettingsTokenTextBox.PlaceholderText" xml:space="preserve">
     <value>Seu token de API</value>
@@ -4389,7 +4389,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Excluir tarefa após a execução</value>
   </data>
   <data name="CronPage_PROMPTPAYLOAD.Text" xml:space="preserve">
-    <value>PROMPT / CARGA</value>
+    <value>PROMPT / CARGA ÚTIL</value>
   </data>
   <data name="CronPage_WhatShouldTheAgent.PlaceholderText" xml:space="preserve">
     <value>O que o agente deve fazer?</value>
@@ -4771,7 +4771,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
   <data name="SessionTitle_ChannelGeneric" xml:space="preserve"><value>Conversa em canal</value></data>
   <data name="SessionTitle_ThreadGeneric" xml:space="preserve"><value>Tópico</value></data>
   <data name="SessionTitle_Cron" xml:space="preserve"><value>Tarefa agendada</value></data>
-  <data name="SessionTitle_Heartbeat" xml:space="preserve"><value>Pulsão</value></data>
+  <data name="SessionTitle_Heartbeat" xml:space="preserve"><value>Pulsação</value></data>
   <data name="SessionTitle_Subagent" xml:space="preserve"><value>Subagente</value></data>
   <data name="SessionTitle_Acp" xml:space="preserve"><value>Sessão ACP</value></data>
   <data name="SessionTitle_Dashboard" xml:space="preserve"><value>Nova sessão</value></data>
@@ -5073,7 +5073,7 @@ Os controles de arquivo, rede, área de transferência, tempo limite e aprovaç�
     <value>Token compartilhado do Gateway</value>
   </data>
   <data name="ConnectionStatusWindow_SharedGatewayToken.Header" xml:space="preserve">
-    <value>Chave</value>
+    <value>Token de acesso</value>
   </data>
   <data name="ConnectionStatusWindow_Connect2.Content" xml:space="preserve">
     <value>Conectar</value>
@@ -5370,7 +5370,7 @@ Certifique-se de que o Gateway está em execução.</value>
     <value>via túnel SSH</value>
   </data>
   <data name="ConnectionPage_TopologyLocal" xml:space="preserve">
-    <value>Localhost</value>
+    <value>Nesta máquina</value>
   </data>
   <data name="ConnectionPage_TopologyTailscale" xml:space="preserve">
     <value>Tailscale</value>
