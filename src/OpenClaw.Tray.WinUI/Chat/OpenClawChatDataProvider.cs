@@ -94,6 +94,10 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     public event EventHandler<ChatDataChangedEventArgs>? Changed;
     public event EventHandler<ChatProviderNotificationEventArgs>? NotificationRequested;
 
+#if OPENCLAW_TRAY_TESTS
+    internal Action<ChatDataSnapshot>? BeforePublishForTests { get; set; }
+#endif
+
     /// <param name="bridge">Adapter wrapping the live gateway client.</param>
     /// <param name="post">
     /// Optional UI-thread marshaling callback. Pass
@@ -1819,6 +1823,10 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
     private void Publish(ChatDataSnapshot snapshot)
     {
+#if OPENCLAW_TRAY_TESTS
+        BeforePublishForTests?.Invoke(snapshot);
+#endif
+
         if (_post is null)
         {
             lock (_publishGate)
@@ -1827,6 +1835,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
                     return;
             }
             Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
+            DebounceSnapshot(snapshot);
         }
         else
         {
@@ -1845,11 +1854,6 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             if (shouldSchedule)
                 PostPublishDrain();
         }
-
-        // Debounce-save last-known UI state so the next launch can show
-        // meaningful labels while reconnecting instead of "Main session"/"model".
-        if (snapshot.Threads.Length > 0 || snapshot.AvailableModels.Length > 0)
-            _persistence.DebounceSnapshot(snapshot);
     }
 
     private void PostPublishDrain()
@@ -1887,9 +1891,15 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             }
         }
 
+        // A producer can be delayed after building its snapshot, then reach
+        // Publish after a newer state transition. Materialize at drain time so
+        // coalescing follows authoritative state order, not caller arrival.
+        snapshot = _state.Snapshot(ProjectionContext());
+
         try
         {
             Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
+            DebounceSnapshot(snapshot);
         }
         finally
         {
@@ -1915,6 +1925,14 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             if (shouldSchedule)
                 PostPublishDrain();
         }
+    }
+
+    private void DebounceSnapshot(ChatDataSnapshot snapshot)
+    {
+        // Save last-known UI state so the next launch can show meaningful
+        // labels while reconnecting instead of "Main session"/"model".
+        if (snapshot.Threads.Length > 0 || snapshot.AvailableModels.Length > 0)
+            _persistence.DebounceSnapshot(snapshot);
     }
 
     // ── Last-chat-state cache ──────────────────────────────────────────

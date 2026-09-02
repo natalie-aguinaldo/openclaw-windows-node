@@ -5596,6 +5596,52 @@ public class OpenClawChatDataProviderTests
     }
 
     [Fact]
+    public async Task PostDelegate_OutOfOrderPublishArrivalUsesAuthoritativeFinalSnapshot()
+    {
+        var bridge = new FakeBridge { Sessions = [MainSession()] };
+        var queued = new ConcurrentQueue<Action>();
+        var postCount = 0;
+        var provider = new OpenClawChatDataProvider(
+            bridge,
+            post: action =>
+            {
+                Interlocked.Increment(ref postCount);
+                queued.Enqueue(action);
+            });
+        using var olderSnapshotBuilt = new ManualResetEventSlim();
+        using var releaseOlderPublish = new ManualResetEventSlim();
+        provider.BeforePublishForTests = snapshot =>
+        {
+            if (snapshot.ConnectionStatus == "Connecting…")
+            {
+                olderSnapshotBuilt.Set();
+                Assert.True(releaseOlderPublish.Wait(TimeSpan.FromSeconds(10)));
+            }
+        };
+        var snapshots = new List<ChatDataSnapshot>();
+        provider.Changed += (_, args) => snapshots.Add(args.Snapshot);
+        await using (provider)
+        {
+            var olderPublish = Task.Run(
+                () => bridge.RaiseStatus(ConnectionStatus.Connecting));
+            Assert.True(olderSnapshotBuilt.Wait(TimeSpan.FromSeconds(10)));
+
+            bridge.RaiseStatus(ConnectionStatus.Disconnected);
+            releaseOlderPublish.Set();
+            await olderPublish;
+
+            Assert.Equal(1, Volatile.Read(ref postCount));
+            AssertSingleQueuedAction(queued)();
+
+            var snapshot = Assert.Single(snapshots);
+            Assert.Equal(
+                ConnectionStatus.Disconnected.ToString(),
+                snapshot.ConnectionStatus);
+            Assert.Empty(queued);
+        }
+    }
+
+    [Fact]
     public async Task PostDelegate_RapidToolAndSessionBurstUsesOneDrainAndKeepsFinalSnapshot()
     {
         const int toolCount = 64;
