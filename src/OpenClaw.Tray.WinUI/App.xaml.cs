@@ -570,16 +570,11 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
 
         if (!ownsMutex)
         {
-            // Forward deep link args to running instance (command-line or protocol activation)
-            var deepLink = _activationRouter.ResolveLaunchCandidate(new LaunchActivationInput(
+            await _activationRouter.ForwardLaunchToPrimaryAsync(new LaunchActivationInput(
                 protocolUri,
                 _startupArgs,
                 _postSetupLaunch,
-                SetupShownDuringStartup: false));
-            if (deepLink != null)
-            {
-                await _activationRouter.ForwardToPrimaryAsync(deepLink, CancellationToken.None);
-            }
+                SetupShownDuringStartup: false), CancellationToken.None);
             Exit();
             return;
         }
@@ -1543,6 +1538,13 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
                     (edit, value) => edit.NodeSttEnabled = value,
                     (settings, value) => settings.NodeSttEnabled = value);
                 break;
+            case "perm-toggle|Ollama":
+                PersistTrayPermission(
+                    nameof(SettingsManager.NodeOllamaInferenceEnabled),
+                    !_settings.NodeOllamaInferenceEnabled,
+                    (edit, value) => edit.NodeOllamaInferenceEnabled = value,
+                    (settings, value) => settings.NodeOllamaInferenceEnabled = value);
+                break;
         }
     }
 
@@ -1559,6 +1561,8 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
             settings => fallbackEdit(settings, value),
             out _))
         {
+            _nodeService?.ApplyOllamaPermission(
+                _settings?.NodeOllamaInferenceEnabled == true);
             ReconnectWithSyncedBrowserProxyForward();
         }
     }
@@ -1634,7 +1638,8 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
                     _settings.NodeScreenEnabled,
                     _settings.NodeLocationEnabled,
                     _settings.NodeTtsEnabled,
-                    _settings.NodeSttEnabled),
+                    _settings.NodeSttEnabled,
+                    _settings.NodeOllamaInferenceEnabled),
             SetupMenuLabel = setupMenuLabel,
             ShowSetupMenuEntry = !hasSetupManagedLocalWslGateway,
             LastUpdated = _appState?.LastCheckTime,

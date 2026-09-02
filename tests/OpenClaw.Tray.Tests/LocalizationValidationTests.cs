@@ -89,6 +89,8 @@ public class LocalizationValidationTests
         "PermissionsPage_Cap_Tts_Description",
         "PermissionsPage_Cap_Stt_Label",
         "PermissionsPage_Cap_Stt_Description",
+        "PermissionsPage_Cap_Ollama_Label",
+        "PermissionsPage_Cap_Ollama_Description",
         "PermissionsPage_Cap_SystemRun_Label",
         "PermissionsPage_Cap_SystemRun_Description",
         "PermissionsPage_NodeStatus_Disabled",
@@ -333,6 +335,10 @@ public class LocalizationValidationTests
         "WorkspacePage_RootFolder",
         "WorkspacePage_SearchResultsPath",
         "WorkspacePage_BrowserTruncated",
+        // "GB" is an internationally recognized SI byte-size abbreviation kept identical
+        // across every supported locale (matches how NodesPage_Label_* technical loanwords
+        // above are handled); only the surrounding sentence is translated per locale.
+        "LocalAi_Reason_GigabytesFormat",
     };
 
     private static readonly HashSet<string> EnUsOnlyFallbackResourceKeys = new(StringComparer.Ordinal);

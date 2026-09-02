@@ -26,11 +26,14 @@ build/sign/publish release artifacts.
      "MSIX distribution is paused"
    ```
 
-3. Create a new stable or prerelease tag from `origin/main`. Never move a
-   previously published tag.
+3. Create a new stable, stable correction, or prerelease tag from `origin/main`.
+   Never move a previously published tag.
 
    ```powershell
-   $tag = "vX.Y.Z" # or vX.Y.Z-alpha.N for a prerelease
+   # Stable: vX.Y.Z
+   # Stable correction matching the OpenClaw monorepo: vX.Y.Z-N
+   # Prerelease: vX.Y.Z-alpha.N
+   $tag = "vX.Y.Z"
    if ((git rev-parse HEAD) -ne (git rev-parse origin/main)) {
        throw "HEAD is not origin/main; do not tag."
    }
@@ -65,10 +68,35 @@ build/sign/publish release artifacts.
 
 ## Release channel policy
 
-Stable and alpha tags use the same signed CI release pipeline:
+Stable, stable-correction, and alpha tags use the same signed CI release pipeline:
 
 - `vX.Y.Z` creates a normal release eligible to become latest.
+- `vX.Y.Z-N` creates a stable correction release eligible to become latest. The
+  numeric correction suffix intentionally follows the OpenClaw monorepo release
+  convention and is not treated as a SemVer prerelease. Only publish a
+  correction for the current latest stable line; publishing one for an older
+  line would incorrectly move GitHub's Latest release marker backward. CI
+  enforces both constraints: the exact tag must already be a published stable
+  `openclaw/openclaw` release, and it must advance the current Windows latest
+  release under OpenClaw correction ordering.
 - `vX.Y.Z-alpha.N` creates a prerelease that stable updater checks do not offer.
+
+Stable correction support begins only with an eligible upstream release tag
+created from `main` after the correction-aware implementation has landed. For
+this rollout, the Windows repository already contains its own annotated
+`v2026.7.1-2` tag, separate from the matching upstream tag, and it points to a
+commit that predates the implementation. It is not a correction-aware artifact
+and must not be moved, rebuilt from a different commit, or reused as a recovery
+release.
+
+If the first post-merge Windows release is another numeric correction, users on
+the matching unsuffixed version need to install that new release manually.
+Older Windows clients use Updatum's default parser, which removes the numeric
+correction suffix before comparison. If the first post-merge release is a newer
+unsuffixed stable version, ordinary Updatum ordering can deliver it without the
+manual correction transition. Once any correction-aware Windows build is
+installed, later corrections and stable base versions are compared using
+OpenClaw release ordering.
 
 ```powershell
 git tag -a vX.Y.Z-alpha.N -m "OpenClaw Windows Hub vX.Y.Z-alpha.N"
