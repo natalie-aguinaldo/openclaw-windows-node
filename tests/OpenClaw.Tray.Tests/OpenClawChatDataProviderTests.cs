@@ -5744,6 +5744,51 @@ public class OpenClawChatDataProviderTests
     }
 
     [Fact]
+    public async Task DisposeAsync_WaitsForInFlightChangedCallback()
+    {
+        var bridge = new FakeBridge { Sessions = [MainSession()] };
+        var provider = new OpenClawChatDataProvider(bridge);
+        using var callbackEntered = new ManualResetEventSlim();
+        using var releaseCallback = new ManualResetEventSlim();
+        provider.Changed += (_, _) =>
+        {
+            callbackEntered.Set();
+            Assert.True(releaseCallback.Wait(TimeSpan.FromSeconds(10)));
+        };
+
+        var publishTask = Task.Run(
+            () => bridge.RaiseStatus(ConnectionStatus.Connecting));
+        Assert.True(callbackEntered.Wait(TimeSpan.FromSeconds(10)));
+        var disposeTask = Task.Run(async () => await provider.DisposeAsync());
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => provider.PublishDisposedForTests,
+                TimeSpan.FromSeconds(10)));
+        Assert.False(disposeTask.IsCompleted);
+        Assert.False(bridge.IsDisposed);
+
+        releaseCallback.Set();
+        await publishTask;
+        await disposeTask;
+
+        Assert.True(bridge.IsDisposed);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_FromChangedCallbackDoesNotDeadlock()
+    {
+        var bridge = new FakeBridge { Sessions = [MainSession()] };
+        var provider = new OpenClawChatDataProvider(bridge);
+        provider.Changed += (_, _) => provider.DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+        await Task.Run(
+            () => bridge.RaiseStatus(ConnectionStatus.Connecting))
+            .WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(bridge.IsDisposed);
+    }
+
+    [Fact]
     public async Task DisposeAsync_PersistsAuthoritativeSnapshotWhenQueuedDeliveryIsDropped()
     {
         using var temp = new TempDirectory();

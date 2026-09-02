@@ -79,7 +79,10 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     private readonly Action<Action>? _post;
     private readonly Func<Func<Task>, Task> _deferredAbortScheduler;
     private readonly object _publishGate = new();
+    private readonly Dictionary<int, int> _publishCallbackDepthByThread = [];
+    private readonly ManualResetEventSlim _disposeCompleted = new();
     private ChatDataSnapshot? _pendingPublishSnapshot;
+    private int _activePublishCallbacks;
     private bool _publishScheduled;
     private bool _publishDisposed;
 
@@ -96,6 +99,14 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
 #if OPENCLAW_TRAY_TESTS
     internal Action<ChatDataSnapshot>? BeforePublishForTests { get; set; }
+    internal bool PublishDisposedForTests
+    {
+        get
+        {
+            lock (_publishGate)
+                return _publishDisposed;
+        }
+    }
 #endif
 
     /// <param name="bridge">Adapter wrapping the live gateway client.</param>
@@ -1023,29 +1034,42 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     {
         var transition = _state.DisposeState();
         if (!transition.IsFirstDispose)
-            return ValueTask.CompletedTask;
-        lock (_publishGate)
         {
-            _publishDisposed = true;
-            _pendingPublishSnapshot = null;
-            _publishScheduled = false;
+            _disposeCompleted.Wait();
+            WaitForInFlightPublishCallbacks();
+            return ValueTask.CompletedTask;
         }
-        _persistence.SaveSnapshot(_state.Snapshot(ProjectionContext()));
-        _telemetry.FinishAll(
-            ChatTelemetryOutcome.Canceled,
-            ChatTurnTelemetryReason.Disposed);
-        _historyLoader.Completed -= OnHistoryLoadCompleted;
-        _historyLoader.Dispose();
-        _metadataStore.Dispose();
-        _persistence.Dispose();
-        _bridge.StatusChanged -= OnStatusChanged;
-        _bridge.SessionsUpdated -= OnSessionsUpdated;
-        _bridge.SessionCommandCompleted -= OnSessionCommandCompleted;
-        _bridge.ChatMessageReceived -= OnChatMessageReceived;
-        _bridge.AgentEventReceived -= OnAgentEventReceived;
-        _bridge.ModelsListUpdated -= OnModelsListUpdated;
-        _bridge.Dispose();
-        return ValueTask.CompletedTask;
+
+        try
+        {
+            lock (_publishGate)
+            {
+                _publishDisposed = true;
+                _pendingPublishSnapshot = null;
+                _publishScheduled = false;
+            }
+            WaitForInFlightPublishCallbacks();
+            _persistence.SaveSnapshot(_state.Snapshot(ProjectionContext()));
+            _telemetry.FinishAll(
+                ChatTelemetryOutcome.Canceled,
+                ChatTurnTelemetryReason.Disposed);
+            _historyLoader.Completed -= OnHistoryLoadCompleted;
+            _historyLoader.Dispose();
+            _metadataStore.Dispose();
+            _persistence.Dispose();
+            _bridge.StatusChanged -= OnStatusChanged;
+            _bridge.SessionsUpdated -= OnSessionsUpdated;
+            _bridge.SessionCommandCompleted -= OnSessionCommandCompleted;
+            _bridge.ChatMessageReceived -= OnChatMessageReceived;
+            _bridge.AgentEventReceived -= OnAgentEventReceived;
+            _bridge.ModelsListUpdated -= OnModelsListUpdated;
+            _bridge.Dispose();
+            return ValueTask.CompletedTask;
+        }
+        finally
+        {
+            _disposeCompleted.Set();
+        }
     }
 
     /// <summary>
@@ -1830,13 +1854,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
         if (_post is null)
         {
-            lock (_publishGate)
-            {
-                if (_publishDisposed)
-                    return;
-            }
-            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
-            DebounceSnapshot(snapshot);
+            DeliverSnapshot(snapshot);
         }
         else
         {
@@ -1899,8 +1917,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
         try
         {
-            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
-            DebounceSnapshot(snapshot);
+            DeliverSnapshot(snapshot);
         }
         finally
         {
@@ -1934,6 +1951,52 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         // labels while reconnecting instead of "Main session"/"model".
         if (snapshot.Threads.Length > 0 || snapshot.AvailableModels.Length > 0)
             _persistence.DebounceSnapshot(snapshot);
+    }
+
+    private void DeliverSnapshot(ChatDataSnapshot snapshot)
+    {
+        var threadId = Environment.CurrentManagedThreadId;
+        lock (_publishGate)
+        {
+            if (_publishDisposed)
+                return;
+            _activePublishCallbacks++;
+            _publishCallbackDepthByThread[threadId] =
+                _publishCallbackDepthByThread.GetValueOrDefault(threadId) + 1;
+        }
+
+        try
+        {
+            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
+            DebounceSnapshot(snapshot);
+        }
+        finally
+        {
+            lock (_publishGate)
+            {
+                _activePublishCallbacks--;
+                var depth = _publishCallbackDepthByThread[threadId] - 1;
+                if (depth == 0)
+                    _publishCallbackDepthByThread.Remove(threadId);
+                else
+                    _publishCallbackDepthByThread[threadId] = depth;
+                Monitor.PulseAll(_publishGate);
+            }
+        }
+    }
+
+    private void WaitForInFlightPublishCallbacks()
+    {
+        lock (_publishGate)
+        {
+            var threadId = Environment.CurrentManagedThreadId;
+            var ownCallbackDepth = _publishCallbackDepthByThread.GetValueOrDefault(threadId);
+            while (_activePublishCallbacks > ownCallbackDepth)
+            {
+                Monitor.Wait(_publishGate);
+                ownCallbackDepth = _publishCallbackDepthByThread.GetValueOrDefault(threadId);
+            }
+        }
     }
 
     // ── Last-chat-state cache ──────────────────────────────────────────
