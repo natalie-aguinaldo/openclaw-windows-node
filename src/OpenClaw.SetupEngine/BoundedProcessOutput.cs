@@ -10,13 +10,16 @@ namespace OpenClaw.SetupEngine;
 internal static class BoundedProcessOutput
 {
     internal const int DefaultTimeoutMs = 5_000;
-    private const int MinDrainMs = 250;
 
-    internal static (int ExitCode, string Output) Read(
+    internal static async Task<(int ExitCode, string Output)> ReadAsync(
         ProcessStartInfo startInfo,
-        int timeoutMs = DefaultTimeoutMs)
+        int timeoutMs = DefaultTimeoutMs,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(startInfo);
+        if (timeoutMs < 0)
+            throw new ArgumentOutOfRangeException(nameof(timeoutMs));
+        cancellationToken.ThrowIfCancellationRequested();
 
         using var process = Process.Start(startInfo);
         if (process is null)
@@ -29,55 +32,85 @@ internal static class BoundedProcessOutput
             ? process.StandardError.ReadToEndAsync()
             : null;
 
-        var output = AwaitRedirectedOutput(process, stdoutTask, timeoutMs) ?? string.Empty;
-        if (stderrTask is not null)
-            ObserveQuietly(stderrTask);
-
         try
         {
-            return (process.HasExited ? process.ExitCode : -1, output);
+            var output = await AwaitRedirectedOutputAsync(
+                process,
+                stdoutTask,
+                timeoutMs,
+                cancellationToken);
+            return output is not null && process.HasExited
+                ? (process.ExitCode, output)
+                : (-1, string.Empty);
         }
-        catch (InvalidOperationException)
+        finally
         {
-            return (-1, output);
+            ObserveQuietly(stdoutTask);
+            if (stderrTask is not null)
+            {
+                if (!stderrTask.IsCompleted)
+                    DisposeQuietly(process.StandardError);
+                ObserveQuietly(stderrTask);
+            }
         }
     }
 
-    internal static string? AwaitRedirectedOutput(Process process, Task<string> readTask, int timeoutMs)
+    internal static async Task<string?> AwaitRedirectedOutputAsync(
+        Process process,
+        Task<string> readTask,
+        int timeoutMs,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(process);
         ArgumentNullException.ThrowIfNull(readTask);
         if (timeoutMs < 0)
             throw new ArgumentOutOfRangeException(nameof(timeoutMs));
 
-        var sw = Stopwatch.StartNew();
-        if (!process.WaitForExit(timeoutMs))
-        {
-            TryKillTree(process);
-            AbandonRead(process, readTask);
-            return null;
-        }
-
-        var elapsedMs = (int)Math.Min(sw.ElapsedMilliseconds, timeoutMs);
-        var drainBudgetMs = Math.Max(timeoutMs - elapsedMs, MinDrainMs);
+        var deadline = new MonotonicDeadline(TimeSpan.FromMilliseconds(timeoutMs));
+        var exitTask = process.WaitForExitAsync(CancellationToken.None);
         try
         {
-            if (!readTask.Wait(drainBudgetMs))
-            {
-                TryKillTree(process);
-                AbandonRead(process, readTask);
-                return null;
-            }
+            await WaitWithinDeadlineAsync(exitTask, deadline, cancellationToken);
+            await WaitWithinDeadlineAsync(readTask, deadline, cancellationToken);
+            return await readTask;
         }
-        catch (AggregateException)
+        catch (TimeoutException)
         {
+            StopAndAbandon(process, readTask);
             return null;
         }
-
-        return readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : null;
+        catch (OperationCanceledException)
+        {
+            StopAndAbandon(process, readTask);
+            throw;
+        }
+        finally
+        {
+            ObserveQuietly(exitTask);
+            ObserveQuietly(readTask);
+        }
     }
 
-    private static void TryKillTree(Process process)
+    private static async Task WaitWithinDeadlineAsync(
+        Task task,
+        MonotonicDeadline deadline,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (task.IsCompleted)
+        {
+            await task;
+            return;
+        }
+
+        var remaining = deadline.Remaining;
+        if (remaining <= TimeSpan.Zero)
+            throw new TimeoutException();
+
+        await task.WaitAsync(remaining, cancellationToken);
+    }
+
+    private static void StopAndAbandon(Process process, Task readTask)
     {
         try { process.Kill(entireProcessTree: true); }
         catch (Exception ex)
@@ -85,17 +118,14 @@ internal static class BoundedProcessOutput
             Trace.WriteLine($"BoundedProcessOutput.TryKillTree: {ex.GetType().Name}: {ex.Message}");
         }
 
-        try { process.WaitForExit(1_000); }
-        catch (Exception ex)
-        {
-            Trace.WriteLine($"BoundedProcessOutput.WaitForExit: {ex.GetType().Name}: {ex.Message}");
-        }
+        if (!readTask.IsCompleted)
+            DisposeQuietly(process.StandardOutput);
     }
 
-    private static void AbandonRead(Process process, Task readTask)
+    private static void DisposeQuietly(IDisposable disposable)
     {
-        ObserveQuietly(readTask);
-        try { process.StandardOutput.Dispose(); } catch { }
+        try { disposable.Dispose(); }
+        catch (ObjectDisposedException) { }
     }
 
     private static void ObserveQuietly(Task task) =>
@@ -104,5 +134,24 @@ internal static class BoundedProcessOutput
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
-}
 
+    private readonly struct MonotonicDeadline
+    {
+        private readonly long _startedAt = Stopwatch.GetTimestamp();
+        private readonly TimeSpan _timeout;
+
+        internal MonotonicDeadline(TimeSpan timeout)
+        {
+            _timeout = timeout;
+        }
+
+        internal TimeSpan Remaining
+        {
+            get
+            {
+                var remaining = _timeout - Stopwatch.GetElapsedTime(_startedAt);
+                return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+            }
+        }
+    }
+}

@@ -829,17 +829,16 @@ public sealed partial class CapabilitiesPage : Page
         try
         {
             var path = PreflightWindowsTailscaleStep.ResolveWindowsTailscaleCliPath();
-            var result = await Task.Run(() =>
+            var psi = new ProcessStartInfo(path, "status --json")
             {
-                var psi = new ProcessStartInfo(path, "status --json")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                };
-                return BoundedProcessOutput.Read(psi, BoundedProcessOutput.DefaultTimeoutMs);
-            });
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            var result = await BoundedProcessOutput.ReadAsync(
+                psi,
+                BoundedProcessOutput.DefaultTimeoutMs);
             string? dnsName = null;
             string? tailnetDnsSuffix = null;
             if (result.ExitCode == 0 &&

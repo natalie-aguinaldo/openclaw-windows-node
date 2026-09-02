@@ -5,23 +5,26 @@ namespace OpenClaw.SetupEngine.Tests;
 public sealed class BoundedProcessOutputTests
 {
     [Fact]
-    public async Task AwaitRedirectedOutput_ReturnsNullWhenStdoutNeverCloses()
+    public async Task AwaitRedirectedOutputAsync_ReturnsNullWhenStdoutNeverCloses()
     {
         using var process = StartExitingProcess();
         Assert.NotNull(process);
 
         var never = new TaskCompletionSource<string>(
             TaskCreationOptions.RunContinuationsAsynchronously).Task;
-        var helper = Task.Run(() =>
-            BoundedProcessOutput.AwaitRedirectedOutput(process, never, timeoutMs: 400));
+        var stopwatch = Stopwatch.StartNew();
 
-        var completed = await Task.WhenAny(helper, Task.Delay(TimeSpan.FromSeconds(3)));
-        Assert.Same(helper, completed);
-        Assert.Null(await helper);
+        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
+            process,
+            never,
+            timeoutMs: 400);
+
+        Assert.Null(output);
+        Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(900));
     }
 
     [Fact]
-    public async Task AwaitRedirectedOutput_ReturnsNullWhenProcessDoesNotExit()
+    public async Task AwaitRedirectedOutputAsync_UsesOneDeadlineForExitKillAndDrain()
     {
         var (fileName, arguments) = LongRunningCommand();
         using var process = Process.Start(new ProcessStartInfo
@@ -36,14 +39,16 @@ public sealed class BoundedProcessOutputTests
 
         var readTask = process.StandardOutput.ReadToEndAsync();
         var stopwatch = Stopwatch.StartNew();
-        var output = BoundedProcessOutput.AwaitRedirectedOutput(
+        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
             process,
             readTask,
             timeoutMs: 400);
 
         Assert.Null(output);
-        Assert.InRange(stopwatch.Elapsed, TimeSpan.Zero, TimeSpan.FromSeconds(2));
-        Assert.True(process.HasExited);
+        Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(300), TimeSpan.FromMilliseconds(900));
+        Assert.True(
+            SpinWait.SpinUntil(() => process.HasExited, TimeSpan.FromSeconds(2)),
+            "The timed-out Tailscale probe process was not killed.");
         var readException = await Record.ExceptionAsync(
             () => readTask.WaitAsync(TimeSpan.FromSeconds(5)));
         Assert.True(
@@ -52,51 +57,84 @@ public sealed class BoundedProcessOutputTests
     }
 
     [Fact]
-    public void AwaitRedirectedOutput_PreservesOutputCompletedDuringDrainGrace()
+    public async Task AwaitRedirectedOutputAsync_PreservesOutputCompletedNearDeadline()
     {
         using var process = StartExitingProcess();
         Assert.True(process.WaitForExit(3_000));
         var outputSource = new TaskCompletionSource<string>(
             TaskCreationOptions.RunContinuationsAsynchronously);
-        string? output = null;
-        Exception? helperException = null;
-        var helperThread = new Thread(() =>
-        {
-            try
-            {
-                output = BoundedProcessOutput.AwaitRedirectedOutput(
-                    process,
-                    outputSource.Task,
-                    timeoutMs: 5_000);
-            }
-            catch (Exception ex)
-            {
-                helperException = ex;
-            }
-        })
-        {
-            IsBackground = true,
-            Name = "setup-tailscale-output-drain-test"
-        };
+        var helper = BoundedProcessOutput.AwaitRedirectedOutputAsync(
+            process,
+            outputSource.Task,
+            timeoutMs: 500);
 
-        helperThread.Start();
-        Assert.True(
-            SpinWait.SpinUntil(
-                () => helperThread.ThreadState.HasFlag(System.Threading.ThreadState.WaitSleepJoin),
-                TimeSpan.FromSeconds(3)),
-            "Helper never entered the redirected-output drain wait.");
+        await Task.Delay(350);
         outputSource.SetResult("{\"BackendState\":\"Running\"}");
 
-        Assert.True(helperThread.Join(TimeSpan.FromSeconds(3)));
-        Assert.Null(helperException);
-        Assert.Equal("{\"BackendState\":\"Running\"}", output);
+        Assert.Equal("{\"BackendState\":\"Running\"}", await helper);
     }
 
     [Fact]
-    public void Read_CapturesStdoutFromExitingProcess()
+    public async Task AwaitRedirectedOutputAsync_CancellationKillsProcessAndObservesRead()
+    {
+        var (fileName, arguments) = LongRunningCommand();
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        });
+        Assert.NotNull(process);
+
+        var readTask = process.StandardOutput.ReadToEndAsync();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.CancelAfter(TimeSpan.FromMilliseconds(150));
+        var stopwatch = Stopwatch.StartNew();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            BoundedProcessOutput.AwaitRedirectedOutputAsync(
+                process,
+                readTask,
+                timeoutMs: 5_000,
+                cancellation.Token));
+
+        Assert.InRange(stopwatch.Elapsed, TimeSpan.Zero, TimeSpan.FromMilliseconds(800));
+        Assert.True(
+            SpinWait.SpinUntil(() => process.HasExited, TimeSpan.FromSeconds(2)),
+            "The cancelled Tailscale probe process was not killed.");
+        _ = await Record.ExceptionAsync(() => readTask);
+    }
+
+    [Fact]
+    public async Task AwaitRedirectedOutputAsync_BoundsInheritedHandleDrainOnWindows()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        using var process = Process.Start(InheritedHandleCommand());
+        Assert.NotNull(process);
+        var readTask = process.StandardOutput.ReadToEndAsync();
+        Assert.True(process.WaitForExit(2_000), "The parent probe process did not exit.");
+        Assert.False(readTask.IsCompleted, "The descendant did not retain the redirected output handle.");
+        var stopwatch = Stopwatch.StartNew();
+
+        var output = await BoundedProcessOutput.AwaitRedirectedOutputAsync(
+            process,
+            readTask,
+            timeoutMs: 300);
+
+        Assert.Null(output);
+        Assert.InRange(stopwatch.Elapsed, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(800));
+        _ = await Record.ExceptionAsync(() => readTask.WaitAsync(TimeSpan.FromSeconds(3)));
+    }
+
+    [Fact]
+    public async Task ReadAsync_CapturesStdoutFromExitingProcess()
     {
         var (fileName, arguments) = EchoCommand("status-ok");
-        var result = BoundedProcessOutput.Read(new ProcessStartInfo
+        var result = await BoundedProcessOutput.ReadAsync(new ProcessStartInfo
         {
             FileName = fileName,
             Arguments = arguments,
@@ -108,6 +146,52 @@ public sealed class BoundedProcessOutputTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("status-ok", result.Output);
+    }
+
+    [Fact]
+    public async Task ReadAsync_HungWindowsTailscaleProbeHonorsFiveSecondDeadline()
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        var (fileName, arguments) = LongRunningCommand();
+        var stopwatch = Stopwatch.StartNew();
+
+        var result = await BoundedProcessOutput.ReadAsync(new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        });
+
+        Assert.Equal(-1, result.ExitCode);
+        Assert.Empty(result.Output);
+        Assert.InRange(
+            stopwatch.Elapsed,
+            TimeSpan.FromSeconds(4.5),
+            TimeSpan.FromMilliseconds(5_750));
+    }
+
+    private static ProcessStartInfo InheritedHandleCommand()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-NonInteractive");
+        startInfo.ArgumentList.Add("-Command");
+        startInfo.ArgumentList.Add(
+            "$null = Start-Process powershell.exe " +
+            "-ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds 2' " +
+            "-NoNewWindow -PassThru; Write-Output inherited-output");
+        return startInfo;
     }
 
     private static Process StartExitingProcess() =>
