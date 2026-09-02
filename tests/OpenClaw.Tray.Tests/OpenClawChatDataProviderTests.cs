@@ -5476,16 +5476,16 @@ public class OpenClawChatDataProviderTests
         var bridge = new FakeBridge { Sessions = new[] { MainSession() } };
         var queued = new List<Action>();
         var provider = new OpenClawChatDataProvider(bridge, post: a => queued.Add(a));
-        var snapshots = new List<ChatDataSnapshot>();
-        provider.Changed += (_, e) => snapshots.Add(e.Snapshot);
+        var deliveries = new List<string>();
+        provider.Changed += (_, _) => deliveries.Add("snapshot");
+        provider.NotificationRequested += (_, _) => deliveries.Add("notification");
 
         bridge.RaiseChat(new ChatMessageInfo { SessionKey = "main", Role = "assistant", Text = "x", State = "final" });
 
-        // Snapshot was queued, not invoked immediately.
-        Assert.Empty(snapshots);
-        Assert.NotEmpty(queued);
+        Assert.Empty(deliveries);
+        Assert.Single(queued);
         foreach (var a in queued) a();
-        Assert.NotEmpty(snapshots);
+        Assert.Equal(["snapshot", "notification"], deliveries);
     }
 
     [Fact]
@@ -5784,6 +5784,36 @@ public class OpenClawChatDataProviderTests
         await Task.Run(
             () => bridge.RaiseStatus(ConnectionStatus.Connecting))
             .WaitAsync(TimeSpan.FromSeconds(10));
+
+        Assert.True(bridge.IsDisposed);
+    }
+
+    [Fact]
+    public async Task DisposeAsync_ConcurrentExternalAndCallbackDisposalDoesNotDeadlock()
+    {
+        var bridge = new FakeBridge { Sessions = [MainSession()] };
+        var provider = new OpenClawChatDataProvider(bridge);
+        using var callbackEntered = new ManualResetEventSlim();
+        using var allowCallbackDispose = new ManualResetEventSlim();
+        provider.Changed += (_, _) =>
+        {
+            callbackEntered.Set();
+            Assert.True(allowCallbackDispose.Wait(TimeSpan.FromSeconds(10)));
+            provider.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        };
+
+        var publishTask = Task.Run(
+            () => bridge.RaiseStatus(ConnectionStatus.Connecting));
+        Assert.True(callbackEntered.Wait(TimeSpan.FromSeconds(10)));
+        var externalDispose = Task.Run(async () => await provider.DisposeAsync());
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => provider.PublishDisposedForTests,
+                TimeSpan.FromSeconds(10)));
+
+        allowCallbackDispose.Set();
+        await publishTask.WaitAsync(TimeSpan.FromSeconds(10));
+        await externalDispose.WaitAsync(TimeSpan.FromSeconds(10));
 
         Assert.True(bridge.IsDisposed);
     }

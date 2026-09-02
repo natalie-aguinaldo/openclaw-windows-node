@@ -79,10 +79,11 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     private readonly Action<Action>? _post;
     private readonly Func<Func<Task>, Task> _deferredAbortScheduler;
     private readonly object _publishGate = new();
-    private readonly Dictionary<int, int> _publishCallbackDepthByThread = [];
+    private readonly Dictionary<int, int> _deliveryDepthByThread = [];
     private readonly ManualResetEventSlim _disposeCompleted = new();
+    private readonly List<ChatProviderNotification> _pendingPublishNotifications = [];
     private ChatDataSnapshot? _pendingPublishSnapshot;
-    private int _activePublishCallbacks;
+    private int _activeDeliveries;
     private bool _publishScheduled;
     private bool _publishDisposed;
 
@@ -1035,8 +1036,10 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         var transition = _state.DisposeState();
         if (!transition.IsFirstDispose)
         {
+            if (IsDeliveringOnCurrentThread())
+                return ValueTask.CompletedTask;
             _disposeCompleted.Wait();
-            WaitForInFlightPublishCallbacks();
+            WaitForInFlightDeliveries();
             return ValueTask.CompletedTask;
         }
 
@@ -1046,9 +1049,10 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             {
                 _publishDisposed = true;
                 _pendingPublishSnapshot = null;
+                _pendingPublishNotifications.Clear();
                 _publishScheduled = false;
             }
-            WaitForInFlightPublishCallbacks();
+            WaitForInFlightDeliveries();
             _persistence.SaveSnapshot(_state.Snapshot(ProjectionContext()));
             _telemetry.FinishAll(
                 ChatTelemetryOutcome.Canceled,
@@ -1892,17 +1896,21 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
     private void DrainPendingPublish()
     {
         ChatDataSnapshot? snapshot;
+        ChatProviderNotification[] notifications;
         lock (_publishGate)
         {
             if (_publishDisposed)
             {
                 _pendingPublishSnapshot = null;
+                _pendingPublishNotifications.Clear();
                 _publishScheduled = false;
                 return;
             }
 
             snapshot = _pendingPublishSnapshot;
             _pendingPublishSnapshot = null;
+            notifications = _pendingPublishNotifications.ToArray();
+            _pendingPublishNotifications.Clear();
             if (snapshot is null)
             {
                 _publishScheduled = false;
@@ -1918,6 +1926,8 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         try
         {
             DeliverSnapshot(snapshot);
+            foreach (var notification in notifications)
+                DeliverNotification(notification);
         }
         finally
         {
@@ -1927,6 +1937,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
                 if (_publishDisposed)
                 {
                     _pendingPublishSnapshot = null;
+                    _pendingPublishNotifications.Clear();
                     _publishScheduled = false;
                     shouldSchedule = false;
                 }
@@ -1955,46 +1966,67 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
     private void DeliverSnapshot(ChatDataSnapshot snapshot)
     {
+        Deliver(
+            () =>
+            {
+                Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
+                DebounceSnapshot(snapshot);
+            });
+    }
+
+    private void DeliverNotification(ChatProviderNotification notification) =>
+        Deliver(
+            () => NotificationRequested?.Invoke(
+                this,
+                new ChatProviderNotificationEventArgs(notification)));
+
+    private void Deliver(Action callback)
+    {
         var threadId = Environment.CurrentManagedThreadId;
         lock (_publishGate)
         {
             if (_publishDisposed)
                 return;
-            _activePublishCallbacks++;
-            _publishCallbackDepthByThread[threadId] =
-                _publishCallbackDepthByThread.GetValueOrDefault(threadId) + 1;
+            _activeDeliveries++;
+            _deliveryDepthByThread[threadId] =
+                _deliveryDepthByThread.GetValueOrDefault(threadId) + 1;
         }
 
         try
         {
-            Changed?.Invoke(this, new ChatDataChangedEventArgs(snapshot));
-            DebounceSnapshot(snapshot);
+            callback();
         }
         finally
         {
             lock (_publishGate)
             {
-                _activePublishCallbacks--;
-                var depth = _publishCallbackDepthByThread[threadId] - 1;
+                _activeDeliveries--;
+                var depth = _deliveryDepthByThread[threadId] - 1;
                 if (depth == 0)
-                    _publishCallbackDepthByThread.Remove(threadId);
+                    _deliveryDepthByThread.Remove(threadId);
                 else
-                    _publishCallbackDepthByThread[threadId] = depth;
+                    _deliveryDepthByThread[threadId] = depth;
                 Monitor.PulseAll(_publishGate);
             }
         }
     }
 
-    private void WaitForInFlightPublishCallbacks()
+    private bool IsDeliveringOnCurrentThread()
+    {
+        lock (_publishGate)
+            return _deliveryDepthByThread.ContainsKey(Environment.CurrentManagedThreadId);
+    }
+
+    private void WaitForInFlightDeliveries()
     {
         lock (_publishGate)
         {
             var threadId = Environment.CurrentManagedThreadId;
-            var ownCallbackDepth = _publishCallbackDepthByThread.GetValueOrDefault(threadId);
-            while (_activePublishCallbacks > ownCallbackDepth)
+            var ownCallbackDepth = _deliveryDepthByThread.GetValueOrDefault(threadId);
+            while (_activeDeliveries > ownCallbackDepth)
             {
                 Monitor.Wait(_publishGate);
-                ownCallbackDepth = _publishCallbackDepthByThread.GetValueOrDefault(threadId);
+                ownCallbackDepth = _deliveryDepthByThread.GetValueOrDefault(threadId);
             }
         }
     }
@@ -2017,13 +2049,23 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
     private void RaiseNotification(ChatProviderNotification notification)
     {
-        var args = new ChatProviderNotificationEventArgs(notification);
         if (_post is null)
         {
-            NotificationRequested?.Invoke(this, args);
+            DeliverNotification(notification);
             return;
         }
-        _post(() => NotificationRequested?.Invoke(this, args));
+
+        lock (_publishGate)
+        {
+            if (_publishDisposed)
+                return;
+            if (_pendingPublishSnapshot is not null)
+            {
+                _pendingPublishNotifications.Add(notification);
+                return;
+            }
+        }
+        _post(() => DeliverNotification(notification));
     }
 
 }
