@@ -883,28 +883,28 @@ Use uma destas opções:
     <value>Solicitação de permissão</value>
   </data>
   <data name="RecordingConsent_ScreenTitle" xml:space="preserve">
-    <value>Permitir gravação de tela?</value>
+    <value>Permitir captura de tela?</value>
   </data>
   <data name="RecordingConsent_CameraTitle" xml:space="preserve">
-    <value>Permitir gravação da câmera?</value>
+    <value>Permitir captura da câmera?</value>
   </data>
   <data name="RecordingConsent_LocationTitle" xml:space="preserve">
     <value>Permitir acesso à localização?</value>
   </data>
   <data name="RecordingConsent_ScreenDescription" xml:space="preserve">
-    <value>Um agente está solicitando permissão para gravar sua tela. Isso capturará vídeo da sua tela e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
+    <value>Um agente está solicitando acesso para capturar sua tela. Isso pode capturar imagens ou vídeo da sua tela e enviá-los ao agente. Sua escolha será lembrada para solicitações futuras.</value>
   </data>
   <data name="RecordingConsent_CameraDescription" xml:space="preserve">
-    <value>Um agente está solicitando permissão para gravar com sua câmera. Isso capturará vídeo da sua webcam e o enviará ao agente. Sua escolha será lembrada para solicitações futuras até que você a altere nas Configurações.</value>
+    <value>Um agente está solicitando acesso à sua câmera. Isso pode capturar fotos ou vídeo e enviá-los ao agente. Sua escolha será lembrada para solicitações futuras.</value>
   </data>
   <data name="RecordingConsent_LocationDescription" xml:space="preserve">
     <value>Um agente está solicitando acesso à localização do seu dispositivo. Isso enviará sua localização atual ao agente. Sua escolha será lembrada para solicitações futuras.</value>
   </data>
   <data name="RecordingConsent_Privacy" xml:space="preserve">
-    <value>Você pode alterar isso posteriormente nas configurações.</value>
+    <value>Permita isso somente se você confiar no agente e no gateway conectados.</value>
   </data>
   <data name="RecordingConsent_Allow" xml:space="preserve">
-    <value>Permitir gravação</value>
+    <value>Permitir</value>
   </data>
   <data name="RecordingConsent_Deny" xml:space="preserve">
     <value>Negar</value>
