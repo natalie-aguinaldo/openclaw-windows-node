@@ -59,9 +59,11 @@ public static class SetupReviewSummaryBuilder
             ? ""
             : $" --node-version {GatewayReleasePolicy.NodeVersion}";
         var installCommand =
-            $"set -euo pipefail; installer=\"$(mktemp)\"; trap 'rm -f \"$installer\"' EXIT; " +
-            $"curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 90 --connect-timeout 15 " +
+            $"set -euo pipefail; umask 077; installer=\"$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)\"; " +
+            $"trap 'rm -f \"$installer\"' EXIT; " +
+            $"curl -fsSL --connect-timeout 15 --max-time {InstallCliStep.DownloadMaxTimeSeconds} --remove-on-error " +
             $"--proto '=https' --tlsv1.2 --output \"$installer\" <install-url>; " +
+            $"test -s \"$installer\"; " +
             $"bash -s -- --version {release.Version}{runtimeArgument} < \"$installer\"";
         LocalModelInfo localAiModel =
             LocalModelCatalog.Find(config.LocalAi.SelectedModelId) ?? LocalModelCatalog.Default;

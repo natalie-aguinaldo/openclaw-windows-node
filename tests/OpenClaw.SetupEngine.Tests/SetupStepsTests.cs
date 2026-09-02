@@ -1783,7 +1783,7 @@ public class SetupStepsTests : IDisposable
     }
 
     [Fact]
-    public void InstallCli_BuildInstallCommand_DownloadsBeforeExecutingWithBoundedRetries()
+    public void InstallCli_BuildInstallCommand_DownloadsCompletelyBeforeExecuting()
     {
         var command = InstallCliStep.BuildInstallCommand(
             "https://openclaw.ai/install-cli.sh",
@@ -1791,15 +1791,35 @@ public class SetupStepsTests : IDisposable
             GatewayReleasePolicy.NodeVersion);
 
         Assert.StartsWith("set -euo pipefail", command);
-        Assert.Contains("installer=\"$(mktemp)\"", command);
+        Assert.Contains("umask 077", command);
+        Assert.Contains("installer=\"$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)\"", command);
         Assert.Contains("trap 'rm -f \"$installer\"' EXIT", command);
-        Assert.Contains("--retry 5", command);
-        Assert.Contains("--retry-all-errors", command);
-        Assert.Contains("--retry-max-time 90", command);
+        Assert.Contains("--connect-timeout 15", command);
+        Assert.Contains("--max-time 60", command);
+        Assert.Contains("--remove-on-error", command);
+        Assert.Contains("--proto '=https'", command);
+        Assert.Contains("--tlsv1.2", command);
         Assert.Contains("--output \"$installer\"", command);
         Assert.Contains("'https://openclaw.ai/install-cli.sh'", command);
+        Assert.Contains("if ! test -s \"$installer\"", command);
         Assert.Contains("bash -s -- --version '2026.5.22' --node-version '22.22.3' < \"$installer\"", command);
+        Assert.DoesNotContain("--retry", command);
         Assert.DoesNotContain("| bash", command);
+    }
+
+    [Fact]
+    public void InstallCli_RetryPolicyLimitsPipelineToTwoTransfers()
+    {
+        var step = new InstallCliStep();
+        var command = InstallCliStep.BuildInstallCommand(
+            "https://openclaw.ai/install-cli.sh",
+            GatewayReleasePolicy.RecommendedVersion,
+            GatewayReleasePolicy.NodeVersion);
+
+        Assert.Equal(2, step.Retry.MaxAttempts);
+        Assert.Equal(TimeSpan.FromSeconds(5), step.Retry.EffectiveInitialDelay);
+        Assert.Equal(InstallCliStep.DownloadMaxTimeSeconds, 60);
+        Assert.DoesNotContain("--retry", command);
     }
 
     [Fact]
@@ -1829,6 +1849,150 @@ public class SetupStepsTests : IDisposable
         Assert.Contains("exit 6", result.Message);
         Assert.Contains("Could not resolve host: openclaw.ai", result.Message);
         Assert.True(Assert.Single(commands.WslCalls).InputViaStdin);
+    }
+
+    [Fact]
+    public async Task InstallCli_TransientDnsFailureRecoversOnSecondPipelineAttempt()
+    {
+        var downloadAttempts = 0;
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) =>
+            {
+                if (command.Contains("curl -fsSL", StringComparison.Ordinal))
+                {
+                    downloadAttempts++;
+                    return downloadAttempts == 1
+                        ? new CommandResult(
+                            6,
+                            "",
+                            "curl: (6) Could not resolve host: openclaw.ai",
+                            TimeSpan.Zero,
+                            TimedOut: false)
+                        : Ok();
+                }
+
+                if (command.Contains("tools/node/bin/node --version", StringComparison.Ordinal))
+                    return Ok($"v{GatewayReleasePolicy.NodeVersion}");
+                if (command.EndsWith("openclaw --version", StringComparison.Ordinal))
+                    return Ok($"OpenClaw {GatewayReleasePolicy.RecommendedVersion}");
+                return Ok();
+            });
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+        var step = new InstallCliStep();
+
+        var result = await RetryExecutor.ExecuteWithRetry(
+            () => step.ExecuteAsync(ctx, CancellationToken.None),
+            step.Retry with { InitialDelay = TimeSpan.FromMilliseconds(1) },
+            ctx.Logger,
+            step.Id,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Message);
+        Assert.Equal(step.Retry.MaxAttempts, downloadAttempts);
+        Assert.Equal(
+            downloadAttempts,
+            commands.WslCalls.Count(call => call.Command.Contains("curl -fsSL", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task InstallCli_TransferTimeoutPreservesCurlExitAndStderr()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) => command.Contains("curl -fsSL", StringComparison.Ordinal)
+                ? new CommandResult(
+                    28,
+                    "",
+                    "curl: (28) Operation timed out after 60000 milliseconds",
+                    TimeSpan.FromSeconds(60),
+                    TimedOut: false)
+                : throw new InvalidOperationException($"Unexpected command: {command}"));
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.Equal(StepOutcome.Failed, result.Outcome);
+        Assert.Contains("exit 28", result.Message);
+        Assert.Contains("Operation timed out after 60000 milliseconds", result.Message);
+    }
+
+    [Fact]
+    public async Task InstallCli_CommandTimeoutReportsDeadlineInsteadOfSyntheticExit()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) => command.Contains("curl -fsSL", StringComparison.Ordinal)
+                ? new CommandResult(
+                    -1,
+                    "",
+                    "last installer diagnostic",
+                    InstallCliStep.InstallerCommandTimeout,
+                    TimedOut: true)
+                : throw new InvalidOperationException($"Unexpected command: {command}"));
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.Equal(StepOutcome.Failed, result.Outcome);
+        Assert.Contains("timed out after 5 minutes", result.Message);
+        Assert.Contains("last installer diagnostic", result.Message);
+        Assert.DoesNotContain("exit -1", result.Message);
+    }
+
+    [Fact]
+    public async Task InstallCli_PartialTransferDoesNotContinueToVerification()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) => command.Contains("curl -fsSL", StringComparison.Ordinal)
+                ? new CommandResult(
+                    18,
+                    "",
+                    "curl: (18) transfer closed with outstanding read data remaining",
+                    TimeSpan.Zero,
+                    TimedOut: false)
+                : throw new InvalidOperationException($"Unexpected command: {command}"));
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.Equal(StepOutcome.Failed, result.Outcome);
+        Assert.Contains("exit 18", result.Message);
+        Assert.Contains("outstanding read data", result.Message);
+        Assert.Single(commands.WslCalls);
+    }
+
+    [Fact]
+    public async Task InstallCli_EmptyDownloadDoesNotContinueToVerification()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) => command.Contains("curl -fsSL", StringComparison.Ordinal)
+                ? new CommandResult(
+                    65,
+                    "",
+                    "CLI installer download was empty.",
+                    TimeSpan.Zero,
+                    TimedOut: false)
+                : throw new InvalidOperationException($"Unexpected command: {command}"));
+        var config = new SetupConfig();
+        GatewayReleasePolicy.ResolveAndApply(config);
+        var ctx = CreateContext(config, commands);
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.Equal(StepOutcome.Failed, result.Outcome);
+        Assert.Contains("download was empty", result.Message);
+        Assert.Single(commands.WslCalls);
     }
 
     [Fact]

@@ -16,6 +16,8 @@ namespace OpenClaw.SetupEngine;
 
 public sealed class InstallCliStep : SetupStep
 {
+    internal const int DownloadMaxTimeSeconds = 60;
+    internal static readonly TimeSpan InstallerCommandTimeout = TimeSpan.FromMinutes(5);
     internal const string StagedValidationPackageReference =
         "file:/var/lib/openclaw/setup-package/openclaw-current.tgz";
     private const string StagedValidationPackageDirectory = "/var/lib/openclaw/setup-package";
@@ -74,9 +76,16 @@ public sealed class InstallCliStep : SetupStep
             var result = await ctx.Commands.RunInWslAsync(
                 distro,
                 installScript,
-                TimeSpan.FromMinutes(5),
+                InstallerCommandTimeout,
                 ct: ct,
                 inputViaStdin: true);
+
+            if (result.TimedOut)
+            {
+                var stderr = string.IsNullOrWhiteSpace(result.Stderr) ? "" : $" {result.Stderr.Trim()}";
+                return StepResult.Fail(
+                    $"CLI installer command timed out after {InstallerCommandTimeout.TotalMinutes:0} minutes.{stderr}");
+            }
 
             if (result.ExitCode != 0)
                 return StepResult.Fail($"CLI install failed (exit {result.ExitCode}): {result.Stderr}");
@@ -178,18 +187,21 @@ public sealed class InstallCliStep : SetupStep
 
         return $"""
             set -euo pipefail
-            installer="$(mktemp)"
+            umask 077
+            installer="$(mktemp --tmpdir openclaw-installer.XXXXXXXXXX)"
             trap 'rm -f "$installer"' EXIT
             curl -fsSL \
-              --retry 5 \
-              --retry-all-errors \
-              --retry-delay 2 \
-              --retry-max-time 90 \
               --connect-timeout 15 \
+              --max-time {DownloadMaxTimeSeconds} \
+              --remove-on-error \
               --proto '=https' \
               --tlsv1.2 \
               --output "$installer" \
               '{escapedUrl}'
+            if ! test -s "$installer"; then
+              echo 'CLI installer download was empty.' >&2
+              exit 65
+            fi
             bash -s -- --version '{escapedVersion}'{runtimeArgument} < "$installer"
             """;
     }
