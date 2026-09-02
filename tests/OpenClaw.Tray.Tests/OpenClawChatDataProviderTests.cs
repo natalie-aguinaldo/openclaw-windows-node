@@ -5744,6 +5744,35 @@ public class OpenClawChatDataProviderTests
     }
 
     [Fact]
+    public async Task DisposeAsync_PersistsAuthoritativeSnapshotWhenQueuedDeliveryIsDropped()
+    {
+        using var temp = new TempDirectory();
+        var statePath = Path.Combine(temp.DirectoryPath, "last-chat-state.json");
+        var queued = new ConcurrentQueue<Action>();
+        var (bridge, provider, snapshots, _) = CreateProvider(
+            lastChatStatePath: statePath,
+            lastChatStateSaveDelay: TimeSpan.FromDays(1),
+            post: queued.Enqueue);
+        bridge.RaiseSessions(
+        [
+            new SessionInfo
+            {
+                Key = "main",
+                IsMain = true,
+                DisplayName = "Final session",
+                Status = "active",
+            },
+        ]);
+        Assert.Single(queued);
+
+        await provider.DisposeAsync();
+
+        Assert.Empty(snapshots);
+        var persisted = OpenClawChatDataProvider.LoadLastChatState(statePath);
+        Assert.Equal("Final session", persisted?.ThreadTitle);
+    }
+
+    [Fact]
     public async Task DisposeAsync_DropsQueuedCommandCatalogDelivery()
     {
         var bridge = new FakeBridge

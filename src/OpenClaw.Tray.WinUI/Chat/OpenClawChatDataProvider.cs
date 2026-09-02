@@ -1030,6 +1030,7 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             _pendingPublishSnapshot = null;
             _publishScheduled = false;
         }
+        _persistence.SaveSnapshot(_state.Snapshot(ProjectionContext()));
         _telemetry.FinishAll(
             ChatTelemetryOutcome.Canceled,
             ChatTurnTelemetryReason.Disposed);
