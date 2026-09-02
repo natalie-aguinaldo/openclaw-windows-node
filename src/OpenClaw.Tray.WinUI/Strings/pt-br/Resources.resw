@@ -824,10 +824,10 @@ Use uma destas opções:
   </data>
   <!-- ==================== Toast: Screen / Camera ==================== -->
   <data name="Toast_ScreenCaptured" xml:space="preserve">
-    <value>📸 Tela capturada</value>
+    <value>📸 Capturando a tela</value>
   </data>
   <data name="Toast_ScreenCapturedDetail" xml:space="preserve">
-    <value>O agente do OpenClaw capturou sua tela</value>
+    <value>O agente do OpenClaw está capturando sua tela</value>
   </data>
   <data name="Toast_CameraCaptured" xml:space="preserve">
     <value>📷 Capturando foto da webcam</value>
@@ -926,7 +926,7 @@ Use uma destas opções:
     <value>Privacidade</value>
   </data>
   <data name="SettingsPrivacyDescription.Text" xml:space="preserve">
-    <value>Pré-aprove recursos para que os agentes possam usá-los sem pedir permissão todas as vezes. Você ainda verá uma contagem regressiva antes do início da gravação.</value>
+    <value>Permita captura sensível sem perguntar todas as vezes. O OpenClaw ainda notifica você antes de cada acesso e mostra uma contagem regressiva antes das gravações.</value>
   </data>
   <data name="ScreenRecordingToggle.Header" xml:space="preserve">
     <value>Permitir gravação de tela</value>
@@ -1060,7 +1060,7 @@ Use uma destas opções:
     <value>Sim: abrir esta URL.</value>
   </data>
   <data name="UrlApproval_NoHint" xml:space="preserve">
-    <value>Não: bloquear esta URL..</value>
+    <value>Não: bloquear esta URL.</value>
   </data>
   <data name="Onboarding_Title" xml:space="preserve">
     <value>Configuração do OpenClaw</value>
@@ -2378,7 +2378,7 @@ Use uma destas opções:
     <value>Renderização do Canvas</value>
   </data>
   <data name="Onboarding_Ready_Node_Canvas_Sub" xml:space="preserve">
-    <value>Saída de área de trabalho visual</value>
+    <value>Saída visual do espaço de trabalho</value>
   </data>
   <data name="Onboarding_Ready_Node_Notify" xml:space="preserve">
     <value>Notificações</value>
@@ -2660,7 +2660,7 @@ Use uma destas opções:
     <value>Modelo (opcional)</value>
   </data>
   <data name="VoiceSettingsPage_PrivacyNote.Text" xml:space="preserve">
-    <value>Todo o processamento de fala é executado inteiramente no seu dispositivo. Nenhum dado de áudio é enviado a nenhum serviço em nuvem.</value>
+    <value>Piper, Windows e o reconhecimento de fala são executados neste dispositivo. Provedores de TTS em nuvem enviam o texto das respostas aos seus serviços para síntese; o áudio do microfone não é enviado a eles.</value>
   </data>
   <data name="VoiceSettingsPage_StatusModelReady" xml:space="preserve">
     <value>✅ Modelo pronto</value>
@@ -3801,10 +3801,10 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>Som</value>
   </data>
   <data name="SettingsRow_ScreenRec_Header.Text" xml:space="preserve">
-    <value>Permitir gravação de tela</value>
+    <value>Permitir captura de tela</value>
   </data>
   <data name="SettingsRow_CamRec_Header.Text" xml:space="preserve">
-    <value>Permitir gravação de câmera</value>
+    <value>Permitir captura de câmera</value>
   </data>
   <data name="SettingsRow_Location_Header.Text" xml:space="preserve">
     <value>Permitir acesso à localização</value>
@@ -4617,7 +4617,7 @@ Os comandos são bloqueados enquanto o sandboxing está indisponível porque o b
     <value>📁 Arquivos</value>
   </data>
   <data name="SandboxPage_ByDefaultTheAgent.Text" xml:space="preserve">
-    <value>Por padrão, o agente só tem uma pasta de área de trabalho temporária na qual pode ler e escrever. Conceda acesso a pastas do usuário abaixo. Chaves SSH, perfis de navegador e as próprias configurações do OpenClaw são sempre bloqueados.</value>
+    <value>Por padrão, o agente só tem uma pasta de espaço de trabalho temporária na qual pode ler e escrever. Conceda acesso a pastas do usuário abaixo. Chaves SSH, perfis de navegador e as próprias configurações do OpenClaw são sempre bloqueados.</value>
   </data>
   <data name="SandboxPage_Documents.Text" xml:space="preserve">
     <value>Documentos</value>
