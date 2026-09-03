@@ -271,7 +271,7 @@ is what lets a packaged smoke test run without disturbing a working install:
 
 | | `-Msix Dev` | `-Msix Store` |
 | --- | --- | --- |
-| Identity | `OpenClaw.Companion.Dev` | `OpenClaw.Companion` |
+| Identity | `OpenClawFoundation.OpenClaw.Dev` | `OpenClawFoundation.OpenClaw` |
 | Publisher | local development certificate | Partner Center |
 | Protocol | `openclaw-dev` | `openclaw` |
 | Signing | signed locally | unsigned; the Store signs |
@@ -304,13 +304,14 @@ runtime, the in-process SetupEngine UI, and the architecture-matched
 the loose Visual C++ runtime files that the Inno payload ships but the MSIX
 resolves through its VCLibs framework dependency).
 
-Upload both `.msix` files to the same Partner Center submission. Before the
-first submission, reserve the app name and replace `Identity/@Name`,
+Upload both `.msix` files to the same Partner Center submission. `Identity/@Name`,
 `Identity/@Publisher`, and `Properties/PublisherDisplayName` in
-`src\OpenClaw.Tray.WinUI\Package.appxmanifest` with the values Partner Center
-assigns. The submission also needs a justification for the `runFullTrust`
-restricted capability and a stated reason plus privacy policy for the declared
-`webcam`, `microphone`, and `location` device capabilities.
+`src\OpenClaw.Tray.WinUI\Package.appxmanifest` already hold the reserved
+Partner Center values and must keep matching **Product management > Product
+identity** exactly; a mismatch fails ingestion. The submission also needs a
+justification for the `runFullTrust` restricted capability and a stated reason
+plus privacy policy for the declared `webcam`, `microphone`, and `location`
+device capabilities.
 
 Generating the optional `.appxsym` symbol package additionally requires
 `mspdbcmf.exe` from the Visual Studio **Desktop development with C++** workload;

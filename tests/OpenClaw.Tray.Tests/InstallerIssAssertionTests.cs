@@ -361,9 +361,9 @@ public sealed class InstallerIssAssertionTests
         Assert.Contains(@"<AppxManifest Remove=""@(AppxManifest)"" />", project);
         Assert.DoesNotContain("PatchDevAppxManifestIdentity", project);
         Assert.Contains("Version=\"0.0.0.0\"", manifest);
-        Assert.Contains("Name=\"OpenClaw.Companion\"", manifest);
+        Assert.Contains("Name=\"OpenClawFoundation.OpenClaw\"", manifest);
         Assert.Contains("<uap:Protocol Name=\"openclaw\">", manifest);
-        Assert.DoesNotContain("OpenClaw.Companion.Dev", manifest);
+        Assert.DoesNotContain("OpenClawFoundation.OpenClaw.Dev", manifest);
     }
 
     [Fact]

@@ -259,7 +259,7 @@
       OutputManifestPath="$(_GeneratedAppxManifestPath)"
       FourPartVersion="$(_AppxManifestVersion)"
       DevBuild="$(DevBuild)"
-      IdentityName="OpenClaw.Companion.Dev"
+      IdentityName="OpenClawFoundation.OpenClaw.Dev"
       Publisher="$(OpenClawDevMsixPublisher)"
       DisplayName="OpenClaw Companion (Dev)"
       ProtocolName="openclaw-dev"

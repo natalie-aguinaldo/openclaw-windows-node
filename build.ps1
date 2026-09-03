@@ -444,7 +444,7 @@ function Build-Project($name, $path, $useRid = $false, $packageMsix = $false) {
     }
     
     if ($packageMsix) {
-        $installedDevPackage = Get-AppxPackage -Name "OpenClaw.Companion.Dev" -ErrorAction SilentlyContinue |
+        $installedDevPackage = Get-AppxPackage -Name "OpenClawFoundation.OpenClaw.Dev" -ErrorAction SilentlyContinue |
             Where-Object Publisher -eq "CN=OpenClaw Local Development" |
             Sort-Object { [version]$_.Version.ToString() } -Descending |
             Select-Object -First 1
@@ -454,7 +454,7 @@ function Build-Project($name, $path, $useRid = $false, $packageMsix = $false) {
             1
         }
         if ($msixRevision -gt 65535) {
-            Write-Error "The installed development MSIX revision is already 65535. Remove the installed OpenClaw.Companion.Dev package before rebuilding."
+            Write-Error "The installed development MSIX revision is already 65535. Remove the installed OpenClawFoundation.OpenClaw.Dev package before rebuilding."
             return $false
         }
 
@@ -565,9 +565,9 @@ if ($buildStoreMsix) {
         Write-Success $package
     }
     Write-Host "`nUpload both packages to the same Partner Center submission." -ForegroundColor Cyan
-    Write-Info "Reserve the app name first, then replace Identity/@Name, Identity/@Publisher,"
-    Write-Info "and Properties/PublisherDisplayName in src\OpenClaw.Tray.WinUI\Package.appxmanifest"
-    Write-Info "with the values Partner Center assigns."
+    Write-Info "Identity is taken from src\OpenClaw.Tray.WinUI\Package.appxmanifest and must keep"
+    Write-Info "matching Partner Center > Product management > Product identity. The Store re-signs"
+    Write-Info "these packages, so they are intentionally left unsigned here."
     Write-Host ""
     exit 0
 }
