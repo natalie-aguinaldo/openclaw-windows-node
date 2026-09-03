@@ -25,6 +25,9 @@ internal static class AppIdentity
     /// <summary>Windows scheduled task name (must differ so both can auto-start).</summary>
     public const string StartupTaskName = "OpenClaw Companion (Dev)";
 
+    /// <summary>MSIX manifest startup task identifier.</summary>
+    public const string PackageStartupTaskId = "OpenClawStartup";
+
     /// <summary>Leaf directory for local and roaming app-owned data.</summary>
     public const string DataDirectoryName = "OpenClawTray-Dev";
 
@@ -63,6 +66,9 @@ internal static class AppIdentity
 
     /// <summary>Windows scheduled task name.</summary>
     public const string StartupTaskName = "OpenClaw Companion";
+
+    /// <summary>MSIX manifest startup task identifier.</summary>
+    public const string PackageStartupTaskId = "OpenClawStartup";
 
     /// <summary>Leaf directory for local and roaming app-owned data.</summary>
     public const string DataDirectoryName = "OpenClawTray";

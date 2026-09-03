@@ -220,6 +220,7 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
     private string? _lastManagerConnectedSideEffectsKey;
     private SettingsWriteOrigin? _trayPermissionWriteOrigin;
     private SettingsWriteOrigin? _appCapabilityPermissionWriteOrigin;
+    private SettingsWriteOrigin? _trayAutoStartWriteOrigin;
 
     // FrozenDictionary for O(1) case-insensitive notification type → setting lookup — no per-call allocation.
     private static readonly System.Collections.Frozen.FrozenDictionary<string, Func<SettingsManager, bool>> s_notifTypeMap =
@@ -4001,9 +4002,11 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
     private async Task ToggleAutoStartAsync()
     {
         if (_settings == null) return;
-        _settings.AutoStart = !_settings.AutoStart;
-        _settings.Save();
-        await AutoStartManager.SetAutoStartAsync(_settings.AutoStart);
+
+        var origin = SettingsStore is { } store
+            ? GetOrCreateSettingsWriteOrigin(ref _trayAutoStartWriteOrigin, store)
+            : null;
+        await ApplyAutoStartCore(origin, !_settings.AutoStart);
     }
 
     /// <summary>
@@ -4014,6 +4017,9 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
     /// triggering view model ignores its own change event.
     /// </summary>
     public async Task<bool> ApplyAutoStart(SettingsWriteOrigin origin, bool autoStart)
+        => await ApplyAutoStartCore(origin, autoStart);
+
+    private async Task<bool> ApplyAutoStartCore(SettingsWriteOrigin? origin, bool autoStart)
     {
         if (_settings == null) return false;
         try
@@ -4035,6 +4041,16 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
         catch (Exception ex)
         {
             Logger.Error($"ApplyAutoStart failed: {ex.Message}");
+            var effectiveAutoStart = await AutoStartManager.IsAutoStartEnabledAsync();
+            if (SettingsStore is { } store)
+            {
+                store.Update(origin, edit => edit.AutoStart = effectiveAutoStart);
+            }
+            else if (_settings != null)
+            {
+                _settings.AutoStart = effectiveAutoStart;
+                _settings.Save();
+            }
             return false;
         }
     }
