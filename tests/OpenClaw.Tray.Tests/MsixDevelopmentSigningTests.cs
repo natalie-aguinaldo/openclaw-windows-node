@@ -268,6 +268,21 @@ public sealed class MsixDevelopmentSigningTests
     }
 
     [Fact]
+    public void DevManifest_RewritesTheStartupTaskDisplayName()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var project = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
+
+        // Windows Startup Apps and Task Manager surface this string. Without the rewrite a
+        // side-by-side Dev install is indistinguishable from production there, so the user
+        // can disable the wrong startup entry.
+        Assert.Contains("startupTaskDisplayRegex", project);
+        Assert.Contains("desktop:StartupTask", project);
+        Assert.Contains("StartupTask/@DisplayName missing from", project);
+    }
+
+    [Fact]
     public void PackagedBuildsDeferUpdatesToTheStore()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();

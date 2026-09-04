@@ -214,6 +214,18 @@
             }
             text = protocolRegex.Replace(text, "${1}" + ProtocolName + "$2", 1);
 
+            // Windows Startup Apps and Task Manager surface this string. Without the
+            // rewrite a side-by-side Dev install is indistinguishable from production,
+            // so the user can disable the wrong startup entry.
+            var startupTaskDisplayRegex = new System.Text.RegularExpressions.Regex(
+                "(<desktop:StartupTask\\b[^>]*?\\bDisplayName\\s*=\\s*[\"'])[^\"']+([\"'])",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!startupTaskDisplayRegex.IsMatch(text)) {
+                Log.LogError("GenerateOpenClawAppxManifest: StartupTask/@DisplayName missing from " + SourceManifestPath);
+                return false;
+            }
+            text = startupTaskDisplayRegex.Replace(text, "${1}" + DisplayName + "$2", 1);
+
             var toastClsidRegex = new System.Text.RegularExpressions.Regex(
                 "(<desktop:ToastNotificationActivation\\b[^>]*?\\bToastActivatorCLSID\\s*=\\s*[\"'])[^\"']+([\"'])",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
