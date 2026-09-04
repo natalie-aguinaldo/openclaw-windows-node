@@ -288,13 +288,13 @@ uninstalled package must be installed before the next revision advances.
 Partner Center rejects any submission whose revision is non-zero.
 
 `-Msix Store` forces `-Configuration Release`, refuses to combine with
-`-DevBuild`, and delegates to `scripts\Build-Msix.ps1` once
+`-DevBuild`, and delegates to `scripts\Build-StoreMsix.ps1` once
 per architecture. Each run produces one unsigned self-contained package at
 `artifacts\msix\<arch>\OpenClawCompanion-<arch>.msix` alongside an
 `msix-metadata.json` provenance sidecar recording the source commit, whether
 the tree was dirty, the package version, publisher, and the package SHA-256.
 
-`scripts\Build-Msix.ps1` fails the build when the produced package drifts from
+`scripts\Build-StoreMsix.ps1` fails the build when the produced package drifts from
 `Package.appxmanifest`: the identity name, publisher, and processor
 architecture must match, the version must be four `uint16` components ending in
 `.0` because Partner Center reserves the revision field, exactly one `.msix`

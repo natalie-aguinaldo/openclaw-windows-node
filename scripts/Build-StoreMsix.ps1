@@ -26,8 +26,9 @@
     separate package per architecture; upload both to one submission.
 
 .PARAMETER Configuration
-    Build configuration: Debug or Release. Defaults to Release. Store
-    certification does not accept Debug binaries.
+    Build configuration. Release is the only accepted value: Store
+    certification rejects Debug binaries, so this script refuses to stamp a
+    Debug build with the release identity and provenance sidecar.
 
 .PARAMETER OutputDirectory
     Where to place the package and its metadata sidecar. Relative paths resolve
@@ -36,8 +37,8 @@
     the build fails if it already exists and is not empty.
 
 .EXAMPLE
-    .\scripts\Build-Msix.ps1 -Architecture x64
-    .\scripts\Build-Msix.ps1 -Architecture arm64
+    .\scripts\Build-StoreMsix.ps1 -Architecture x64
+    .\scripts\Build-StoreMsix.ps1 -Architecture arm64
     .\build.ps1 -Project WinUI -Msix Store
 #>
 [CmdletBinding()]
@@ -45,7 +46,11 @@ param(
     [ValidateSet('x64', 'arm64')]
     [string]$Architecture = 'x64',
 
-    [ValidateSet('Debug', 'Release')]
+    # Release-only by design. build.ps1 -Msix Store already forces Release, but this
+    # script is a documented entry point on its own: accepting Debug here would let a
+    # caller produce a locally verified, provenance-stamped package that Partner
+    # Center rejects.
+    [ValidateSet('Release')]
     [string]$Configuration = 'Release',
 
     [string]$OutputDirectory

@@ -539,14 +539,14 @@ $projects = @{
 }
 
 if ($buildStoreMsix) {
-    # scripts\Build-Msix.ps1 owns packaging, identity verification, and the
+    # scripts\Build-StoreMsix.ps1 owns packaging, identity verification, and the
     # provenance sidecar. build.ps1 only drives it once per architecture.
     $storeArchitectures = $storeMsixRuntimeIdentifiers | ForEach-Object { $_ -replace "^win-", "" }
     $storePackages = @()
     foreach ($storeArchitecture in $storeArchitectures) {
         Write-Host "`nBuilding Store MSIX ($storeArchitecture)..." -ForegroundColor White
         try {
-            & (Join-Path $repoRoot "scripts\Build-Msix.ps1") `
+            & (Join-Path $repoRoot "scripts\Build-StoreMsix.ps1") `
                 -Architecture $storeArchitecture `
                 -Configuration $Configuration
         } catch {

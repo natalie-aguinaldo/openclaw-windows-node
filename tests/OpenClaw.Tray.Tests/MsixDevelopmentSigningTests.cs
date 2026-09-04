@@ -60,11 +60,11 @@ public sealed class MsixDevelopmentSigningTests
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
         var buildScript = File.ReadAllText(Path.Combine(root, "build.ps1"));
-        var packagingScript = File.ReadAllText(Path.Combine(root, "scripts", "Build-Msix.ps1"));
+        var packagingScript = File.ReadAllText(Path.Combine(root, "scripts", "Build-StoreMsix.ps1"));
 
         Assert.Contains("$buildStoreMsix = ($Msix -eq \"Store\")", buildScript);
         Assert.Contains("$storeMsixRuntimeIdentifiers = @(\"win-x64\", \"win-arm64\")", buildScript);
-        Assert.Contains(@"scripts\Build-Msix.ps1", buildScript);
+        Assert.Contains(@"scripts\Build-StoreMsix.ps1", buildScript);
 
         // The Store identity and the dev identity must never be produced by the same build.
         Assert.Contains("-Msix Store cannot be combined with -DevBuild", buildScript);
@@ -252,6 +252,19 @@ public sealed class MsixDevelopmentSigningTests
         // A refusal from Windows (DisabledByUser / DisabledByPolicy) must be persisted as
         // false rather than retried silently, so the toggle tells the truth.
         Assert.Contains("edit.AutoStart = effective", app);
+    }
+
+    [Fact]
+    public void StoreMsixPackaging_RefusesDebugConfigurations()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var packagingScript = File.ReadAllText(Path.Combine(root, "scripts", "Build-StoreMsix.ps1"));
+
+        // build.ps1 -Msix Store forces Release, but this script is a documented entry
+        // point on its own. Accepting Debug would let a caller produce a locally verified,
+        // provenance-stamped package that Partner Center rejects.
+        Assert.Contains("[ValidateSet('Release')]", packagingScript);
+        Assert.DoesNotContain("[ValidateSet('Debug', 'Release')]", packagingScript);
     }
 
     [Fact]
