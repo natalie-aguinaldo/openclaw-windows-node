@@ -151,6 +151,33 @@ public sealed class MsixDevelopmentSigningTests
     }
 
     [Fact]
+    public void PackagedBuilds_EmbedTheDpiAwareApplicationManifest()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var project = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
+        var appManifest = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "app.manifest"));
+
+        Assert.Contains("PerMonitorV2", appManifest);
+
+        // app.manifest carries PerMonitorV2 DPI awareness, which packaging does not
+        // supply. It once sat in the unpackaged-only property group, so MSIX builds
+        // shipped a DPI-unaware executable that the Windows App Certification Kit
+        // flagged. Keep the declaration unconditional.
+        var unpackagedOnlyGroup = project.IndexOf(
+            "<PropertyGroup Condition=\"'$(PackageMsix)' != 'true'\">",
+            StringComparison.Ordinal);
+        Assert.True(unpackagedOnlyGroup >= 0);
+        var unpackagedOnlyGroupEnd = project.IndexOf(
+            "</PropertyGroup>", unpackagedOnlyGroup, StringComparison.Ordinal);
+        var unpackagedOnlyBody = project[unpackagedOnlyGroup..unpackagedOnlyGroupEnd];
+
+        Assert.Contains("<ApplicationManifest>app.manifest</ApplicationManifest>", project);
+        Assert.DoesNotContain("<ApplicationManifest>", unpackagedOnlyBody);
+    }
+
+    [Fact]
     public void GeneratedDevelopmentManifest_UsesVersionAndIdentityIsolation()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();
