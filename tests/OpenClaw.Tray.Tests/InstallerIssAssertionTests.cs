@@ -79,7 +79,7 @@ public sealed class InstallerIssAssertionTests
         Assert.Contains("UninstallSilent()", iss);
         Assert.Contains("LocalGatewayCleanupRequested := True", iss);
         Assert.Contains("{#MyDistroName} WSL distro", iss);
-        Assert.Contains("MB_YESNO", iss);
+        Assert.Contains("MB_YESNO or MB_DEFBUTTON2", iss);
         Assert.Contains("ExpandConstant('{sys}\\WindowsPowerShell\\v1.0\\powershell.exe')", iss);
         Assert.Contains("ewWaitUntilTerminated", iss);
         Assert.Contains("MB_RETRYCANCEL", iss);
