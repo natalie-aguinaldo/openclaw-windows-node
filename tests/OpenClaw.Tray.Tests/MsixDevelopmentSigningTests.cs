@@ -200,4 +200,39 @@ public sealed class MsixDevelopmentSigningTests
         Assert.Contains("await ApplyAutoStartCore(origin, !_settings.AutoStart);", app);
         Assert.Contains("await AutoStartManager.IsAutoStartEnabledAsync()", app);
     }
+
+    [Fact]
+    public void PackagedBuildsDeferUpdatesToTheStore()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var coordinator = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "Services", "UpdateCoordinator.cs"));
+
+        // A Store package is serviced by Windows. Self-updating from GitHub releases would
+        // bypass the Store and let a packaged build claim update ownership.
+        Assert.Contains("if (PackageHelper.IsPackaged)", coordinator);
+        Assert.Contains("managed by the Microsoft Store", coordinator);
+        Assert.Contains("Update_Message_Skipped_Store", coordinator);
+
+        // The skip must precede the network check so no packaged path reaches Updatum.
+        var packagedSkip = coordinator.IndexOf("if (PackageHelper.IsPackaged)", StringComparison.Ordinal);
+        var devSkip = coordinator.IndexOf("if (AppIdentity.IsDev)", StringComparison.Ordinal);
+        Assert.True(packagedSkip > 0 && packagedSkip < devSkip,
+            "The packaged update skip must run before the development-build skip.");
+    }
+
+    [Fact]
+    public void StoreUpdateMessageExistsInEveryLocale()
+    {
+        var resources = Directory.GetFiles(
+            Path.Combine(TestRepositoryPaths.GetRepositoryRoot(), "src"),
+            "Resources.resw",
+            SearchOption.AllDirectories);
+
+        Assert.NotEmpty(resources);
+        foreach (var resource in resources)
+        {
+            Assert.Contains("Update_Message_Skipped_Store", File.ReadAllText(resource));
+        }
+    }
 }
