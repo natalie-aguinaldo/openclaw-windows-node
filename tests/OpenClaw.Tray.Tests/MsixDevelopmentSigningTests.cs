@@ -229,6 +229,32 @@ public sealed class MsixDevelopmentSigningTests
     }
 
     [Fact]
+    public void PackagedAutoStart_IsReconciledWithWindowsAtStartup()
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var manager = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "Services", "AutoStartManager.cs"));
+        var app = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "App.xaml.cs"));
+
+        // The manifest installs the StartupTask disabled and Windows owns the state
+        // afterwards, so an AutoStart=true setting preserved from an unpackaged install
+        // would otherwise be reported as enabled while nothing launches at logon.
+        Assert.Contains("ReconcileAutoStartAsync", manager);
+        Assert.Contains("ReconcileAutoStartOnStartupAsync", app);
+
+        // SettingsChangeCoordinator.Apply only runs on a settings *change*, so the
+        // reconcile must be invoked from the startup path itself.
+        var coordinator = File.ReadAllText(Path.Combine(
+            root, "src", "OpenClaw.Tray.WinUI", "Services", "SettingsChangeCoordinator.cs"));
+        Assert.DoesNotContain("ReconcileAutoStartAsync", coordinator);
+
+        // A refusal from Windows (DisabledByUser / DisabledByPolicy) must be persisted as
+        // false rather than retried silently, so the toggle tells the truth.
+        Assert.Contains("edit.AutoStart = effective", app);
+    }
+
+    [Fact]
     public void PackagedBuildsDeferUpdatesToTheStore()
     {
         var root = TestRepositoryPaths.GetRepositoryRoot();

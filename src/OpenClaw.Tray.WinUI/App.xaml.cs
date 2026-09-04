@@ -854,6 +854,15 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
             Logger.Error($"Onboarding failed during launch (tray remains available): {ex}");
         }
 
+        // Packaged builds must reconcile auto-start with Windows after settings load.
+        // Nothing else does: SettingsChangeCoordinator.Apply only runs on a settings
+        // *change*, so a preserved AutoStart=true would be shown as enabled while the
+        // manifest's StartupTask sat disabled. Backgrounded so a slow StartupTask query
+        // cannot delay tray availability.
+        ObserveBackgroundFault(
+            ReconcileAutoStartOnStartupAsync(),
+            "[App] Failed to reconcile auto-start with Windows");
+
         // Ensure NodeService is constructed BEFORE InitializeGatewayClient triggers a
         // NodeConnector connect. The NodeConnector.ClientCreated event subscription
         // above relies on _nodeService being non-null to register capabilities on the
@@ -4053,6 +4062,32 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
             }
             return false;
         }
+    }
+
+    /// <summary>
+    /// Aligns the stored auto-start preference with the state Windows actually reports,
+    /// so the Settings toggle never claims auto-start is on while nothing launches at logon.
+    /// </summary>
+    private async Task ReconcileAutoStartOnStartupAsync()
+    {
+        if (_settings == null) return;
+
+        var configured = _settings.AutoStart;
+        var effective = await AutoStartManager.ReconcileAutoStartAsync(configured);
+        if (effective == configured) return;
+
+        Logger.Info($"Auto-start setting corrected from {configured} to {effective} to match Windows.");
+        if (SettingsStore is { } store)
+        {
+            store.Update(null, edit => edit.AutoStart = effective);
+        }
+        else
+        {
+            _settings.AutoStart = effective;
+            _settings.Save();
+        }
+
+        OnSettingsSaved(this, EventArgs.Empty);
     }
 
     private void OpenLogFile()

@@ -59,6 +59,52 @@ public static class AutoStartManager
             ? IsPackagedAutoStartEnabledAsync()
             : Task.Run(IsAutoStartEnabled);
 
+    /// <summary>
+    /// Reconciles the persisted auto-start preference against the real Windows startup
+    /// state and returns the value the app should now report and store.
+    /// </summary>
+    /// <remarks>
+    /// Packaged builds need this at startup. The manifest installs the StartupTask
+    /// disabled, and Windows (not the app) owns the state afterwards, so a preserved
+    /// <c>AutoStart=true</c> setting carried over from an unpackaged install would
+    /// otherwise be displayed as enabled while nothing actually launches at logon. The
+    /// user can also flip the task in Settings &gt; Apps &gt; Startup at any time.
+    ///
+    /// Windows is treated as the source of truth: the stored intent is applied when it
+    /// can be, and whatever Windows reports afterwards is what gets persisted. Enabling
+    /// is a request that Windows may refuse (DisabledByUser / DisabledByPolicy), and a
+    /// refusal must not be retried silently forever, so it is surfaced as false.
+    /// </remarks>
+    public static async Task<bool> ReconcileAutoStartAsync(bool configured)
+    {
+        if (!PackageHelper.IsPackaged)
+            return configured;
+
+        try
+        {
+            var actual = await IsPackagedAutoStartEnabledAsync();
+            if (actual == configured)
+                return configured;
+
+            if (!configured)
+            {
+                // Windows says enabled while the app setting says off, which happens when
+                // the user enables the entry in Startup Apps. Report the truth instead of
+                // fighting Windows; the in-app toggle still pushes changes the other way.
+                Logger.Info("Auto-start is enabled in Windows; adopting that state.");
+                return true;
+            }
+
+            await SetPackagedAutoStartAsync(true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Auto-start could not be reconciled, reporting disabled: {ex.Message}");
+            return false;
+        }
+    }
+
     private static void SetUnpackagedAutoStart(bool enable)
     {
         try
