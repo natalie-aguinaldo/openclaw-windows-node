@@ -317,6 +317,33 @@ Generating the optional `.appxsym` symbol package additionally requires
 `mspdbcmf.exe` from the Visual Studio **Desktop development with C++** workload;
 without it the build logs a warning and skips symbols.
 
+#### The Store package replaces an Inno install
+
+The Store package and the Inno installer produce the same application, so they
+are not supported side by side. Both register the `openclaw` protocol and both
+can claim autostart, and production builds of either share the `OpenClawTray`
+single-instance mutex. MSIX full-trust apps are not namespace-isolated for named
+objects, so the second launch hands its activation to whichever instance is
+already running. With both installed, opening the Store app usually surfaces the
+Inno one instead.
+
+Uninstall the Inno build before installing the Store package. That transfer is
+safe today:
+
+- Settings, gateway records, and device identities under
+  `%APPDATA%\OpenClawTray` are preserved. Inno uninstall removes only the
+  install directory, and a packaged process reads the existing per-user data
+  through the merged MSIX view, so pairing carries over without re-pairing.
+- Uninstall asks whether to also remove the local WSL gateway. **No** is the
+  default and keeps the gateway. Answer **No** when reinstalling; **Yes** is a
+  deliberate destructive choice that unregisters the distro.
+- A silent uninstall (`/SILENT`, `/VERYSILENT`) always removes the local
+  gateway, so do not use it to move to the Store package.
+
+Detecting a legacy install from the packaged app, obtaining consent, and
+removing it automatically belong to a migration service that does not exist
+yet. Until it ships, uninstalling first is the supported path.
+
 #### Dev identity and side-by-side installs
 
 Release identity is the default for every configuration. Use `-DevBuild` on `build.ps1` or `-Dev` on `run-app-local.ps1` when you explicitly want the side-by-side dev identity:
