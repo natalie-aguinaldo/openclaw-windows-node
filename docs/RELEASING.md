@@ -13,7 +13,9 @@ infrastructure changes. Those fail-closed pull requests run the x64 publish
 smoke only; ARM64 portable publish remains required on `main` and tags.
 When either release-build lane is selected, CI also builds both architectures
 of Dev-signed and unsigned Store MSIX **workflow artifacts**. CI Gate requires
-that MSIX job to succeed, but no MSIX is attached to GitHub Releases.
+that MSIX job to succeed. Canonical alpha releases also attach the unsigned
+Store MSIX packages and metadata for manual Partner Center submission.
+Stable releases do not include MSIX assets; Dev-signed packages stay in Actions.
 
 ## Release checklist
 
@@ -34,7 +36,8 @@ that MSIX job to succeed, but no MSIX is attached to GitHub Releases.
      "Verify Release Binary Signing Policy", `
      "OpenClaw.Tray.WinUI.exe", `
      "build-msix:", `
-     "MSIX release publishing remains paused"
+     "isMsixAlpha:", `
+     "Stage alpha Store MSIX release assets"
    ```
 
 3. Create a new stable, stable correction, or prerelease tag from `origin/main`.
@@ -97,6 +100,9 @@ Stable, stable-correction, and alpha tags use the same signed CI release pipelin
   numeric-suffix tag, including malformed ones such as `-0` and `-03`, is routed
   through the validator rather than silently classified by GitVersion.
 - `vX.Y.Z-alpha.N` creates a prerelease that stable updater checks do not offer.
+  It also includes unsigned x64/ARM64 Store submission MSIX files and their
+  metadata, not Dev-signed installers. The pre-release is visible on GitHub's
+  Releases page but is not promoted as Latest.
   The daily workflow evaluates the default branch at 2:00 PM Pacific, skips a
   head already represented by a published release, and defers while an
   unpublished non-alpha tag points at the head. After each successful alpha
@@ -167,24 +173,60 @@ Current release artifacts are:
   - `OpenClawTray-<version>-win-x64.zip`
   - `OpenClawTray-<version>-win-arm64.zip`
 
-MSIX release publishing remains paused while the supported release downloads
-use Inno installers and signed portable update payloads. CI workflow downloads
-now include Dev-signed tester MSIX packages (with public certificates and
-instructions) and validated unsigned Store submission packages with provenance.
-They are not official Store-signed release assets.
+Canonical alpha releases additionally contain:
 
-The pause is independent of whether a tag is stable or alpha. This workflow
-does not submit to Partner Center, retrieve Store-signed packages, or attach
-MSIX assets to GitHub Releases. Those stages remain follow-up work in #1375,
-including packaged consent, native ARM64 and signed lifecycle proof, maintainer
-approval, Store availability, and a verified signed-package retrieval path.
-Existing EXE/ZIP publishing remains unchanged.
+- `OpenClawCompanion-x64.msix` and `OpenClawCompanion-arm64.msix`
+- `OpenClawCompanion-x64.msix-metadata.json` and
+  `OpenClawCompanion-arm64.msix-metadata.json`
+
+These are **unsigned Store submission inputs, not installers**. Download the
+MSIX files and upload them manually to Partner Center. Microsoft signs accepted
+Store submissions. The alpha release step checks both architectures' clean
+source provenance, identity, version, and package hashes before staging the
+unchanged bytes built by `Build-StoreMsix.ps1`. It fails rather than publishing
+a partial or mismatched set.
+
+Stable, stable-correction, and non-alpha prereleases retain the existing
+EXE/ZIP asset set and do not receive MSIX download notes. Dev-signed tester
+MSIX packages, public certificates, and instructions remain Actions artifacts
+only. No production signing step is applied to the unsigned Store packages.
+
+Store distribution remains paused: automatic Partner Center submission,
+Store-signed retrieval and publication, and official lifecycle acceptance
+remain follow-up work in #1375. Alpha submission artifacts do not clear those
+rollout gates.
 
 Store versions still end in `.0`; different prerelease/correction tags with
 the same `X.Y.Z` base can produce the same Store version. These build artifacts
 are not an automatic submission/version-allocation policy. See
 [CI MSIX downloads](../DEVELOPMENT.md#ci-msix-downloads) for Dev certificate
 handling, workflow revision limits, and installation instructions.
+
+## Manual alpha releases
+
+After the workflow change is on the default branch, a maintainer with Actions
+write access can use **Actions > Daily Alpha Release > Run workflow**, or:
+
+```powershell
+gh workflow run daily-alpha-release.yml `
+  --repo openclaw/openclaw-windows-node --ref main
+```
+
+This is a request to release the **current default branch**, not the selected
+feature branch. It bypasses only the scheduled time-of-day check. All existing
+change, published-head, pending non-alpha tag, canonical GitVersion, and tag
+ownership checks remain active. If the head is already published, it skips;
+it does not replace the release, move the tag, or force a new version.
+
+When there is an eligible new head, the workflow creates or reuses its
+unpublished `vX.Y.Z-alpha.N` tag and dispatches **Build and Test** on that tag.
+The full CI Gate and release-signing environment still gate publication.
+The release stays a public pre-release with `make_latest: false`.
+Existing 30-day alpha retention applies to its submission assets too.
+
+Running **Build and Test** manually on a branch is still build-only. Running
+it on an eligible alpha tag uses the same tagged release path. No new
+unreviewed-branch or MSIX-only version allocator is introduced.
 
 ## Binary signing policy
 
@@ -288,8 +330,9 @@ proofs as skipped when the host is not MXC-capable; use
 validation. Release tags cannot enter the `release` job until **CI Gate**
 confirms classification, fast validation, tests, E2E, and release builds all
 succeeded. The `build-msix` job must also succeed whenever release metadata is
-required. It builds workflow artifacts only; MSIX release publishing remains
-paused and the release job does not download or attach those artifacts.
+required. The release job downloads and attaches its unsigned Store packages
+only for canonical alpha tags. Stable releases and Dev tester distribution
+do not gain MSIX release attachments.
 
 The release job should:
 
@@ -300,8 +343,10 @@ The release job should:
 5. Create the portable x64 and ARM64 ZIPs.
 6. Build Inno installers.
 7. Sign installers.
-8. Create a GitHub release whose prerelease flag matches the tag, with installer
-   and portable ZIP assets.
+8. For canonical alpha tags only, stage the validated unsigned Store MSIX
+   packages and metadata.
+9. Create a GitHub release whose prerelease flag matches the tag, with installer
+   and portable ZIP assets plus any gated alpha submission assets.
 
 ## Post-release verification
 

@@ -326,8 +326,7 @@ build, and workflow PRs, pushes to `main`/`master`, tags, and manual workflow
 dispatches. Ordinary targeted or documentation-only PRs intentionally skip them.
 MSIX failures block **CI Gate** when selected; a skipped unselected job is valid.
 
-Download the desired ZIP from the workflow run's **Artifacts**, not from GitHub
-Releases:
+Download the desired ZIP from the workflow run's **Artifacts**:
 
 | Artifact | Contents and purpose |
 |---|---|
@@ -363,9 +362,23 @@ can therefore produce the same Store version; CI artifacts do not promise
 unique Store submissions for every tag. Store submission version allocation
 must be resolved before distribution is enabled in #1375.
 
-MSIX release publishing remains paused. This workflow neither submits to
-Partner Center nor retrieves Store-signed packages nor adds MSIX assets to
-GitHub Releases. Existing EXE/ZIP releases are unchanged.
+Canonical `vX.Y.Z-alpha.N` releases also attach the **unsigned Store** MSIX
+files and architecture-specific metadata, for manual upload to Partner Center.
+They do not attach the Dev-signed packages or certificates. These public
+pre-releases are not Latest and are not hidden from GitHub's Releases list.
+Stable releases retain only the existing EXE/ZIP downloads and do not mention
+MSIX submission assets in their generated download notes.
+
+To request a new alpha from current `main`, manually run **Daily Alpha
+Release**. Its existing checks choose the GitVersion alpha tag, skip a commit
+that already has a published release, and dispatch **Build and Test** on the
+tag. It does not release the feature branch selected in the UI. Running
+**Build and Test** directly on a branch still produces workflow artifacts
+only. See [manual alpha releases](docs/RELEASING.md#manual-alpha-releases).
+
+Store distribution remains paused. This workflow neither submits to Partner
+Center nor retrieves or publishes Store-signed packages. An alpha release
+label does not change the Store package version or make the package installable.
 
 #### The Store package alongside an existing Inno install
 

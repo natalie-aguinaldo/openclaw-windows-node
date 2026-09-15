@@ -712,8 +712,24 @@ foreach ($token in @(
     )) {
     Assert-Contains -Text $releaseJob -Expected $token -Message "Tag release is missing '$token'."
 }
-Assert-NotContains -Text $releaseJob -Unexpected ".msix" -Message "MSIX release publishing must remain paused."
+$alphaDownload = Get-StepBlock -Text $releaseJob -Name 'Download alpha Store MSIX artifacts'
+$alphaStage = Get-StepBlock -Text $releaseJob -Name 'Stage alpha Store MSIX release assets'
+foreach ($step in @($alphaDownload, $alphaStage)) {
+    Assert-Contains -Text $step -Expected "if: needs.metadata.outputs.isMsixAlpha == 'true'" -Message "Store release assets must be alpha-only."
+}
+Assert-Contains -Text $alphaDownload -Expected 'pattern: openclaw-msix-store-unsigned-*' -Message "Alpha releases must use unsigned Store inputs."
+Assert-NotContains -Text $alphaDownload -Unexpected 'openclaw-msix-dev-' -Message "Dev packages must stay workflow-only."
+Assert-Contains -Text $alphaStage -Expected '-ExpectedSourceCommit $env:GITHUB_SHA' -Message "Release staging must bind artifacts to the tag's source."
+Assert-Contains -Text $alphaStage -Expected '-Version $env:RELEASE_VERSION' -Message "Release staging must validate the alpha version."
+$createRelease = Get-StepBlock -Text $releaseJob -Name 'Create Release'
+Assert-Contains -Text $createRelease -Expected '${{ steps.msix_alpha.outputs.files }}' -Message "Only the gated alpha stage may add MSIX release files."
+Assert-Contains -Text $createRelease -Expected '${{ steps.msix_alpha.outputs.notes }}' -Message "Only alpha release notes may mention MSIX downloads."
+Assert-Contains -Text $createRelease -Expected 'fail_on_unmatched_files: true' -Message "Missing release files must fail publication."
+Assert-Contains -Text $createRelease -Expected "make_latest: `${{ needs.metadata.outputs.isPrerelease == 'true' && 'false' || 'true' }}" -Message "Alpha releases must not become Latest."
+Assert-NotContains -Text $createRelease -Unexpected 'OpenClawCompanion-x64.msix' -Message "MSIX must not be an unconditional stable release asset."
+Assert-NotContains -Text $createRelease -Unexpected 'OpenClawCompanion-arm64.msix' -Message "MSIX must not be an unconditional stable release asset."
 Assert-Contains -Text $workflow -Expected "./scripts/test-msix-ci-artifacts.ps1" -Message "Fast validation must exercise the Dev artifact contracts."
+Assert-Contains -Text $workflow -Expected "./scripts/test-msix-alpha-release.ps1" -Message "Fast validation must exercise alpha release staging."
 
 $triggerPaths = @(
     ".github/workflows/ci.yml",

@@ -114,6 +114,10 @@ jobs:
       shell: pwsh
       run: ./scripts/test-msix-ci-artifacts.ps1
 
+    - name: Validate Store MSIX alpha release assets
+      shell: pwsh
+      run: ./scripts/test-msix-alpha-release.ps1
+
     - name: Validate stable correction release ordering regressions
       shell: pwsh
       run: ./scripts/test-stable-correction-release-validator.ps1
@@ -158,6 +162,7 @@ jobs:
       majorMinorPatch: ${{ steps.release_version.outputs.majorMinorPatch }}
       isPrerelease: ${{ steps.release_version.outputs.isPrerelease }}
       isStableCorrection: ${{ steps.release_version.outputs.isStableCorrection }}
+      isMsixAlpha: ${{ steps.release_version.outputs.isMsixAlpha }}
     steps:
     - uses: actions/checkout@v7
       with:
@@ -216,6 +221,8 @@ jobs:
         "majorMinorPatch=$majorMinorPatch" >> $env:GITHUB_OUTPUT
         "isPrerelease=$($isPrerelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
         "isStableCorrection=$($isStableCorrection.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+        $isMsixAlpha = $isPrerelease -and ($env:GITHUB_REF -cmatch '^refs/tags/v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-alpha\.(?:0|[1-9]\d*)$')
+        "isMsixAlpha=$($isMsixAlpha.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   core-tests:
     name: Core and CLI tests
@@ -815,7 +822,7 @@ jobs:
     name: MSIX artifacts (${{ matrix.architecture }})
     needs: [change-classification, metadata]
     if: ${{ !cancelled() && needs.change-classification.result == 'success' && needs.metadata.result == 'success' && (needs.change-classification.outputs.x64_release == 'true' || needs.change-classification.outputs.arm64_release == 'true') }}
-    # Workflow downloads only. MSIX release publishing remains paused.
+    # Unsigned Store packages may publish to alpha releases only. Dev packages stay workflow-only.
     runs-on: ${{ matrix.architecture == 'arm64' && 'windows-11-arm' || 'windows-latest' }}
     env:
       OPENCLAW_BUILD_VERSION: ${{ needs.metadata.outputs.semVer }}
@@ -1161,6 +1168,28 @@ jobs:
         -Tag $env:RELEASE_TAG
         -GitHubToken $env:GH_TOKEN
 
+    - name: Download alpha Store MSIX artifacts
+      if: needs.metadata.outputs.isMsixAlpha == 'true'
+      uses: actions/download-artifact@v8
+      with:
+        pattern: openclaw-msix-store-unsigned-*
+        path: artifacts/msix-alpha
+
+    - name: Stage alpha Store MSIX release assets
+      if: needs.metadata.outputs.isMsixAlpha == 'true'
+      id: msix_alpha
+      shell: pwsh
+      env:
+        RELEASE_VERSION: ${{ needs.metadata.outputs.semVer }}
+      run: |
+        $assets = .\scripts\Stage-StoreMsixReleaseAssets.ps1 `
+          -ArtifactDirectory 'artifacts\msix-alpha' `
+          -OutputDirectory 'msix-alpha-release' `
+          -Version $env:RELEASE_VERSION `
+          -ExpectedSourceCommit $env:GITHUB_SHA
+        @('files<<MSIX_ALPHA_FILES'; $assets.Files; 'MSIX_ALPHA_FILES') >> $env:GITHUB_OUTPUT
+        @('notes<<MSIX_ALPHA_NOTES'; $assets.Notes; 'MSIX_ALPHA_NOTES') >> $env:GITHUB_OUTPUT
+
     - name: Create Release
       uses: softprops/action-gh-release@v3
       with:
@@ -1170,6 +1199,8 @@ jobs:
           Output/OpenClawCompanion-Setup-arm64.exe
           OpenClawTray-${{ needs.metadata.outputs.semVer }}-win-x64.zip
           OpenClawTray-${{ needs.metadata.outputs.semVer }}-win-arm64.zip
+          ${{ steps.msix_alpha.outputs.files }}
+        fail_on_unmatched_files: true
         prerelease: ${{ needs.metadata.outputs.isPrerelease }}
         make_latest: ${{ needs.metadata.outputs.isPrerelease == 'true' && 'false' || 'true' }}
         body: |
@@ -1180,6 +1211,8 @@ jobs:
           - **Installer (ARM64)**: `OpenClawCompanion-Setup-arm64.exe` - Windows on ARM (Surface, etc.)
           - **Portable x64**: `OpenClawTray-${{ needs.metadata.outputs.semVer }}-win-x64.zip`
           - **Portable ARM64**: `OpenClawTray-${{ needs.metadata.outputs.semVer }}-win-arm64.zip`
+
+          ${{ steps.msix_alpha.outputs.notes }}
 
           ### Features
           - 🦞 System tray integration with gateway status

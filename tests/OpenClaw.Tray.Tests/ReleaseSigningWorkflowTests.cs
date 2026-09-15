@@ -115,11 +115,11 @@ public sealed class ReleaseSigningWorkflowTests
     }
 
     [Fact]
-    public void ReleaseWorkflow_EnablesMsixArtifactsButKeepsReleasePublishingPaused()
+    public void ReleaseWorkflow_PublishesOnlyUnsignedStoreMsixForAlphaTags()
     {
         var workflow = File.ReadAllText(Path.Combine(TestRepositoryPaths.GetRepositoryRoot(), ".github", "workflows", "ci.yml"));
 
-        Assert.Contains("MSIX release publishing remains paused.", workflow);
+        Assert.Contains("Dev packages stay workflow-only.", workflow);
         Assert.Contains("global-json-file: global.json", workflow);
         Assert.Contains(@".\scripts\Build-StoreMsix.ps1 -Architecture", workflow);
         Assert.Contains(@".\scripts\Export-DevMsixArtifact.ps1", workflow);
@@ -130,7 +130,16 @@ public sealed class ReleaseSigningWorkflowTests
         Assert.DoesNotContain("Download win-x64 MSIX artifact", workflow);
         Assert.DoesNotContain("Download win-arm64 MSIX artifact", workflow);
         Assert.DoesNotContain("Sign Release MSIX Packages", workflow);
-        Assert.DoesNotContain(".msix", ExtractReleaseStep(workflow));
+        Assert.Contains("isMsixAlpha: ${{ steps.release_version.outputs.isMsixAlpha }}", workflow);
+        Assert.Contains("if: needs.metadata.outputs.isMsixAlpha == 'true'", workflow);
+        Assert.Contains("pattern: openclaw-msix-store-unsigned-*", workflow);
+        Assert.Contains(@".\scripts\Stage-StoreMsixReleaseAssets.ps1", workflow);
+        var releaseStep = ExtractReleaseStep(workflow);
+        Assert.Contains("${{ steps.msix_alpha.outputs.files }}", releaseStep);
+        Assert.Contains("${{ steps.msix_alpha.outputs.notes }}", releaseStep);
+        Assert.DoesNotContain("OpenClawCompanion-x64.msix", releaseStep);
+        Assert.DoesNotContain("OpenClawCompanion-arm64.msix", releaseStep);
+        Assert.DoesNotContain("openclaw-msix-dev-", releaseStep);
     }
 
     private static string ExtractReleaseStep(string workflow)

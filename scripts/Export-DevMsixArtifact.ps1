@@ -146,6 +146,7 @@ installed package still relies on it:
 Remove-Item -LiteralPath 'Cert:\LocalMachine\TrustedPeople\$($certificate.Thumbprint)'
 
 Store submission artifacts are separate unsigned CI downloads, not installers.
-No MSIX package is published to GitHub Releases by this workflow.
+Unsigned Store packages may also appear on alpha GitHub pre-releases for
+Partner Center submission. This signed Dev tester package stays workflow-only.
 "@ | Set-Content -LiteralPath (Join-Path $OutputDirectory 'INSTALL.txt') -Encoding utf8
 Write-Host "Staged signed Dev tester artifact: $OutputDirectory"

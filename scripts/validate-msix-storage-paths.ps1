@@ -80,7 +80,8 @@
     and cannot be installed directly. The Dev artifact has a different
     identity and is not a substitute for this production-identity storage test.
     Obtain an appropriately signed production-identity MSIX before passing
-    its path to -MsixPath. MSIX release publishing remains paused.
+    its path to -MsixPath. Alpha Store assets are unsigned submission inputs,
+    not installable packages; Store-signed distribution remains paused.
 
 .PARAMETER MsixPath
     Absolute path to the OpenClawTray MSIX file (e.g. OpenClawTray_1.2.3.0_x64.msix)
