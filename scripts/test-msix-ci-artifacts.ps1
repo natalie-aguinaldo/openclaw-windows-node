@@ -83,31 +83,42 @@ function New-Arguments {
 
 try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $arguments = New-Arguments
-    New-Package -Directory $arguments.PackageDirectory
-    # Unrelated build output must not be uploaded, even if it contains a key.
-    Set-Content (Join-Path $arguments.PackageDirectory 'do-not-publish.pfx') 'not a real key'
-    & $exporter @arguments
-    $files = @(Get-ChildItem -LiteralPath $arguments.OutputDirectory -File | Sort-Object Name | Select-Object -ExpandProperty Name)
-    if (($files -join ',') -ne 'INSTALL.txt,msix-metadata.json,OpenClaw-Dev.cer,OpenClawCompanion-Dev-x64.msix') {
-        throw "Unexpected Dev artifact contents: $($files -join ',')"
-    }
-    $metadata = Get-Content (Join-Path $arguments.OutputDirectory 'msix-metadata.json') -Raw | ConvertFrom-Json
-    $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
-        (Join-Path $arguments.OutputDirectory 'OpenClaw-Dev.cer'))
-    try {
-        if ($publicCertificate.HasPrivateKey -or $publicCertificate.Thumbprint -ne $certificate.Thumbprint) {
-            throw 'The exported certificate is not the expected public-only signer.'
+    foreach ($architecture in @('x64', 'arm64')) {
+        $arguments = New-Arguments
+        $arguments.Architecture = $architecture
+        New-Package -Directory $arguments.PackageDirectory -Architecture $architecture
+        # Unrelated build output must not be uploaded, even if it contains a key.
+        Set-Content (Join-Path $arguments.PackageDirectory 'do-not-publish.pfx') 'not a real key'
+        & $exporter @arguments
+        $packageName = "OpenClaw-Dev-$architecture.msix"
+        $expectedFiles = @('INSTALL.txt', 'msix-metadata.json', 'OpenClaw-Dev.cer', $packageName)
+        $files = @(Get-ChildItem -LiteralPath $arguments.OutputDirectory -File | Select-Object -ExpandProperty Name)
+        if (@(Compare-Object $expectedFiles $files).Count -gt 0) {
+            throw "Unexpected Dev artifact contents: $($files -join ',')"
         }
+        $metadata = Get-Content (Join-Path $arguments.OutputDirectory 'msix-metadata.json') -Raw | ConvertFrom-Json
+        $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            (Join-Path $arguments.OutputDirectory 'OpenClaw-Dev.cer'))
+        try {
+            if ($publicCertificate.HasPrivateKey -or $publicCertificate.Thumbprint -ne $certificate.Thumbprint) {
+                throw 'The exported certificate is not the expected public-only signer.'
+            }
+        }
+        finally { $publicCertificate.Dispose() }
+        $actualHash = (Get-FileHash (Join-Path $arguments.OutputDirectory $metadata.archive) -Algorithm SHA256).Hash
+        if (-not $metadata.signed -or $metadata.signing -ne 'development-only' -or
+            $metadata.archive -ne $packageName -or $metadata.architecture -ne $architecture -or
+            $metadata.identityName -ne 'OpenClawFoundation.OpenClaw.Dev' -or
+            $metadata.packageVersion -ne '2026.7.2.123' -or $metadata.sha256 -ne $actualHash -or
+            $metadata.certificateThumbprint -ne $certificate.Thumbprint -or $metadata.sourceCommit -notmatch '^[0-9a-f]{40}$') {
+            throw 'Dev package provenance did not match its inputs.'
+        }
+        $instructions = Get-Content (Join-Path $arguments.OutputDirectory 'INSTALL.txt') -Raw
+        if (-not $instructions.Contains("Add-AppxPackage -Path .\$packageName")) {
+            throw 'Dev installation instructions did not name the exported package.'
+        }
+        Assert-Fails { & $exporter @arguments } 'must be absent or empty'
     }
-    finally { $publicCertificate.Dispose() }
-    $actualHash = (Get-FileHash (Join-Path $arguments.OutputDirectory $metadata.archive) -Algorithm SHA256).Hash
-    if (-not $metadata.signed -or $metadata.signing -ne 'development-only' -or
-        $metadata.packageVersion -ne '2026.7.2.123' -or $metadata.sha256 -ne $actualHash -or
-        $metadata.certificateThumbprint -ne $certificate.Thumbprint -or $metadata.sourceCommit -notmatch '^[0-9a-f]{40}$') {
-        throw 'Dev package provenance did not match its inputs.'
-    }
-    Assert-Fails { & $exporter @arguments } 'must be absent or empty'
 
     $arguments = New-Arguments
     New-Item -ItemType Directory -Path $arguments.PackageDirectory | Out-Null

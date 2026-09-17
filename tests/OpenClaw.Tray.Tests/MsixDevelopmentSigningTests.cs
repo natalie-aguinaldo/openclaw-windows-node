@@ -94,7 +94,8 @@ public sealed class MsixDevelopmentSigningTests
 
         // Exactly one package per architecture, deterministically named, with provenance.
         Assert.Contains("$builtPackages.Count -ne 1", packagingScript);
-        Assert.Contains("\"OpenClawCompanion-$Architecture.msix\"", packagingScript);
+        Assert.Contains("\"OpenClaw-$Architecture.msix\"", packagingScript);
+        Assert.Contains(@"artifacts\msix\$storeArchitecture\OpenClaw-$storeArchitecture.msix", buildScript);
         Assert.Contains("msix-metadata.json", packagingScript);
         Assert.Contains("signed = $false", packagingScript);
         Assert.Contains("sourceTreeDirty = $sourceTreeDirty", packagingScript);

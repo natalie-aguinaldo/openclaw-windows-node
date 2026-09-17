@@ -859,7 +859,7 @@ jobs:
       with:
         name: openclaw-msix-store-unsigned-${{ matrix.architecture }}
         path: |
-          artifacts/msix/${{ matrix.architecture }}/OpenClawCompanion-${{ matrix.architecture }}.msix
+          artifacts/msix/${{ matrix.architecture }}/OpenClaw-${{ matrix.architecture }}.msix
           artifacts/msix/${{ matrix.architecture }}/msix-metadata.json
         if-no-files-found: error
 
@@ -891,7 +891,7 @@ jobs:
       with:
         name: openclaw-msix-dev-${{ matrix.architecture }}
         path: |
-          artifacts/msix-dev/${{ matrix.architecture }}/OpenClawCompanion-Dev-${{ matrix.architecture }}.msix
+          artifacts/msix-dev/${{ matrix.architecture }}/OpenClaw-Dev-${{ matrix.architecture }}.msix
           artifacts/msix-dev/${{ matrix.architecture }}/OpenClaw-Dev.cer
           artifacts/msix-dev/${{ matrix.architecture }}/msix-metadata.json
           artifacts/msix-dev/${{ matrix.architecture }}/INSTALL.txt

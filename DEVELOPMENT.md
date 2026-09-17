@@ -291,7 +291,7 @@ Partner Center rejects any submission whose revision is non-zero.
 `-Msix Store` forces `-Configuration Release`, refuses to combine with
 `-DevBuild`, and delegates to `scripts\Build-StoreMsix.ps1` once
 per architecture. Each run produces one unsigned self-contained package at
-`artifacts\msix\<arch>\OpenClawCompanion-<arch>.msix` alongside an
+`artifacts\msix\<arch>\OpenClaw-<arch>.msix` alongside an
 `msix-metadata.json` provenance sidecar recording the source commit, whether
 the tree was dirty, the package version, publisher, and the package SHA-256.
 
@@ -330,8 +330,12 @@ Download the desired ZIP from the workflow run's **Artifacts**:
 
 | Artifact | Contents and purpose |
 |---|---|
-| `openclaw-msix-dev-x64` / `openclaw-msix-dev-arm64` | Signed Dev `.msix`, public `OpenClaw-Dev.cer`, `msix-metadata.json`, and `INSTALL.txt` for opt-in tester installation. |
-| `openclaw-msix-store-unsigned-x64` / `openclaw-msix-store-unsigned-arm64` | Unsigned Store `.msix` and the validated provenance sidecar from `Build-StoreMsix.ps1`. Submission inputs, not directly installable tester packages. |
+| `openclaw-msix-dev-x64` / `openclaw-msix-dev-arm64` | Signed `OpenClaw-Dev-<arch>.msix`, public `OpenClaw-Dev.cer`, `msix-metadata.json`, and `INSTALL.txt` for opt-in tester installation. |
+| `openclaw-msix-store-unsigned-x64` / `openclaw-msix-store-unsigned-arm64` | Unsigned `OpenClaw-<arch>.msix` and the validated provenance sidecar from `Build-StoreMsix.ps1`. Submission inputs, not directly installable tester packages. |
+
+These MSIX filenames use `OpenClaw`, not the previous `OpenClawCompanion`
+prefix. Only the download filenames changed: package identities, versions,
+and EXE installer filenames are unchanged. Existing downloads are not renamed.
 
 Each disposable runner uses `setup-dev-msix-cert.ps1` to generate and trust a
 non-exportable Dev certificate. Only its public `.cer` is included. The key and

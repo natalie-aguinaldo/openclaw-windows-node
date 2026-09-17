@@ -208,7 +208,7 @@ try {
         )
     }
 
-    $msixName = "OpenClawCompanion-$Architecture.msix"
+    $msixName = "OpenClaw-$Architecture.msix"
     $msixPath = Join-Path $OutputDirectory $msixName
     Copy-Item -LiteralPath $builtPackages[0].FullName -Destination $msixPath -Force
 
