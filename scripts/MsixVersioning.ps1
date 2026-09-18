@@ -200,7 +200,9 @@ function Invoke-MsixGitHubApi {
     )
 
     $headers = @{ Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
-    if (-not [string]::IsNullOrEmpty($Token)) { $headers.Authorization = "Bearer $Token" }
+    if (-not [string]::IsNullOrEmpty($Token)) {
+        $headers.Authorization = [string]::Concat('Bearer ', $Token)
+    }
     $arguments = @{
         Method = $Method
         Uri = "https://api.github.com/repos/$Repository/git/$Path"

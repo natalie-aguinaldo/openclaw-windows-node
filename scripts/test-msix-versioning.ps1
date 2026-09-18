@@ -175,7 +175,9 @@ function Invoke-RestMethod {
     }
     Assert-Equal $Headers.Accept 'application/vnd.github+json'
     Assert-Equal $Headers['X-GitHub-Api-Version'] '2022-11-28'
-    if ($msixTestState.expectAuthorization) { Assert-Equal $Headers.Authorization "Bearer $($msixTestState.token)" }
+    if ($msixTestState.expectAuthorization) {
+        Assert-Equal $Headers.Authorization ([string]::Concat('Bearer ', $token))
+    }
     else { Assert-Equal $Headers.ContainsKey('Authorization') $false }
     Assert-Equal $UserAgent 'OpenClaw-MsixVersionAllocator'
     Assert-Equal $MaximumRedirection 0

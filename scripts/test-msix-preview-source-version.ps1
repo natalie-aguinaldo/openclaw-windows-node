@@ -74,7 +74,7 @@ foreach ($token in @(
     'https://api.github.com/repos/openclaw/openclaw-windows-node/releases/latest',
     "Accept = 'application/vnd.github+json'",
     "'X-GitHub-Api-Version' = '2022-11-28'",
-    '$headers.Authorization = "******"',
+    '$headers.Authorization = [string]::Concat(''Bearer '', $GitHubToken)',
     '-MaximumRedirection 0',
     'for ($attempt = 1; $attempt -le 3; $attempt++)',
     'Start-Sleep -Seconds $attempt',

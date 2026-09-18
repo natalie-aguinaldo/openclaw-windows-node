@@ -49,7 +49,7 @@ if ([string]::IsNullOrWhiteSpace($tag)) {
             'X-GitHub-Api-Version' = '2022-11-28'
         }
         if (-not [string]::IsNullOrWhiteSpace($GitHubToken)) {
-            $headers.Authorization = "******"
+            $headers.Authorization = [string]::Concat('Bearer ', $GitHubToken)
         }
         for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
