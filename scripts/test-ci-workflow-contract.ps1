@@ -668,6 +668,8 @@ foreach ($token in @(
         '-CertificateThumbprint $thumbprint',
         'name: openclaw-msix-store-unsigned-${{ matrix.architecture }}',
         'name: openclaw-msix-dev-${{ matrix.architecture }}',
+        'artifacts/msix/${{ matrix.architecture }}/OpenClaw-${{ matrix.architecture }}.msix',
+        'artifacts/msix-dev/${{ matrix.architecture }}/OpenClaw-Dev-${{ matrix.architecture }}.msix',
         'msix-metadata.json',
         'OpenClaw-Dev.cer',
         'INSTALL.txt',
@@ -726,8 +728,8 @@ Assert-Contains -Text $createRelease -Expected '${{ steps.msix_alpha.outputs.fil
 Assert-Contains -Text $createRelease -Expected '${{ steps.msix_alpha.outputs.notes }}' -Message "Only alpha release notes may mention MSIX downloads."
 Assert-Contains -Text $createRelease -Expected 'fail_on_unmatched_files: true' -Message "Missing release files must fail publication."
 Assert-Contains -Text $createRelease -Expected "make_latest: `${{ needs.metadata.outputs.isPrerelease == 'true' && 'false' || 'true' }}" -Message "Alpha releases must not become Latest."
-Assert-NotContains -Text $createRelease -Unexpected 'OpenClawCompanion-x64.msix' -Message "MSIX must not be an unconditional stable release asset."
-Assert-NotContains -Text $createRelease -Unexpected 'OpenClawCompanion-arm64.msix' -Message "MSIX must not be an unconditional stable release asset."
+Assert-NotContains -Text $createRelease -Unexpected 'OpenClaw-x64.msix' -Message "MSIX must not be an unconditional stable release asset."
+Assert-NotContains -Text $createRelease -Unexpected 'OpenClaw-arm64.msix' -Message "MSIX must not be an unconditional stable release asset."
 Assert-Contains -Text $workflow -Expected "./scripts/test-msix-ci-artifacts.ps1" -Message "Fast validation must exercise the Dev artifact contracts."
 Assert-Contains -Text $workflow -Expected "./scripts/test-msix-alpha-release.ps1" -Message "Fast validation must exercise alpha release staging."
 

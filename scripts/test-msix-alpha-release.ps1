@@ -36,7 +36,7 @@ function New-Fixture {
     foreach ($architecture in @('x64', 'arm64')) {
         $directory = Join-Path $inputPath "openclaw-msix-store-unsigned-$architecture"
         New-Item -ItemType Directory -Path $directory -Force | Out-Null
-        $packageName = "OpenClawCompanion-$architecture.msix"
+        $packageName = "OpenClaw-$architecture.msix"
         $packagePath = Join-Path $directory $packageName
         Set-Content -LiteralPath $packagePath -Value "Synthetic $architecture package fixture."
         [ordered]@{
@@ -69,18 +69,18 @@ try {
     $assets = & $stager @arguments
     $names = @($assets.Files | ForEach-Object { [IO.Path]::GetFileName($_) } | Sort-Object)
     $expected = @(
-        'OpenClawCompanion-arm64.msix',
-        'OpenClawCompanion-arm64.msix-metadata.json',
-        'OpenClawCompanion-x64.msix',
-        'OpenClawCompanion-x64.msix-metadata.json'
+        'OpenClaw-arm64.msix',
+        'OpenClaw-arm64.msix-metadata.json',
+        'OpenClaw-x64.msix',
+        'OpenClaw-x64.msix-metadata.json'
     )
     if (@(Compare-Object $expected $names).Count -gt 0 -or
         @(Get-ChildItem -LiteralPath $arguments.OutputDirectory).Count -ne 4) {
         throw 'Release assets did not match the exact public Store allowlist.'
     }
     foreach ($architecture in @('x64', 'arm64')) {
-        $original = Join-Path $arguments.ArtifactDirectory "openclaw-msix-store-unsigned-$architecture\OpenClawCompanion-$architecture.msix"
-        $copy = Join-Path $arguments.OutputDirectory "OpenClawCompanion-$architecture.msix"
+        $original = Join-Path $arguments.ArtifactDirectory "openclaw-msix-store-unsigned-$architecture\OpenClaw-$architecture.msix"
+        $copy = Join-Path $arguments.OutputDirectory "OpenClaw-$architecture.msix"
         if ((Get-FileHash -LiteralPath $original).Hash -ne (Get-FileHash -LiteralPath $copy).Hash) {
             throw 'Staging changed the validated package bytes.'
         }
@@ -90,7 +90,7 @@ try {
             throw 'Published metadata did not describe the released file.'
         }
     }
-    foreach ($warning in @('unsigned', 'not installers', '2026.7.2.0', 'same Store version', 'Dev-signed tester downloads remain in Actions')) {
+    foreach ($warning in @('OpenClaw-x64.msix', 'OpenClaw-arm64.msix', 'unsigned', 'not installers', '2026.7.2.0', 'same Store version', 'Dev-signed tester downloads remain in Actions')) {
         if (-not $assets.Notes.Contains($warning)) { throw "Release notes are missing '$warning'." }
     }
     Assert-Fails { & $stager @arguments } 'absent or empty'
@@ -126,7 +126,7 @@ try {
     Set-Content -LiteralPath (Join-Path $arguments.ArtifactDirectory 'openclaw-msix-store-unsigned-x64\extra.pfx') 'not a real key'
     Assert-Fails { & $stager @arguments } 'exactly'
     $arguments = New-Fixture
-    Remove-Item -LiteralPath (Join-Path $arguments.ArtifactDirectory 'openclaw-msix-store-unsigned-arm64\OpenClawCompanion-arm64.msix')
+    Remove-Item -LiteralPath (Join-Path $arguments.ArtifactDirectory 'openclaw-msix-store-unsigned-arm64\OpenClaw-arm64.msix')
     Assert-Fails { & $stager @arguments } 'exactly'
     $arguments = New-Fixture
     $arguments.Version = '2026.7.3-alpha.4'

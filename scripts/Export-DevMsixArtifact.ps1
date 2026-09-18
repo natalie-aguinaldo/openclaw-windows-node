@@ -77,7 +77,7 @@ if ($LASTEXITCODE -ne 0 -or $sourceCommit -notmatch '^[0-9a-fA-F]{40}$') {
 $sourceTreeDirty = [bool](& git -C $repositoryRoot status --porcelain)
 if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect the current source tree.' }
 
-$packageName = "OpenClawCompanion-Dev-$Architecture.msix"
+$packageName = "OpenClaw-Dev-$Architecture.msix"
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 Copy-Item -LiteralPath $package.FullName -Destination (Join-Path $OutputDirectory $packageName)
 $certificatePath = Join-Path $OutputDirectory 'OpenClaw-Dev.cer'

@@ -32,7 +32,7 @@ if ((Test-Path -LiteralPath $OutputDirectory) -and
 $expectedVersion = ($Version -replace '-alpha\.\d+$', '') + '.0'
 $packages = foreach ($architecture in @('x64', 'arm64')) {
     $directory = Join-Path $ArtifactDirectory "openclaw-msix-store-unsigned-$architecture"
-    $packageName = "OpenClawCompanion-$architecture.msix"
+    $packageName = "OpenClaw-$architecture.msix"
     $expectedFiles = @($packageName, 'msix-metadata.json') | Sort-Object
     $entries = @(Get-ChildItem -LiteralPath $directory -Force)
     if ($entries.Count -ne 2 -or
@@ -80,7 +80,7 @@ $files = foreach ($package in $packages) {
     Notes = @"
 ### Unsigned Store submission packages (alpha only)
 
-OpenClawCompanion-x64.msix and OpenClawCompanion-arm64.msix are unsigned
+OpenClaw-x64.msix and OpenClaw-arm64.msix are unsigned
 Partner Center submission inputs, not installers. Their architecture-specific
 metadata files record the source commit, package version, and SHA-256.
 Upload the MSIX files manually to Partner Center; Microsoft signs accepted

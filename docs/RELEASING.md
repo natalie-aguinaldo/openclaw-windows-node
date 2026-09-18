@@ -175,9 +175,9 @@ Current release artifacts are:
 
 Canonical alpha releases additionally contain:
 
-- `OpenClawCompanion-x64.msix` and `OpenClawCompanion-arm64.msix`
-- `OpenClawCompanion-x64.msix-metadata.json` and
-  `OpenClawCompanion-arm64.msix-metadata.json`
+- `OpenClaw-x64.msix` and `OpenClaw-arm64.msix`
+- `OpenClaw-x64.msix-metadata.json` and
+  `OpenClaw-arm64.msix-metadata.json`
 
 These are **unsigned Store submission inputs, not installers**. Download the
 MSIX files and upload them manually to Partner Center. Microsoft signs accepted

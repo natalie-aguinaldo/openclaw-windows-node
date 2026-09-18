@@ -137,8 +137,8 @@ public sealed class ReleaseSigningWorkflowTests
         var releaseStep = ExtractReleaseStep(workflow);
         Assert.Contains("${{ steps.msix_alpha.outputs.files }}", releaseStep);
         Assert.Contains("${{ steps.msix_alpha.outputs.notes }}", releaseStep);
-        Assert.DoesNotContain("OpenClawCompanion-x64.msix", releaseStep);
-        Assert.DoesNotContain("OpenClawCompanion-arm64.msix", releaseStep);
+        Assert.DoesNotContain("OpenClaw-x64.msix", releaseStep);
+        Assert.DoesNotContain("OpenClaw-arm64.msix", releaseStep);
         Assert.DoesNotContain("openclaw-msix-dev-", releaseStep);
     }
 
