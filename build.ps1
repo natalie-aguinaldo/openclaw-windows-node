@@ -51,6 +51,11 @@
     the repository root. The directory is never cleared automatically.
     Only valid with -Msix Dev; omission preserves the local AppPackages path.
 
+.PARAMETER MsixBaseVersion
+    Optional numeric X.Y.Z base for a one-off Dev MSIX build. Keeps the explicit
+    or installed-package-derived revision. Only valid with -Msix Dev.
+    Omit to retain the GitVersion-calculated base.
+
 .EXAMPLE
     .\build.ps1
     .\build.ps1 -Project WinUI -Configuration Release
@@ -83,6 +88,16 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$MsixOutputDirectory,
 
+    [ValidatePattern('^[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$')]
+    [ValidateScript({
+        foreach ($part in $_.Split('.')) {
+            [uint16]$value = 0
+            if (-not [uint16]::TryParse($part, [ref]$value)) { return $false }
+        }
+        return $true
+    })]
+    [string]$MsixBaseVersion,
+
     [switch]$NoTrustRepository
 )
 
@@ -99,6 +114,9 @@ if (($PSBoundParameters.ContainsKey("MsixRevision") -or
     throw "-MsixRevision and -MsixOutputDirectory require -Msix Dev."
 }
 $explicitMsixRevision = $PSBoundParameters.ContainsKey("MsixRevision")
+if ($PSBoundParameters.ContainsKey("MsixBaseVersion") -and -not $buildDevMsix) {
+    throw "-MsixBaseVersion requires -Msix Dev."
+}
 if ($MsixOutputDirectory) {
     $MsixOutputDirectory = [IO.Path]::GetFullPath([IO.Path]::Combine($repoRoot, $MsixOutputDirectory))
     if ((Test-Path -LiteralPath $MsixOutputDirectory) -and
@@ -528,6 +546,18 @@ function Build-Project($name, $path, $useRid = $false, $packageMsix = $false) {
             "-p:AppxBundle=Never",
             "-p:UapAppxPackageBuildMode=SideloadOnly",
             "-p:AppxPackageDir=$appxOutput"
+        )
+    }
+    if ($MsixBaseVersion) {
+        $assemblyRevision = if ($packageMsix) { $msixRevision } else { 0 }
+        $assemblyVersion = "$MsixBaseVersion.$assemblyRevision"
+        $dotnetArgs += @(
+            "-p:Version=$MsixBaseVersion",
+            "-p:UpdateVersionProperties=false",
+            "-p:UpdateAssemblyInfo=false",
+            "-p:AssemblyVersion=$assemblyVersion",
+            "-p:FileVersion=$assemblyVersion",
+            "-p:InformationalVersion=$assemblyVersion"
         )
     }
     $result = Invoke-DotNetCaptured $dotnetArgs

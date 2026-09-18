@@ -121,7 +121,7 @@ public sealed class ReleaseSigningWorkflowTests
 
         Assert.Contains("Dev packages stay workflow-only.", workflow);
         Assert.Contains("global-json-file: global.json", workflow);
-        Assert.Contains(@".\scripts\Build-StoreMsix.ps1 -Architecture", workflow);
+        Assert.Contains(@".\scripts\Build-StoreMsix.ps1 @buildArguments", workflow);
         Assert.Contains(@".\scripts\Export-DevMsixArtifact.ps1", workflow);
         Assert.Contains("name: openclaw-msix-store-unsigned-", workflow);
         Assert.Contains("name: openclaw-msix-dev-", workflow);

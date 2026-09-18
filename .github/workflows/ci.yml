@@ -850,9 +850,36 @@ jobs:
         key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
         restore-keys: nuget-${{ runner.os }}-
 
+    - name: Select MSIX artifact version
+      id: msix_version
+      shell: pwsh
+      env:
+        BUILD_EVENT: ${{ github.event_name }}
+        PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        PR_HEAD_BRANCH: ${{ github.head_ref }}
+      run: |
+        $baseVersionOverride = ''
+        # Temporary first-Store-submission exception for this PR branch. Remove before merge.
+        if ($env:BUILD_EVENT -eq 'pull_request' -and
+            $env:PR_HEAD_REPOSITORY -eq 'natalie-aguinaldo/openclaw-windows-node' -and
+            $env:PR_HEAD_BRANCH -eq 'user/natalie-aguinaldo/msix-ci-artifacts-versioning') {
+          $baseVersionOverride = '2026.9.4'
+        }
+        $expectedDevVersion = if ($baseVersionOverride) { $baseVersionOverride } else { $env:OPENCLAW_BUILD_VERSION }
+        "baseVersionOverride=$baseVersionOverride" >> $env:GITHUB_OUTPUT
+        "expectedDevVersion=$expectedDevVersion" >> $env:GITHUB_OUTPUT
+
     - name: Build and validate unsigned Store MSIX
       shell: pwsh
-      run: .\scripts\Build-StoreMsix.ps1 -Architecture ${{ matrix.architecture }}
+      env:
+        BUILD_ARCHITECTURE: ${{ matrix.architecture }}
+        MSIX_BASE_VERSION_OVERRIDE: ${{ steps.msix_version.outputs.baseVersionOverride }}
+      run: |
+        $buildArguments = @{ Architecture = $env:BUILD_ARCHITECTURE }
+        if ($env:MSIX_BASE_VERSION_OVERRIDE) {
+          $buildArguments.StorePackageVersion = "$($env:MSIX_BASE_VERSION_OVERRIDE).0"
+        }
+        .\scripts\Build-StoreMsix.ps1 @buildArguments
 
     - name: Upload unsigned Store submission artifact
       uses: actions/upload-artifact@v7
@@ -869,20 +896,29 @@ jobs:
 
     - name: Build signed Dev MSIX
       shell: pwsh
-      run: >
-        .\build.ps1 -Project WinUI -Configuration Release -Msix Dev
-        -MsixRevision $env:DEV_MSIX_REVISION
-        -MsixOutputDirectory "$env:RUNNER_TEMP\openclaw-dev-appx"
+      env:
+        MSIX_BASE_VERSION_OVERRIDE: ${{ steps.msix_version.outputs.baseVersionOverride }}
+      run: |
+        $versionArguments = @{}
+        if ($env:MSIX_BASE_VERSION_OVERRIDE) {
+          $versionArguments.MsixBaseVersion = $env:MSIX_BASE_VERSION_OVERRIDE
+        }
+        .\build.ps1 -Project WinUI -Configuration Release -Msix Dev `
+          -MsixRevision $env:DEV_MSIX_REVISION `
+          -MsixOutputDirectory "$env:RUNNER_TEMP\openclaw-dev-appx" `
+          @versionArguments
 
     - name: Validate and stage Dev tester artifact
       shell: pwsh
+      env:
+        EXPECTED_DEV_VERSION: ${{ steps.msix_version.outputs.expectedDevVersion }}
       run: |
         $thumbprint = (Get-Content "$env:LOCALAPPDATA\OpenClawDevelopment\MSIX\dev-msix-thumbprint.txt" -Raw).Trim()
         .\scripts\Export-DevMsixArtifact.ps1 `
           -Architecture ${{ matrix.architecture }} `
           -PackageDirectory "$env:RUNNER_TEMP\openclaw-dev-appx" `
           -ExpectedRevision $env:DEV_MSIX_REVISION `
-          -ExpectedVersion $env:OPENCLAW_BUILD_VERSION `
+          -ExpectedVersion $env:EXPECTED_DEV_VERSION `
           -CertificateThumbprint $thumbprint `
           -OutputDirectory "artifacts\msix-dev\${{ matrix.architecture }}"
 

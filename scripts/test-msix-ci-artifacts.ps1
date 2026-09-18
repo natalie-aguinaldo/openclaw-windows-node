@@ -54,7 +54,11 @@ function New-Package {
     New-Item -ItemType Directory -Path $Directory -Force | Out-Null
     $zip = [IO.Compression.ZipFile]::Open((Join-Path $Directory $Name), [IO.Compression.ZipArchiveMode]::Create)
     try {
-        foreach ($name in @('AppxManifest.xml', 'AppxSignature.p7x', 'OpenClaw.Tray.WinUI.exe', 'OpenClaw.Tray.WinUI.dll', 'coreclr.dll')) {
+        foreach ($name in @(
+            'AppxManifest.xml', 'AppxSignature.p7x', 'OpenClaw.Tray.WinUI.exe', 'OpenClaw.Tray.WinUI.dll',
+            'coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll', 'Microsoft.ui.xaml.dll',
+            'OpenClaw.SetupEngine.dll', 'OpenClaw.SetupEngine.UI.dll', "tools/mxc/$Architecture/wxc-exec.exe"
+        )) {
             if ($name -eq $Omit) { continue }
             $writer = [IO.StreamWriter]::new($zip.CreateEntry($name).Open())
             try {
@@ -118,6 +122,14 @@ try {
             throw 'Dev installation instructions did not name the exported package.'
         }
         Assert-Fails { & $exporter @arguments } 'must be absent or empty'
+
+        $arguments = New-Arguments
+        $arguments.Architecture = $architecture
+        $arguments.ExpectedVersion = '2026.9.4'
+        New-Package -Directory $arguments.PackageDirectory -Architecture $architecture -Version '2026.9.4.123'
+        & $exporter @arguments
+        $metadata = Get-Content (Join-Path $arguments.OutputDirectory 'msix-metadata.json') -Raw | ConvertFrom-Json
+        if ($metadata.packageVersion -ne '2026.9.4.123') { throw 'Dev export ignored the overridden base.' }
     }
 
     $arguments = New-Arguments
@@ -156,6 +168,158 @@ try {
         Assert-Fails { & $exporter @arguments } $mismatch.Error
     }
 
+    # Exercise the real Store validator and metadata writer, stubbing only the costly publish.
+    & {
+        $storeBuilder = Join-Path $RepoRoot 'scripts\Build-StoreMsix.ps1'
+        [xml]$storeManifest = Get-Content (Join-Path $RepoRoot 'src\OpenClaw.Tray.WinUI\Package.appxmanifest') -Raw
+        $storeProbe = @{ Arguments = @(); ProducedVersion = $null; Calls = 0 }
+        function dotnet {
+            $storeProbe.Arguments = @($args)
+            $storeProbe.Calls++
+            $output = ($args | Where-Object { $_ -like '-p:AppxPackageDir=*' }) -replace '^-p:AppxPackageDir=', ''
+            $architecture = if ($args -contains 'win-arm64') { 'arm64' } else { 'x64' }
+            $versionArgument = @($args | Where-Object { $_ -like '-p:Version=*' })
+            $version = if ($storeProbe.ProducedVersion) { $storeProbe.ProducedVersion }
+                elseif ($versionArgument.Count) { $versionArgument[0] -replace '^-p:Version=', '' }
+                else { '2026.9.5.0' }
+            New-Package -Directory $output -Name 'Store.msix' -Architecture $architecture `
+                -Version $version -Identity $storeManifest.Package.Identity.Name `
+                -Publisher $storeManifest.Package.Identity.Publisher -Omit 'AppxSignature.p7x'
+            $global:LASTEXITCODE = 0
+        }
+        foreach ($case in @(
+            @{ Architecture = 'x64'; Override = $null; Expected = '2026.9.5.0' },
+            @{ Architecture = 'arm64'; Override = $null; Expected = '2026.9.5.0' },
+            @{ Architecture = 'x64'; Override = '2026.9.4.0'; Expected = '2026.9.4.0' },
+            @{ Architecture = 'arm64'; Override = '2026.9.4.0'; Expected = '2026.9.4.0' }
+        )) {
+            $output = Join-Path $temporaryRoot "store-$($storeProbe.Calls)"
+            $arguments = @{ Architecture = $case.Architecture; OutputDirectory = $output }
+            if ($case.Override) { $arguments.StorePackageVersion = $case.Override }
+            & $storeBuilder @arguments
+            if ($case.Override) {
+                foreach ($property in @(
+                    '-p:Version=2026.9.4.0', '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
+                    '-p:AssemblyVersion=2026.9.4.0', '-p:FileVersion=2026.9.4.0', '-p:InformationalVersion=2026.9.4.0'
+                )) {
+                    if ($storeProbe.Arguments -notcontains $property) { throw "Missing Store override: $property" }
+                }
+            } elseif (@($storeProbe.Arguments | Where-Object {
+                $_ -match '^-p:(Version|UpdateVersionProperties|UpdateAssemblyInfo|AssemblyVersion|FileVersion|InformationalVersion)='
+            }).Count) {
+                throw 'Default Store builds must retain normal GitVersion behavior.'
+            }
+            $metadata = Get-Content (Join-Path $output 'msix-metadata.json') -Raw | ConvertFrom-Json
+            if ($metadata.packageVersion -ne $case.Expected -or $metadata.signed -or
+                $metadata.archive -ne "OpenClaw-$($case.Architecture).msix" -or
+                $metadata.identityName -ne $storeManifest.Package.Identity.Name) {
+                throw 'Store metadata did not describe the actual overridden package.'
+            }
+        }
+        $calls = $storeProbe.Calls
+        foreach ($version in @('v2026.9.4.0', '2026.9.4', '2026.9.4.1', '2026.9.4.0-alpha.1', '02026.9.4.0', '0.9.4.0', '')) {
+            Assert-Fails { & $storeBuilder -StorePackageVersion $version } 'cannot validate argument'
+        }
+        foreach ($version in @('65536.9.4.0', '2026.65536.4.0', '2026.9.65536.0')) {
+            Assert-Fails { & $storeBuilder -StorePackageVersion $version } 'Invalid MSIX package version component'
+        }
+        if ($storeProbe.Calls -ne $calls) { throw 'Invalid Store versions must fail before publishing.' }
+        $storeProbe.ProducedVersion = '2026.9.5.0'
+        $output = Join-Path $temporaryRoot 'store-mismatch'
+        Assert-Fails {
+            & $storeBuilder -Architecture x64 -OutputDirectory $output -StorePackageVersion '2026.9.4.0'
+        } 'Expected Store package version 2026.9.4.0, found 2026.9.5.0'
+        if (Test-Path (Join-Path $output 'msix-metadata.json')) {
+            throw 'A mismatched Store version must not receive validated metadata.'
+        }
+    }
+
+    $workflow = Get-Content (Join-Path $RepoRoot '.github\workflows\ci.yml') -Raw
+    function Get-WorkflowRun([string]$Name, [string]$ExpectedEnvironment = '') {
+        $step = [regex]::Match($workflow, "(?ms)^    - name: $([regex]::Escape($Name))\r?\n(?<body>.*?)(?=^    - |\z)")
+        $body = $step.Groups['body'].Value
+        $run = [regex]::Match($body, '(?s)      run: \|\r?\n(?<script>.*)')
+        if (-not $run.Success -or -not $body.Contains($ExpectedEnvironment)) { throw "Invalid workflow step: $Name" }
+        $run.Groups['script'].Value -replace '(?m)^        ', ''
+    }
+    $selector = [scriptblock]::Create((Get-WorkflowRun 'Select MSIX artifact version'))
+    $overrideBinding = 'MSIX_BASE_VERSION_OVERRIDE: ${{ steps.msix_version.outputs.baseVersionOverride }}'
+    $storeRun = Get-WorkflowRun 'Build and validate unsigned Store MSIX' $overrideBinding
+    $storeBuild = [scriptblock]::Create($storeRun.Replace(
+        '.\scripts\Build-StoreMsix.ps1 @buildArguments', '[pscustomobject]$buildArguments'))
+    $devRun = Get-WorkflowRun 'Build signed Dev MSIX' $overrideBinding
+    $devBuild = [scriptblock]::Create($devRun.Replace('.\build.ps1 ', 'Invoke-WorkflowDevBuild '))
+    function Invoke-WorkflowDevBuild {
+        param($Project, $Configuration, $Msix, $MsixRevision, $MsixOutputDirectory, $MsixBaseVersion)
+        [pscustomobject](@{} + $PSBoundParameters)
+    }
+    $exportRun = Get-WorkflowRun 'Validate and stage Dev tester artifact' `
+        'EXPECTED_DEV_VERSION: ${{ steps.msix_version.outputs.expectedDevVersion }}'
+    if (-not $exportRun.Contains('-ExpectedVersion $env:EXPECTED_DEV_VERSION')) {
+        throw 'Dev export must validate the selected version.'
+    }
+
+    $savedEnvironment = @{}
+    foreach ($name in @(
+        'BUILD_ARCHITECTURE', 'BUILD_EVENT', 'PR_HEAD_REPOSITORY', 'PR_HEAD_BRANCH',
+        'GITHUB_OUTPUT', 'OPENCLAW_BUILD_VERSION', 'MSIX_BASE_VERSION_OVERRIDE', 'DEV_MSIX_REVISION', 'RUNNER_TEMP'
+    )) {
+        $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
+    }
+    try {
+        $env:GITHUB_OUTPUT = Join-Path $temporaryRoot 'version-output'
+        $env:OPENCLAW_BUILD_VERSION = '2026.9.5-PullRequest1403.3'
+        $env:DEV_MSIX_REVISION = '123'
+        $env:RUNNER_TEMP = $temporaryRoot
+        foreach ($architecture in @('x64', 'arm64')) {
+            foreach ($case in @(
+                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $true },
+                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts'; Override = $false },
+                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'other-pr'; Override = $false },
+                @{ Event = 'pull_request'; Repo = 'openclaw/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $false },
+                @{ Event = 'push'; Repo = ''; Branch = ''; Override = $false },
+                @{ Event = 'workflow_dispatch'; Repo = ''; Branch = ''; Override = $false },
+                @{ Event = 'pull_request_target'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $false }
+            )) {
+                $env:BUILD_ARCHITECTURE = $architecture
+                $env:BUILD_EVENT = $case.Event
+                $env:PR_HEAD_REPOSITORY = $case.Repo
+                $env:PR_HEAD_BRANCH = $case.Branch
+                Set-Content -LiteralPath $env:GITHUB_OUTPUT -Value '' -NoNewline
+                & $selector
+                $outputs = ConvertFrom-StringData (Get-Content -LiteralPath $env:GITHUB_OUTPUT -Raw)
+                $expectedBase = if ($case.Override) { '2026.9.4' } else { '' }
+                $expectedDevVersion = if ($case.Override) { '2026.9.4' } else { $env:OPENCLAW_BUILD_VERSION }
+                if ($outputs.baseVersionOverride -ne $expectedBase -or $outputs.expectedDevVersion -ne $expectedDevVersion) {
+                    throw "Unexpected MSIX version selection for $($case.Event), $($case.Repo), $($case.Branch)."
+                }
+                if ($env:OPENCLAW_BUILD_VERSION -ne '2026.9.5-PullRequest1403.3') {
+                    throw 'MSIX selection must not change the normal release version.'
+                }
+                $env:MSIX_BASE_VERSION_OVERRIDE = $outputs.baseVersionOverride
+                $selected = & $storeBuild
+                if ($selected.Architecture -ne $architecture) { throw 'Store selector changed the requested architecture.' }
+                $hasOverride = $null -ne $selected.PSObject.Properties['StorePackageVersion']
+                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.StorePackageVersion -ne '2026.9.4.0')) {
+                    throw "Unexpected Store override for $($case.Event), $($case.Repo), $($case.Branch)."
+                }
+                $selected = & $devBuild
+                $hasOverride = $null -ne $selected.PSObject.Properties['MsixBaseVersion']
+                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.MsixBaseVersion -ne '2026.9.4') -or
+                    $selected.MsixRevision -ne 123 -or $selected.Msix -ne 'Dev' -or
+                    $selected.Project -ne 'WinUI' -or $selected.Configuration -ne 'Release' -or
+                    $selected.MsixOutputDirectory -ne (Join-Path $temporaryRoot 'openclaw-dev-appx')) {
+                    throw "Unexpected Dev build arguments for $($case.Event), $($case.Repo), $($case.Branch)."
+                }
+            }
+        }
+    }
+    finally {
+        foreach ($name in $savedEnvironment.Keys) {
+            [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name])
+        }
+    }
+
     # Exercise the real parameter binder without executing build.ps1's body.
     $tokens = $null
     $errors = $null
@@ -172,7 +336,67 @@ try {
         Assert-Fails { & $exporter @arguments } 'cannot validate argument'
     }
     Assert-Fails { & $bind -PackageMsix } 'parameter cannot be found'
-    Write-Host 'MSIX CI artifact contracts passed: version bounds, identity, architecture, signature rejection, exact package selection, provenance, and public-only exports.'
+
+    $bindBase = [scriptblock]::Create($attributes + "`n" + $ast.ParamBlock.Extent.Text + "`n`$MsixBaseVersion")
+    foreach ($version in @('2026.9.4', '1.0.0', '65535.65535.65535')) {
+        if ((& $bindBase -Msix Dev -MsixBaseVersion $version) -ne $version) { throw 'Valid Dev base was rejected.' }
+    }
+    foreach ($version in @(
+        '', 'v2026.9.4', '2026.9', '2026.9.4.0', '2026.9.4-alpha.1', '02026.9.4',
+        '0.9.4', '2026.09.4', '65536.9.4', '2026.65536.4', '2026.9.65536'
+    )) {
+        Assert-Fails { & $bindBase -Msix Dev -MsixBaseVersion $version } 'cannot validate argument'
+    }
+    foreach ($mode in @(@{}, @{ Msix = 'Store' })) {
+        Assert-Fails { & (Join-Path $RepoRoot 'build.ps1') @mode -MsixBaseVersion '2026.9.4' } '-MsixBaseVersion requires -Msix Dev.'
+    }
+
+    # Run the real Dev build argument construction without compiling or touching certificates.
+    & {
+        $buildFunction = $ast.Find({
+            param($node)
+            $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Build-Project'
+        }, $true)
+        . ([scriptblock]::Create($buildFunction.Extent.Text))
+        $probe = @{ Arguments = @() }
+        function Invoke-DotNetCaptured($arguments) {
+            $probe.Arguments = @($arguments)
+            $global:LASTEXITCODE = 0
+        }
+        function Write-Success($message) {}
+        $explicitMsixRevision = $true
+        $MsixRevision = 123
+        $MsixOutputDirectory = Join-Path $temporaryRoot 'dev-build-output'
+        $DevBuild = $true
+        $Configuration = 'Release'
+        foreach ($rid in @('win-x64', 'win-arm64')) {
+            foreach ($MsixBaseVersion in @('', '2026.9.4')) {
+                foreach ($packageMsix in @($false, $true)) {
+                    if (-not (Build-Project 'WinUI' (Join-Path $RepoRoot 'build.ps1') $true $packageMsix)) {
+                        throw 'Dev argument probe failed.'
+                    }
+                    if ($MsixBaseVersion) {
+                        $revision = if ($packageMsix) { 123 } else { 0 }
+                        foreach ($property in @(
+                            '-p:Version=2026.9.4', '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
+                            "-p:AssemblyVersion=2026.9.4.$revision", "-p:FileVersion=2026.9.4.$revision",
+                            "-p:InformationalVersion=2026.9.4.$revision"
+                        )) {
+                            if ($probe.Arguments -notcontains $property) { throw "Missing Dev override: $property" }
+                        }
+                    } elseif (@($probe.Arguments | Where-Object {
+                        $_ -match '^-p:(Version|UpdateVersionProperties|UpdateAssemblyInfo|AssemblyVersion|FileVersion|InformationalVersion)='
+                    }).Count) {
+                        throw 'Default Dev builds must retain normal GitVersion behavior.'
+                    }
+                    if ($packageMsix -and $probe.Arguments -notcontains '-p:MsixRevision=123') {
+                        throw 'The base override must preserve the Dev revision.'
+                    }
+                }
+            }
+        }
+    }
+    Write-Host 'MSIX CI artifact contracts passed: version bounds, matched Store/Dev PR-only bases, build arguments, identity, architecture, signature rejection, exact package selection, provenance, and public-only exports.'
 }
 finally {
     $certificate.Dispose()

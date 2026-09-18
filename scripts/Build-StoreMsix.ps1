@@ -36,6 +36,11 @@
     which is cleaned on each run. A caller-supplied directory is never deleted;
     the build fails if it already exists and is not empty.
 
+.PARAMETER StorePackageVersion
+    Optional numeric X.Y.Z.0 version for a one-off Store submission build.
+    Overrides GitVersion for package and assembly versions only for this build.
+    Omitting it preserves normal GitVersion behavior.
+
 .EXAMPLE
     .\scripts\Build-StoreMsix.ps1 -Architecture x64
     .\scripts\Build-StoreMsix.ps1 -Architecture arm64
@@ -53,7 +58,10 @@ param(
     [ValidateSet('Release')]
     [string]$Configuration = 'Release',
 
-    [string]$OutputDirectory
+    [string]$OutputDirectory,
+
+    [ValidatePattern('^[1-9]\d*\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.0$')]
+    [string]$StorePackageVersion
 )
 
 Set-StrictMode -Version Latest
@@ -127,6 +135,20 @@ function Test-PackageVersion {
     }
 }
 
+$versionArguments = @()
+if ($PSBoundParameters.ContainsKey('StorePackageVersion')) {
+    Test-PackageVersion -Version $StorePackageVersion
+    # GitVersion rewrites Version and assembly attributes unless both updates are disabled.
+    $versionArguments = @(
+        "-p:Version=$StorePackageVersion",
+        '-p:UpdateVersionProperties=false',
+        '-p:UpdateAssemblyInfo=false',
+        "-p:AssemblyVersion=$StorePackageVersion",
+        "-p:FileVersion=$StorePackageVersion",
+        "-p:InformationalVersion=$StorePackageVersion"
+    )
+}
+
 # The tracked manifest is the single source of truth for the release identity.
 # A packaged build that drifts from it is a packaging bug, not a new identity.
 [xml]$sourceManifest = Get-Content -LiteralPath $sourceManifestPath -Raw
@@ -191,6 +213,7 @@ try {
                 -p:UapAppxPackageBuildMode=SideloadOnly `
                 -p:AppxPackageSigningEnabled=false `
                 "-p:AppxPackageDir=$appxOutput" `
+                @versionArguments `
                 --nologo
         }
 
@@ -281,6 +304,9 @@ try {
     $packagedIdentity = $packagedManifest.Package.Identity
     $packageVersion = [string]$packagedIdentity.Version
     Test-PackageVersion -Version $packageVersion
+    if ($StorePackageVersion -and $packageVersion -ne $StorePackageVersion) {
+        throw "Expected Store package version $StorePackageVersion, found $packageVersion."
+    }
 
     if ([string]$packagedIdentity.Name -ne $expectedIdentityName) {
         throw (

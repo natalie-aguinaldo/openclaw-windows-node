@@ -295,6 +295,19 @@ per architecture. Each run produces one unsigned self-contained package at
 `msix-metadata.json` provenance sidecar recording the source commit, whether
 the tree was dirty, the package version, publisher, and the package SHA-256.
 
+For a one-off Store submission version, invoke the validated builder directly:
+
+```powershell
+.\scripts\Build-StoreMsix.ps1 -Architecture x64 -StorePackageVersion 2026.9.4.0 `
+  -OutputDirectory 'artifacts\store-submission\x64'
+.\scripts\Build-StoreMsix.ps1 -Architecture arm64 -StorePackageVersion 2026.9.4.0 `
+  -OutputDirectory 'artifacts\store-submission\arm64'
+```
+
+Use fresh output directories. The override changes the numeric package and
+assembly versions for that invocation and verifies the packaged version before
+writing metadata. It does not create a tag or change the normal GitVersion policy.
+
 `scripts\Build-StoreMsix.ps1` fails the build when the produced package drifts from
 `Package.appxmanifest`: the identity name, publisher, and processor
 architecture must match, the version must be four `uint16` components ending in
@@ -337,6 +350,15 @@ These MSIX filenames use `OpenClaw`, not the previous `OpenClawCompanion`
 prefix. Only the download filenames changed: package identities, versions,
 and EXE installer filenames are unchanged. Existing downloads are not renamed.
 
+**Temporary submission-build exception:** PR runs whose head is
+`natalie-aguinaldo/openclaw-windows-node:user/natalie-aguinaldo/msix-ci-artifacts-versioning`
+build the unsigned Store artifacts as `2026.9.4.0` and the Dev tester artifacts
+as `2026.9.4.<github.run_number>`. Both use the same base without changing their
+identities or signing. Other PRs, pushes, tags, manual runs, EXE/ZIP artifacts,
+and GitHub release tags still use their normal version policy.
+Remove this temporary workflow exception and this note before merging.
+This exception does not publish an alpha release or change its version checks.
+
 Each disposable runner uses `setup-dev-msix-cert.ps1` to generate and trust a
 non-exportable Dev certificate. Only its public `.cer` is included. The key and
 runner trust are removed in an always-run cleanup step. No repository signing
@@ -360,6 +382,12 @@ The same run's reruns keep the same version, not a new upgrade. Version
 ordering is not guaranteed across forks, branches, local builds, or decreasing
 base versions. Do not uninstall/downgrade an existing Dev package just to
 resolve a version conflict without considering its settings and data.
+
+For a one-off local Dev build, `-MsixBaseVersion 2026.9.4` overrides only the
+base while retaining the selected revision. It requires `-Msix Dev`; omit it
+for the GitVersion base. The CI exporter checks the package against the
+selected base plus the run-number revision. A `2026.9.4.*` Dev package is older
+than an installed `2026.9.5.*` package regardless of its revision.
 
 The Store version stays `X.Y.Z.0`. Prerelease and stable-correction suffixes
 can therefore produce the same Store version; CI artifacts do not promise
