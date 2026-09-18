@@ -298,9 +298,9 @@ the tree was dirty, the package version, publisher, and the package SHA-256.
 For a one-off Store submission version, invoke the validated builder directly:
 
 ```powershell
-.\scripts\Build-StoreMsix.ps1 -Architecture x64 -StorePackageVersion 2026.9.4.0 `
+.\scripts\Build-StoreMsix.ps1 -Architecture x64 -StorePackageVersion 2026.9.400.0 `
   -OutputDirectory 'artifacts\store-submission\x64'
-.\scripts\Build-StoreMsix.ps1 -Architecture arm64 -StorePackageVersion 2026.9.4.0 `
+.\scripts\Build-StoreMsix.ps1 -Architecture arm64 -StorePackageVersion 2026.9.400.0 `
   -OutputDirectory 'artifacts\store-submission\arm64'
 ```
 
@@ -351,13 +351,16 @@ prefix. Only the download filenames changed: package identities, versions,
 and EXE installer filenames are unchanged. Existing downloads are not renamed.
 
 **Temporary submission-build exception:** PR runs whose head is
-`natalie-aguinaldo/openclaw-windows-node:user/natalie-aguinaldo/msix-ci-artifacts-versioning`
-build the unsigned Store artifacts as `2026.9.4.0` and the Dev tester artifacts
-as `2026.9.4.<github.run_number>`. Both use the same base without changing their
+`natalie-aguinaldo/openclaw-windows-node:user/natalie-aguinaldo/msix-ci-artifacts-versioning-400`
+build the unsigned Store artifacts as `2026.9.400.0` and the Dev tester artifacts
+as `2026.9.400.<github.run_number>`. Both use the same base without changing their
 identities or signing. Other PRs, pushes, tags, manual runs, EXE/ZIP artifacts,
 and GitHub release tags still use their normal version policy.
 Remove this temporary workflow exception and this note before merging.
 This exception does not publish an alpha release or change its version checks.
+The fixed `400` component represents `04` (patch), `0` (no correction suffix),
+and `0` (first MSIX packaging revision). It does not implement an automatic
+version allocator.
 
 Each disposable runner uses `setup-dev-msix-cert.ps1` to generate and trust a
 non-exportable Dev certificate. Only its public `.cer` is included. The key and
@@ -383,11 +386,12 @@ ordering is not guaranteed across forks, branches, local builds, or decreasing
 base versions. Do not uninstall/downgrade an existing Dev package just to
 resolve a version conflict without considering its settings and data.
 
-For a one-off local Dev build, `-MsixBaseVersion 2026.9.4` overrides only the
+For a one-off local Dev build, `-MsixBaseVersion 2026.9.400` overrides only the
 base while retaining the selected revision. It requires `-Msix Dev`; omit it
 for the GitVersion base. The CI exporter checks the package against the
-selected base plus the run-number revision. A `2026.9.4.*` Dev package is older
-than an installed `2026.9.5.*` package regardless of its revision.
+selected base plus the run-number revision. A `2026.9.400.*` Dev package is newer
+than either `2026.9.4.*` or `2026.9.5.*` regardless of its revision. Returning
+from the encoded base to either smaller base is a downgrade.
 
 The Store version stays `X.Y.Z.0`. Prerelease and stable-correction suffixes
 can therefore produce the same Store version; CI artifacts do not promise

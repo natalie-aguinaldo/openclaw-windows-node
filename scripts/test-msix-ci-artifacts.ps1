@@ -123,13 +123,15 @@ try {
         }
         Assert-Fails { & $exporter @arguments } 'must be absent or empty'
 
-        $arguments = New-Arguments
-        $arguments.Architecture = $architecture
-        $arguments.ExpectedVersion = '2026.9.4'
-        New-Package -Directory $arguments.PackageDirectory -Architecture $architecture -Version '2026.9.4.123'
-        & $exporter @arguments
-        $metadata = Get-Content (Join-Path $arguments.OutputDirectory 'msix-metadata.json') -Raw | ConvertFrom-Json
-        if ($metadata.packageVersion -ne '2026.9.4.123') { throw 'Dev export ignored the overridden base.' }
+        foreach ($baseVersion in @('2026.9.4', '2026.9.400')) {
+            $arguments = New-Arguments
+            $arguments.Architecture = $architecture
+            $arguments.ExpectedVersion = $baseVersion
+            New-Package -Directory $arguments.PackageDirectory -Architecture $architecture -Version "$baseVersion.123"
+            & $exporter @arguments
+            $metadata = Get-Content (Join-Path $arguments.OutputDirectory 'msix-metadata.json') -Raw | ConvertFrom-Json
+            if ($metadata.packageVersion -ne "$baseVersion.123") { throw 'Dev export ignored the overridden base.' }
+        }
     }
 
     $arguments = New-Arguments
@@ -191,7 +193,9 @@ try {
             @{ Architecture = 'x64'; Override = $null; Expected = '2026.9.5.0' },
             @{ Architecture = 'arm64'; Override = $null; Expected = '2026.9.5.0' },
             @{ Architecture = 'x64'; Override = '2026.9.4.0'; Expected = '2026.9.4.0' },
-            @{ Architecture = 'arm64'; Override = '2026.9.4.0'; Expected = '2026.9.4.0' }
+            @{ Architecture = 'arm64'; Override = '2026.9.4.0'; Expected = '2026.9.4.0' },
+            @{ Architecture = 'x64'; Override = '2026.9.400.0'; Expected = '2026.9.400.0' },
+            @{ Architecture = 'arm64'; Override = '2026.9.400.0'; Expected = '2026.9.400.0' }
         )) {
             $output = Join-Path $temporaryRoot "store-$($storeProbe.Calls)"
             $arguments = @{ Architecture = $case.Architecture; OutputDirectory = $output }
@@ -199,8 +203,8 @@ try {
             & $storeBuilder @arguments
             if ($case.Override) {
                 foreach ($property in @(
-                    '-p:Version=2026.9.4.0', '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
-                    '-p:AssemblyVersion=2026.9.4.0', '-p:FileVersion=2026.9.4.0', '-p:InformationalVersion=2026.9.4.0'
+                    "-p:Version=$($case.Override)", '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
+                    "-p:AssemblyVersion=$($case.Override)", "-p:FileVersion=$($case.Override)", "-p:InformationalVersion=$($case.Override)"
                 )) {
                     if ($storeProbe.Arguments -notcontains $property) { throw "Missing Store override: $property" }
                 }
@@ -273,13 +277,14 @@ try {
         $env:RUNNER_TEMP = $temporaryRoot
         foreach ($architecture in @('x64', 'arm64')) {
             foreach ($case in @(
-                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $true },
+                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning-400'; Override = $true },
+                @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $false },
                 @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts'; Override = $false },
                 @{ Event = 'pull_request'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'other-pr'; Override = $false },
-                @{ Event = 'pull_request'; Repo = 'openclaw/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $false },
+                @{ Event = 'pull_request'; Repo = 'openclaw/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning-400'; Override = $false },
                 @{ Event = 'push'; Repo = ''; Branch = ''; Override = $false },
                 @{ Event = 'workflow_dispatch'; Repo = ''; Branch = ''; Override = $false },
-                @{ Event = 'pull_request_target'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning'; Override = $false }
+                @{ Event = 'pull_request_target'; Repo = 'natalie-aguinaldo/openclaw-windows-node'; Branch = 'user/natalie-aguinaldo/msix-ci-artifacts-versioning-400'; Override = $false }
             )) {
                 $env:BUILD_ARCHITECTURE = $architecture
                 $env:BUILD_EVENT = $case.Event
@@ -288,8 +293,8 @@ try {
                 Set-Content -LiteralPath $env:GITHUB_OUTPUT -Value '' -NoNewline
                 & $selector
                 $outputs = ConvertFrom-StringData (Get-Content -LiteralPath $env:GITHUB_OUTPUT -Raw)
-                $expectedBase = if ($case.Override) { '2026.9.4' } else { '' }
-                $expectedDevVersion = if ($case.Override) { '2026.9.4' } else { $env:OPENCLAW_BUILD_VERSION }
+                $expectedBase = if ($case.Override) { '2026.9.400' } else { '' }
+                $expectedDevVersion = if ($case.Override) { '2026.9.400' } else { $env:OPENCLAW_BUILD_VERSION }
                 if ($outputs.baseVersionOverride -ne $expectedBase -or $outputs.expectedDevVersion -ne $expectedDevVersion) {
                     throw "Unexpected MSIX version selection for $($case.Event), $($case.Repo), $($case.Branch)."
                 }
@@ -300,12 +305,12 @@ try {
                 $selected = & $storeBuild
                 if ($selected.Architecture -ne $architecture) { throw 'Store selector changed the requested architecture.' }
                 $hasOverride = $null -ne $selected.PSObject.Properties['StorePackageVersion']
-                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.StorePackageVersion -ne '2026.9.4.0')) {
+                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.StorePackageVersion -ne '2026.9.400.0')) {
                     throw "Unexpected Store override for $($case.Event), $($case.Repo), $($case.Branch)."
                 }
                 $selected = & $devBuild
                 $hasOverride = $null -ne $selected.PSObject.Properties['MsixBaseVersion']
-                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.MsixBaseVersion -ne '2026.9.4') -or
+                if ($hasOverride -ne $case.Override -or ($hasOverride -and $selected.MsixBaseVersion -ne '2026.9.400') -or
                     $selected.MsixRevision -ne 123 -or $selected.Msix -ne 'Dev' -or
                     $selected.Project -ne 'WinUI' -or $selected.Configuration -ne 'Release' -or
                     $selected.MsixOutputDirectory -ne (Join-Path $temporaryRoot 'openclaw-dev-appx')) {
@@ -338,7 +343,7 @@ try {
     Assert-Fails { & $bind -PackageMsix } 'parameter cannot be found'
 
     $bindBase = [scriptblock]::Create($attributes + "`n" + $ast.ParamBlock.Extent.Text + "`n`$MsixBaseVersion")
-    foreach ($version in @('2026.9.4', '1.0.0', '65535.65535.65535')) {
+    foreach ($version in @('2026.9.4', '2026.9.400', '1.0.0', '65535.65535.65535')) {
         if ((& $bindBase -Msix Dev -MsixBaseVersion $version) -ne $version) { throw 'Valid Dev base was rejected.' }
     }
     foreach ($version in @(
@@ -370,7 +375,7 @@ try {
         $DevBuild = $true
         $Configuration = 'Release'
         foreach ($rid in @('win-x64', 'win-arm64')) {
-            foreach ($MsixBaseVersion in @('', '2026.9.4')) {
+            foreach ($MsixBaseVersion in @('', '2026.9.4', '2026.9.400')) {
                 foreach ($packageMsix in @($false, $true)) {
                     if (-not (Build-Project 'WinUI' (Join-Path $RepoRoot 'build.ps1') $true $packageMsix)) {
                         throw 'Dev argument probe failed.'
@@ -378,9 +383,9 @@ try {
                     if ($MsixBaseVersion) {
                         $revision = if ($packageMsix) { 123 } else { 0 }
                         foreach ($property in @(
-                            '-p:Version=2026.9.4', '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
-                            "-p:AssemblyVersion=2026.9.4.$revision", "-p:FileVersion=2026.9.4.$revision",
-                            "-p:InformationalVersion=2026.9.4.$revision"
+                            "-p:Version=$MsixBaseVersion", '-p:UpdateVersionProperties=false', '-p:UpdateAssemblyInfo=false',
+                            "-p:AssemblyVersion=$MsixBaseVersion.$revision", "-p:FileVersion=$MsixBaseVersion.$revision",
+                            "-p:InformationalVersion=$MsixBaseVersion.$revision"
                         )) {
                             if ($probe.Arguments -notcontains $property) { throw "Missing Dev override: $property" }
                         }

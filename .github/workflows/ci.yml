@@ -862,8 +862,8 @@ jobs:
         # Temporary first-Store-submission exception for this PR branch. Remove before merge.
         if ($env:BUILD_EVENT -eq 'pull_request' -and
             $env:PR_HEAD_REPOSITORY -eq 'natalie-aguinaldo/openclaw-windows-node' -and
-            $env:PR_HEAD_BRANCH -eq 'user/natalie-aguinaldo/msix-ci-artifacts-versioning') {
-          $baseVersionOverride = '2026.9.4'
+            $env:PR_HEAD_BRANCH -eq 'user/natalie-aguinaldo/msix-ci-artifacts-versioning-400') {
+          $baseVersionOverride = '2026.9.400'
         }
         $expectedDevVersion = if ($baseVersionOverride) { $baseVersionOverride } else { $env:OPENCLAW_BUILD_VERSION }
         "baseVersionOverride=$baseVersionOverride" >> $env:GITHUB_OUTPUT
