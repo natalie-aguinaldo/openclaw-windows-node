@@ -211,15 +211,22 @@ patch or year/month starts its own range. Windows' 65535 component limit still
 applies, including to the last partial range.
 
 `.github/msix-version-baseline.json` imports already-used versions. It marks
-`2026.9.400.0` used, so the next official `2026.9.4` release reserves
-`2026.9.401.0`. This file is migration state, not a value to bump for each
-release. New `2026.9.5` releases start at `2026.9.500.0`.
+`2026.9.400.0` used and records the workflow run, source commits, artifact IDs,
+and package hashes that substantiate that migration floor. This file is
+migration state, not a value to bump for each release. New `2026.9.5` releases
+start at `2026.9.500.0`.
+
+The canonical ledger now contains the first live reservation for this release
+line at `refs/tags/msix-package/2026.9.4/401`. It targets the commit behind
+`v2026.9.4`; an identical second allocator run reused the same reservation
+instead of consuming another number. Therefore the next unreserved
+`2026.9.4` candidate is `2026.9.402.0`.
 
 PR/main metadata jobs resolve the latest published stable Windows release from
 the canonical upstream repository and call
 `scripts\Resolve-MsixPackageVersion.ps1` in read-only mode against that release
 line and the canonical reservation ledger. While Latest is `v2026.9.4`, their
-Store preview is `2026.9.401.0`, even if GitVersion on main or the PR has moved
+Store preview is `2026.9.402.0`, even if GitVersion on main or the PR has moved
 to a `2026.9.5` development line. This selection affects only MSIX manifests;
 assemblies, EXE/ZIP artifacts, GitVersion output, and release tags are unchanged.
 
@@ -239,8 +246,17 @@ and reservation; moving a source tag is an error.
 Do not delete or force-update these records. Failed or cancelled builds keep
 their reservations and must be retried with the same source tag. Alpha release
 retention deletes release objects/assets, not the allocation tags. They do not
-begin with `v` and therefore do not trigger tag-driven release builds.
-Protect the namespace against updates/deletion where repository rules permit.
+begin with `v` and therefore do not trigger tag-driven release builds. The
+active `Protect MSIX package reservations` tag ruleset blocks deletion and
+non-fast-forward updates under `refs/tags/msix-package/**/*`; preserving that
+ruleset is part of the release contract.
+
+The canonical reservation ledger is an intentional, fail-closed dependency of
+the release workflow. If allocation, authentication, permissions, or ledger
+validation fails, the tagged release stops before publishing EXE/ZIP assets.
+Maintainers must repair and rerun the same source tag rather than bypassing the
+allocator or publishing a partial release.
+
 API, authentication, malformed-state, exhaustion, and retry-limit errors fail
 closed. No workflow should replace such a failure with a guessed version.
 

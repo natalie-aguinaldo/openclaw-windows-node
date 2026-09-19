@@ -360,7 +360,7 @@ Tagged-release reruns reuse their reserved package base. PR/main previews use
 the latest published stable Windows release line from the canonical upstream
 repository and do not consume numbers. For example, while Latest is
 `v2026.9.4`, previews use the `2026.9.4` allocation range and currently produce
-Store `2026.9.401.0`; a future official `v2026.9.5` release still starts in the
+Store `2026.9.402.0`; a future official `v2026.9.5` release still starts in the
 `500-599` range. A preview candidate can advance after another official release
 reserves a number. Version ordering is not guaranteed across forks, branches,
 local builds, or decreasing base versions.
@@ -383,9 +383,12 @@ the third package component starts at `Z * 100` and advances within that patch's
 | `2026.9.5`, including its alpha/correction tags | `2026.9.500.0` through `2026.9.599.0` |
 | `2026.10.1`, including its alpha/correction tags | `2026.10.100.0` through `2026.10.199.0` |
 
-The already-used `2026.9.400.0` is recorded in
-`.github/msix-version-baseline.json`, so the next official `2026.9.4` packaging
-release gets `2026.9.401.0`. Correction suffixes do not occupy their own digit.
+The already-used `2026.9.400.0` is recorded with its workflow and artifact
+provenance in `.github/msix-version-baseline.json`. The canonical ledger also
+contains reservation `msix-package/2026.9.4/401`, so the next unreserved
+`2026.9.4` packaging candidate is `2026.9.402.0`. Correction suffixes do not
+occupy their own digit.
+
 All tags on the same app patch share the counter, including revisions 10, 11,
 and onward. Exhaustion fails rather than entering the next patch's range.
 Every component must fit `uint16`; patch 655 has only the remaining 65500-65535
@@ -406,8 +409,10 @@ The allocator records reservations as append-only annotated Git tags under
 create-ref requests; reruns of the same source tag/commit reuse their record.
 Failed builds keep their reservations, so numbers are never recycled.
 Do not delete, move, or repurpose reservation tags, including during alpha
-release cleanup. Repository maintainers should protect this namespace against
-updates/deletion while permitting the official workflow to create refs.
+release cleanup. The repository's active `Protect MSIX package reservations`
+ruleset blocks deletion and non-fast-forward updates under this namespace while
+permitting the official workflow to create refs. Preserve that ruleset as part
+of the release contract.
 See [MSIX version allocation](docs/RELEASING.md#msix-version-allocation).
 
 For an encoded local preview, save the readonly resolver result outside tracked
