@@ -366,6 +366,11 @@ reserves a number. Version ordering is not guaranteed across forks, branches,
 local builds, or decreasing base versions.
 Do not uninstall/downgrade an existing Dev package just to
 resolve a version conflict without considering its settings and data.
+When `-MsixBaseVersion` is omitted, local `-Msix Dev` builds compare the
+application-derived base with the installed Dev package and reuse the installed
+three-part base when it is higher. The fourth component still increments from
+the installed revision. This keeps ordinary local builds upgrade-compatible
+after installing an encoded CI Dev package without changing GitVersion.
 
 CI allocates a separate MSIX base without changing the application's GitVersion,
 assembly metadata, EXE/ZIP versions, or GitHub release tags. For app `X.Y.Z`,

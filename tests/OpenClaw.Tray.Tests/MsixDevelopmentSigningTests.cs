@@ -54,7 +54,9 @@ public sealed class MsixDevelopmentSigningTests
         Assert.Contains("$explicitMsixRevision", buildScript);
         Assert.Contains("-MsixRevision and -MsixOutputDirectory require -Msix Dev.", buildScript);
         Assert.Contains("-MsixBaseVersion requires -Msix Dev.", buildScript);
-        Assert.Contains("-p:MsixPackageBaseVersion=$MsixBaseVersion", buildScript);
+        Assert.Contains("Select-LocalDevMsixBaseVersion", buildScript);
+        Assert.Contains("Get-CurrentAppBaseVersion", buildScript);
+        Assert.Contains("-p:MsixPackageBaseVersion=$effectiveMsixBaseVersion", buildScript);
         Assert.Contains("The Dev MSIX output directory must be absent or empty:", buildScript);
         Assert.Contains("([version]$installedDevPackage.Version.ToString()).Revision + 1", buildScript);
         Assert.Contains("setup-dev-msix-cert.ps1", buildScript);

@@ -283,6 +283,25 @@ try {
     }
     Assert-Fails { & (Join-Path $RepoRoot 'build.ps1') -MsixBaseVersion '2026.9.401' } '-MsixBaseVersion requires -Msix Dev.'
     & {
+        $baseSelector = $ast.Find({
+            param($node)
+            $node -is [Management.Automation.Language.FunctionDefinitionAst] -and
+                $node.Name -eq 'Select-LocalDevMsixBaseVersion'
+        }, $true)
+        . ([scriptblock]::Create($baseSelector.Extent.Text))
+        if ((Select-LocalDevMsixBaseVersion $null '2026.9.5') -ne $null) {
+            throw 'Missing installed package must preserve the application-derived base.'
+        }
+        if ((Select-LocalDevMsixBaseVersion ([version]'2026.9.401.123') '2026.9.5') -ne '2026.9.401') {
+            throw 'A higher installed Dev base must be reused.'
+        }
+        if ((Select-LocalDevMsixBaseVersion ([version]'2026.9.5.123') '2026.9.5') -ne $null) {
+            throw 'An equal installed Dev base must preserve the application-derived base.'
+        }
+        if ((Select-LocalDevMsixBaseVersion ([version]'2026.8.999.123') '2026.9.5') -ne $null) {
+            throw 'An older installed Dev base must not override a newer application base.'
+        }
+
         $buildFunction = $ast.Find({
             param($node)
             $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Build-Project'
@@ -290,6 +309,9 @@ try {
         . ([scriptblock]::Create($buildFunction.Extent.Text))
         $probe = @{ Arguments = @() }
         function Invoke-DotNetCaptured($arguments) { $probe.Arguments = @($arguments); $global:LASTEXITCODE = 0 }
+        $probeInstalledDevPackage = $null
+        function Get-InstalledDevMsixPackage { $probeInstalledDevPackage }
+        function Get-CurrentAppBaseVersion { '2026.9.5' }
         function Write-Success($message) {}
         $explicitMsixRevision = $true
         $MsixRevision = 123
@@ -308,6 +330,35 @@ try {
                     }).Count) { throw 'Dev packaging must preserve app version metadata.' }
                 }
             }
+        }
+
+        $explicitMsixRevision = $false
+        $MsixBaseVersion = ''
+        $probeInstalledDevPackage = [pscustomobject]@{ Version = [version]'2026.9.401.123' }
+        if (-not (Build-Project 'WinUI' (Join-Path $RepoRoot 'build.ps1') $true $true)) {
+            throw 'Installed Dev package build argument probe failed.'
+        }
+        if ($probe.Arguments -notcontains '-p:MsixPackageBaseVersion=2026.9.401' -or
+            $probe.Arguments -notcontains '-p:MsixRevision=124') {
+            throw 'A higher installed Dev package must supply its base and next revision.'
+        }
+
+        $MsixBaseVersion = '2026.9.411'
+        if (-not (Build-Project 'WinUI' (Join-Path $RepoRoot 'build.ps1') $true $true)) {
+            throw 'Explicit Dev package base precedence probe failed.'
+        }
+        if ($probe.Arguments -notcontains '-p:MsixPackageBaseVersion=2026.9.411') {
+            throw 'An explicit Dev package base must override the installed package base.'
+        }
+
+        $MsixBaseVersion = ''
+        $probeInstalledDevPackage = [pscustomobject]@{ Version = [version]'2026.8.999.123' }
+        if (-not (Build-Project 'WinUI' (Join-Path $RepoRoot 'build.ps1') $true $true)) {
+            throw 'Older installed Dev package build argument probe failed.'
+        }
+        if (@($probe.Arguments | Where-Object { $_ -like '-p:MsixPackageBaseVersion=*' }).Count -ne 0 -or
+            $probe.Arguments -notcontains '-p:MsixRevision=124') {
+            throw 'An older installed Dev base must not override the app base, but its next revision must remain monotonic.'
         }
     }
     Write-Host 'MSIX CI artifact contracts passed: version bounds, identity, architecture, signature rejection, exact package selection, provenance, and public-only exports.'
