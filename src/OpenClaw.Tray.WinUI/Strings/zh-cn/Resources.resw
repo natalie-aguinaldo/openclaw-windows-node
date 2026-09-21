@@ -7116,4 +7116,28 @@
   <data name="LocalAiPage_UnavailableProbeTitle" xml:space="preserve"><value>无法验证本地 AI 可用性</value></data>
   <data name="LocalAiPage_CheckingTitle" xml:space="preserve"><value>正在检查本地 AI 可用性</value></data>
   <data name="LocalAiPage_CheckingMessage" xml:space="preserve"><value>OpenClaw 正在检查此设备是否可以运行本地 AI。这只需要片刻。</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>您的 OpenClaw 配置已迁移到 Store 版本。请关闭此消息以退出此应用，然后通过 Windows 设置 &gt; 应用 &gt; 已安装的应用卸载旧版 OpenClaw Companion，再打开 Store 版本。已迁移的配置和网关将予以保留。</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>OpenClaw 无法检查是否已完成向 Store 版本的迁移。此副本无法安全启动。请关闭其他 OpenClaw 进程后重试。请勿删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>OpenClaw 迁移预览</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>已找到受支持的旧版安装。正常启动已暂停。此测试版本尚不会迁移您的配置或请求您的同意。请关闭此预览并继续使用旧版应用。</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>旧版应用低于此预览要求的源版本。迁移和 Store 版本的正常启动已被阻止。请先使用经过验证且支持迁移的 Inno 版本，再测试迁移。您的配置未被更改。</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>迁移预览不支持此安装位置、体系结构或程序包配置。仅支持体系结构匹配的默认按用户安装。您的配置未被更改。</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>迁移预览无法安全检查旧版安装或迁移记录。正常启动已被阻止。请关闭此预览并查看应用日志后重试。请勿删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>之前的迁移需要恢复或完成。此测试版本无法继续该迁移或正常启动。请关闭此预览。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
+  </data>
 </root>

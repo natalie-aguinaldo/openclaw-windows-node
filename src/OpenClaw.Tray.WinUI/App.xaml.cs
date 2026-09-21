@@ -535,6 +535,12 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
             return; // Environment.Exit called inside; defensive return
         }
 
+        if (StoreMigrationStartupGuard.ShouldStopLaunch())
+        {
+            Exit();
+            return;
+        }
+
         // Check for protocol activation (MSIX packaged apps receive deep links this way)
         string? protocolUri = GetProtocolActivationUri();
 
@@ -571,6 +577,13 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
                 Logger.Warn("Post-setup restart acquired abandoned tray mutex.");
                 ownsMutex = true;
             }
+        }
+
+        // Keep Inno's AppMutex held while finish-migration guidance is visible.
+        if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch())
+        {
+            Exit();
+            return;
         }
 
         _activationRouter = new ActivationRouter(AppIdentity.ProtocolScheme, DeepLinkPipeName);

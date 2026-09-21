@@ -15,7 +15,9 @@ param(
     [string]$DataDirectoryName = 'OpenClawTray',
     [string]$AutoStartName = 'OpenClawTray',
     [string]$StartupTaskName = 'OpenClaw Companion',
-    [string]$DistroName = 'OpenClawGateway'
+    [string]$DistroName = 'OpenClawGateway',
+    [ValidateSet('x64', 'arm64')]
+    [string]$Architecture = $(if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' })
 )
 
 $ErrorActionPreference = 'Stop'
@@ -649,6 +651,24 @@ function Remove-GatewayDirectory {
 }
 
 try {
+    if ($DataDirectoryName -eq 'OpenClawTray') {
+        $checker = Join-Path $AppRoot 'Test-InnoMigration.ps1'
+        if (-not (Test-Path -LiteralPath $checker -PathType Leaf)) {
+            throw 'Migration preservation checker is missing. Gateway cleanup was not started.'
+        }
+        & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') `
+            -NoProfile -ExecutionPolicy Bypass -File $checker -AppRoot $AppRoot `
+            -DataDirectoryName $DataDirectoryName -Architecture $Architecture `
+            -RoamingDirectory (Resolve-AppDataDir) -LocalDirectory (Resolve-LocalDataDir)
+        $migrationResult = $LASTEXITCODE
+        if ($migrationResult -eq 10) {
+            Write-GatewayLog 'Completed Store migration: preserving gateway and generated state.'
+            exit 10
+        }
+        if ($migrationResult -ne 0) {
+            throw "Migration preservation check failed (exit $migrationResult). Gateway cleanup was not started."
+        }
+    }
     Ensure-AppRoot
     Write-GatewayLog "Starting local gateway cleanup for $DistroName."
 

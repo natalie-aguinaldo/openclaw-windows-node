@@ -7180,4 +7180,28 @@ Make sure the gateway is running.</value>
   <data name="LocalAiPage_UnavailableProbeTitle" xml:space="preserve"><value>Local AI availability could not be verified</value></data>
   <data name="LocalAiPage_CheckingTitle" xml:space="preserve"><value>Checking Local AI availability</value></data>
   <data name="LocalAiPage_CheckingMessage" xml:space="preserve"><value>OpenClaw is verifying whether this device can run Local AI. This only takes a moment.</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>Your OpenClaw setup was migrated to the Store version. Close this message to exit this app. Then uninstall the previous OpenClaw Companion app through Windows Settings &gt; Apps &gt; Installed apps and open the Store version. Your migrated setup and gateway will be preserved.</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>OpenClaw could not check whether migration to the Store version has completed. This copy cannot start safely. Close other OpenClaw processes and try again. Do not delete migration data or run gateway cleanup.</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>OpenClaw migration preview</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>A supported previous installation was found. Normal startup is paused. This test build does not migrate your setup or request consent yet. Close this preview and continue using the previous app.</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>The previous app is older than this preview's required source version. Migration and normal Store startup are blocked. Use a verified migration-capable Inno release before testing migration. Your setup has not been changed.</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>This installation layout, architecture, or package configuration is not supported by the migration preview. Only the default per-user installation with a matching architecture is supported. Your setup has not been changed.</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>The migration preview could not safely inspect the previous installation or migration records. Normal startup is blocked. Close this preview and check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>A previous migration needs recovery or finalization. This test build cannot continue it or start normally. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
 </root>

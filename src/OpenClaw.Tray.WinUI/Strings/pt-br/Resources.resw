@@ -7170,4 +7170,28 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="VoiceSettingsPage_MiniMaxVoiceIdBox.Header" xml:space="preserve"><value>ID da voz</value></data>
   <data name="VoiceSettingsPage_MiniMaxVoiceIdBox.PlaceholderText" xml:space="preserve"><value>por exemplo, male-qn-qingse</value></data>
   <data name="VoiceSettingsPage_TtsMiniMax.Content" xml:space="preserve"><value>MiniMax (nuvem, requer chave da API)</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>Sua configuração do OpenClaw foi migrada para a versão da Store. Feche esta mensagem para sair deste aplicativo. Depois, desinstale o aplicativo OpenClaw Companion anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e abra a versão da Store. Sua configuração migrada e seu gateway serão preservados.</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu verificar se a migração para a versão da Store foi concluída. Esta cópia não pode iniciar com segurança. Feche os outros processos do OpenClaw e tente novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>Prévia da migração do OpenClaw</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>Uma instalação anterior compatível foi encontrada. A inicialização normal está pausada. Esta versão de teste ainda não migra sua configuração nem solicita consentimento. Feche esta prévia e continue usando o aplicativo anterior.</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>O aplicativo anterior é mais antigo que a versão de origem exigida por esta prévia. A migração e a inicialização normal da versão da Store estão bloqueadas. Use uma versão Inno verificada com suporte à migração antes de testá-la. Sua configuração não foi alterada.</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>Este local de instalação, arquitetura ou configuração de pacote não é compatível com a prévia da migração. Apenas a instalação padrão por usuário com arquitetura correspondente é compatível. Sua configuração não foi alterada.</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>A prévia da migração não conseguiu verificar com segurança a instalação anterior ou os registros de migração. A inicialização normal está bloqueada. Feche esta prévia e consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>Uma migração anterior precisa de recuperação ou finalização. Esta versão de teste não pode continuá-la nem iniciar normalmente. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
 </root>

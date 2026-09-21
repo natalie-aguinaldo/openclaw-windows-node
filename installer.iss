@@ -103,6 +103,8 @@ Name: "startupicon"; Description: "Start {#MyAppName} when Windows starts"; Grou
 Source: "{#publish}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; WSL gateway uninstall helper copied to {tmp} by [Code] during uninstall.
 Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion
 #if vcRedist != ""
 Source: "{#vcRedist}"; DestDir: "{tmp}"; DestName: "vc_redist.exe"; Flags: deleteafterinstall; AfterInstall: InstallVCRuntime
 #endif
@@ -175,12 +177,49 @@ begin
 #endif
 end;
 
+function CheckCompletedStoreMigration: Integer;
+var
+  ResultCode: Integer;
+  Started: Boolean;
+begin
+  Result := 2;
+  if not FileExists(ExpandConstant('{app}\Test-InnoMigration.ps1')) then
+  begin
+    Log('Migration preservation checker is missing. Generated state will be preserved.');
+    Exit;
+  end;
+  Started := Exec(
+    ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    '-NoProfile -ExecutionPolicy Bypass -File ' +
+    AddQuotes(ExpandConstant('{app}\Test-InnoMigration.ps1')) +
+    ' -AppRoot ' + AddQuotes(ExpandConstant('{app}')) +
+    ' -DataDirectoryName ' + AddQuotes('{#MyInstallDir}') +
+    ' -Architecture ' + AddQuotes('{#MyAppArch}'),
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if Started then
+    Result := ResultCode;
+  Log('Migration preservation check returned ' + IntToStr(Result) + '.');
+end;
+
 procedure EnsureLocalGatewayCleanupChoice;
+var
+  MigrationResult: Integer;
 begin
   if LocalGatewayCleanupChoiceInitialized then
     Exit;
 
   LocalGatewayCleanupChoiceInitialized := True;
+
+  MigrationResult := CheckCompletedStoreMigration;
+  if MigrationResult <> 0 then
+  begin
+    LocalGatewayCleanupRequested := False;
+    if MigrationResult = 10 then
+      Log('Completed Store migration: preserving generated state and local WSL gateway.')
+    else
+      Log('Migration preservation check unavailable: skipping destructive gateway cleanup.');
+    Exit;
+  end;
 
   if UninstallSilent() then
   begin
@@ -241,7 +280,8 @@ begin
     ' -DataDirectoryName ' + AddQuotes('{#MyInstallDir}') +
     ' -AutoStartName ' + AddQuotes('{#MyAutoStartName}') +
     ' -StartupTaskName ' + AddQuotes('{#MyStartupTaskName}') +
-    ' -DistroName ' + AddQuotes('{#MyDistroName}');
+    ' -DistroName ' + AddQuotes('{#MyDistroName}') +
+    ' -Architecture ' + AddQuotes('{#MyAppArch}');
 
   Log('Running local gateway cleanup script from {tmp}.');
   Result :=
@@ -274,6 +314,12 @@ begin
     Retry := False;
     UninstallProgressForm.StatusLabel.Caption := 'Removing local WSL gateway...';
     Started := RunLocalGatewayCleanupOnce(ResultCode);
+
+    if Started and (ResultCode = 10) then
+    begin
+      Log('Completed Store migration detected before cleanup. Generated state will be preserved.');
+      Exit;
+    end;
 
     if Started and (ResultCode = 0) then
     begin

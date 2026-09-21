@@ -7116,4 +7116,28 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
   <data name="LocalAiPage_UnavailableProbeTitle" xml:space="preserve"><value>La disponibilité de l'IA locale n'a pas pu être vérifiée</value></data>
   <data name="LocalAiPage_CheckingTitle" xml:space="preserve"><value>Vérification de la disponibilité de l'IA locale</value></data>
   <data name="LocalAiPage_CheckingMessage" xml:space="preserve"><value>OpenClaw vérifie si cet appareil peut exécuter l'IA locale. Cela ne prend qu'un instant.</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>Votre configuration OpenClaw a été migrée vers la version du Store. Fermez ce message pour quitter cette application. Désinstallez ensuite l'ancienne application OpenClaw Companion dans Paramètres Windows &gt; Applications &gt; Applications installées, puis ouvrez la version du Store. Votre configuration migrée et votre passerelle seront conservées.</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu vérifier si la migration vers la version du Store est terminée. Cette copie ne peut pas démarrer en toute sécurité. Fermez les autres processus OpenClaw et réessayez. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>Aperçu de la migration OpenClaw</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>Une installation précédente compatible a été trouvée. Le démarrage normal est suspendu. Cette version de test ne migre pas encore votre configuration et ne demande pas votre consentement. Fermez cet aperçu et continuez à utiliser l'application précédente.</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>L'application précédente est antérieure à la version source requise par cet aperçu. La migration et le démarrage normal de la version du Store sont bloqués. Utilisez une version Inno vérifiée prenant en charge la migration avant de la tester. Votre configuration n'a pas été modifiée.</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>Cette disposition d'installation, cette architecture ou cette configuration de package n'est pas prise en charge par l'aperçu de migration. Seule l'installation par utilisateur à l'emplacement par défaut avec une architecture correspondante est prise en charge. Votre configuration n'a pas été modifiée.</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>L'aperçu de migration n'a pas pu vérifier en toute sécurité l'installation précédente ou les enregistrements de migration. Le démarrage normal est bloqué. Fermez cet aperçu et consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>Une migration précédente nécessite une récupération ou une finalisation. Cette version de test ne peut ni la poursuivre ni démarrer normalement. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
 </root>

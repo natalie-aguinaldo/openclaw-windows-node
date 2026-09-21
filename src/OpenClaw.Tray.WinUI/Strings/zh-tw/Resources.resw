@@ -7116,4 +7116,28 @@
   <data name="LocalAiPage_UnavailableProbeTitle" xml:space="preserve"><value>無法驗證本機 AI 可用性</value></data>
   <data name="LocalAiPage_CheckingTitle" xml:space="preserve"><value>正在檢查本機 AI 可用性</value></data>
   <data name="LocalAiPage_CheckingMessage" xml:space="preserve"><value>OpenClaw 正在檢查此裝置是否可以執行本機 AI。這只需要片刻。</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>您的 OpenClaw 設定已移轉至 Store 版本。請關閉此訊息以結束此應用程式，然後透過 Windows 設定 &gt; 應用程式 &gt; 已安裝的應用程式解除安裝舊版 OpenClaw Companion，再開啟 Store 版本。已移轉的設定和閘道將會保留。</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>OpenClaw 無法檢查是否已完成移轉至 Store 版本。此副本無法安全啟動。請關閉其他 OpenClaw 處理程序後再試一次。請勿刪除移轉資料或執行閘道清理。</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>OpenClaw 移轉預覽</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>已找到支援的舊版安裝。正常啟動已暫停。此測試版本尚不會移轉您的設定或徵求您的同意。請關閉此預覽並繼續使用舊版應用程式。</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>舊版應用程式低於此預覽要求的來源版本。移轉及 Store 版本的正常啟動已遭封鎖。請先使用經過驗證且支援移轉的 Inno 版本，再測試移轉。您的設定未被變更。</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>移轉預覽不支援此安裝位置、架構或套件設定。僅支援架構相符的預設個別使用者安裝。您的設定未被變更。</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>移轉預覽無法安全檢查舊版安裝或移轉記錄。正常啟動已遭封鎖。請關閉此預覽並查看應用程式記錄後重試。請勿刪除移轉資料或執行閘道清理。</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>先前的移轉需要復原或完成。此測試版本無法繼續該移轉或正常啟動。請關閉此預覽。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
+  </data>
 </root>

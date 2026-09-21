@@ -17,6 +17,106 @@ that MSIX job to succeed. Every tag release also attaches the unsigned Store
 MSIX bundle, standalone packages, and metadata for manual Partner Center
 submission. Dev-signed packages stay in Actions.
 
+## Inno-to-Store migration foundation
+
+Issue #1374's foundation does not advertise or initiate migration. No Store
+action, MSIX importer, or completion writer is enabled by this change.
+
+`MigrationPreparation.Prepare` is a non-UI API for a future explicitly consented
+Inno action. It inventories existing state without moving the WSL gateway or
+Local AI payload. Its protected intent is stored under
+`%APPDATA%\OpenClawTray\store-migration\intent.dpapi`. Repeating preparation with
+unchanged state reuses the unexpired intent. Intent expires after 30 days; only
+new consent may renew it. Corrupt records require explicit recovery rather than
+silent replacement. Preparation is serialized and writes via a flushed sibling
+temporary file followed by atomic rename.
+
+`completed.dpapi` is a separate receipt, reserved for the future MSIX importer
+after successful validation. It has no wall-clock expiry: a delay before manual
+Inno removal must not re-enable destructive cleanup. Finalization after verified
+Inno removal owns receipt and intent cleanup. Completion and failed-attempt
+recovery are not implemented by the foundation.
+
+Records use a versioned binary envelope protected by current-user DPAPI. They
+bind the migration ID, source version, architecture, Windows SID, canonical
+install/roaming/local directories, target Store identity, state fingerprint,
+startup preference, timestamps, and record kind. Intent contains inventory
+metadata; completion additionally requires the validated target version.
+The migration directory has a protected ACL for the current user, SYSTEM, and
+Administrators. This is a same-user boundary, not an authenticity guarantee
+against a malicious process already running as that user.
+
+`MigrationRecordCodec.cs` is deliberately C# 5/.NET Framework compatible:
+the same parser and validation policy runs in the app and in Windows PowerShell
+5.1 during uninstall. Inno ships the source and `Test-InnoMigration.ps1`, waits
+for the read-only check to exit, and does not load the tray executable for
+uninstall. The check returns 10 for validated completion, 0 for missing/invalid
+completion, and 2 for operational failure. Invalid records are diagnosed;
+operational check failures skip destructive cleanup rather than guessing.
+
+With valid completion, normal Inno startup shows finish-migration guidance
+instead of starting services. The guidance keeps Inno's installer mutex held;
+dismissing it exits the app before the user uninstalls. Interactive and silent Inno uninstall skip gateway
+cleanup and generated-state deletion, removing only the Inno payload and its
+registrations. `Uninstall-LocalGateway.ps1` independently rechecks completion
+before destructive work and propagates preservation as exit 10, not cleanup
+success. Without valid completion, the existing interactive/silent choices
+remain unchanged. Explicit `--uninstall --confirm-destructive` remains a
+complete-removal operation and intentionally does not honor migration receipts.
+
+Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
+restart recovery, current-head guidance, and manual uninstall preservation.
+Passing unit or PowerShell contract tests is not signed-package migration proof.
+
+### Read-only Store startup preview
+
+The first Store-side slice adds installation detection and startup admission,
+not the migration journey. **Ordinary builds remain unchanged.** There is no
+production minimum source version, runtime toggle, or environment-variable
+bypass. Do not enable migration by choosing the current app version as a
+placeholder for a verified safeguard-containing Inno release.
+
+An explicit test build may set `StoreMigrationPreview=true` and
+`StoreMigrationPreviewMinimumSourceVersion` to a three- or four-part numeric
+test source version. This is accepted only for **Debug MSIX builds with the
+production identity**; Release, unpackaged, and Dev-identity preview builds
+fail the build. Sign and run these experimental packages only in a disposable
+Windows VM. They must not be distributed.
+
+```powershell
+dotnet publish .\src\OpenClaw.Tray.WinUI\OpenClaw.Tray.WinUI.csproj `
+  -c Debug -r win-x64 --self-contained -m:1 `
+  -p:PackageMsix=true -p:DevBuild=false -p:AppxPackageSigningEnabled=false `
+  -p:StoreMigrationPreview=true `
+  -p:StoreMigrationPreviewMinimumSourceVersion=<verified-test-source-version>
+```
+
+The preview:
+
+- Reads only the exact production Inno uninstall registration, not display-name
+  matches. Only the default current-user installation at
+  `%LOCALAPPDATA%\OpenClawTray` is supported. Custom, machine-wide, ambiguous,
+  inconsistent, or unreadable installations block admission.
+- Requires coherent source version and executable architecture evidence.
+  Prerelease/informational versions do not satisfy the stable version gate.
+- Reads existing intent/completion records through the shared DPAPI codec.
+  Invalid or inaccessible records block startup. An orphan intent requires
+  recovery; completion without Inno requires finalization, not fresh startup.
+- Stops before production instance forwarding, settings, gateway/node/MCP
+  services, updates, or startup-task reconciliation when migration is needed.
+  All normal launch, protocol, and startup-task activations use this gate.
+- Shows localized, read-only preview guidance and exits when dismissed.
+  Even valid Inno intent does not imply Store-side consent. Consent, adoption,
+  completion writing, manual-uninstall guidance, and finalization are not
+  implemented yet. Do not uninstall Inno based on this preview.
+- Preserves normal fresh-install behavior when there is no exact Inno
+  registration and no pending migration record.
+
+This admission result is not an exclusive lease or authorization to uninstall.
+The later consent workflow must reacquire exclusive ownership and revalidate
+the source before adopting state. Runtime record writers, source-version
+enablement, and the complete recovery/finalization journey remain release gates.
+
 ## Release checklist
 
 1. Start clean on current `main`.

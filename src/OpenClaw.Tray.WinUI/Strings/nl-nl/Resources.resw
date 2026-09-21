@@ -7117,4 +7117,28 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
   <data name="LocalAiPage_UnavailableProbeTitle" xml:space="preserve"><value>Beschikbaarheid van lokale AI kon niet worden geverifieerd</value></data>
   <data name="LocalAiPage_CheckingTitle" xml:space="preserve"><value>Beschikbaarheid van lokale AI controleren</value></data>
   <data name="LocalAiPage_CheckingMessage" xml:space="preserve"><value>OpenClaw controleert of dit apparaat lokale AI kan uitvoeren. Dit duurt slechts een moment.</value></data>
+  <data name="Migration_InnoCompleted" xml:space="preserve">
+    <value>Uw OpenClaw-configuratie is gemigreerd naar de Store-versie. Sluit dit bericht om deze app af te sluiten. Verwijder daarna de vorige OpenClaw Companion-app via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps en open de Store-versie. Uw gemigreerde configuratie en gateway blijven behouden.</value>
+  </data>
+  <data name="Migration_InnoCheckFailed" xml:space="preserve">
+    <value>OpenClaw kon niet controleren of de migratie naar de Store-versie is voltooid. Deze versie kan niet veilig starten. Sluit andere OpenClaw-processen en probeer het opnieuw. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+  </data>
+  <data name="Migration_StorePreviewTitle" xml:space="preserve">
+    <value>OpenClaw-migratievoorbeeld</value>
+  </data>
+  <data name="Migration_StorePreviewReady" xml:space="preserve">
+    <value>Er is een ondersteunde vorige installatie gevonden. Normaal opstarten is gepauzeerd. Deze testversie migreert uw configuratie nog niet en vraagt nog geen toestemming. Sluit dit voorbeeld en blijf de vorige app gebruiken.</value>
+  </data>
+  <data name="Migration_StoreUpdateRequired" xml:space="preserve">
+    <value>De vorige app is ouder dan de bronversie die dit voorbeeld vereist. Migratie en normaal opstarten van de Store-versie zijn geblokkeerd. Gebruik een geverifieerde Inno-versie met migratieondersteuning voordat u migratie test. Uw configuratie is niet gewijzigd.</value>
+  </data>
+  <data name="Migration_StoreUnsupported" xml:space="preserve">
+    <value>Deze installatielocatie, architectuur of pakketconfiguratie wordt niet ondersteund door het migratievoorbeeld. Alleen de standaardinstallatie per gebruiker met een overeenkomende architectuur wordt ondersteund. Uw configuratie is niet gewijzigd.</value>
+  </data>
+  <data name="Migration_StoreInspectionFailed" xml:space="preserve">
+    <value>Het migratievoorbeeld kon de vorige installatie of migratierecords niet veilig controleren. Normaal opstarten is geblokkeerd. Sluit dit voorbeeld en bekijk het applogboek voordat u het opnieuw probeert. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+  </data>
+  <data name="Migration_StorePending" xml:space="preserve">
+    <value>Een vorige migratie moet worden hersteld of afgerond. Deze testversie kan die migratie niet voortzetten of normaal starten. Sluit dit voorbeeld. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
+  </data>
 </root>
