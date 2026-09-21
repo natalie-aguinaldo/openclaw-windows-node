@@ -7190,7 +7190,31 @@ Make sure the gateway is running.</value>
     <value>OpenClaw migration preview</value>
   </data>
   <data name="Migration_StorePreviewReady" xml:space="preserve">
-    <value>A supported previous installation was found. Normal startup is paused. This test build does not migrate your setup or request consent yet. Close this preview and continue using the previous app.</value>
+    <value>A supported previous installation was found. Normal startup is paused. You can start migration, or choose Not now to continue using the previous app.</value>
+  </data>
+  <data name="Migration_StoreConsent" xml:space="preserve">
+    <value>A supported previous installation was found. Start migration only when you are ready. This preview will not change your setup yet.</value>
+  </data>
+  <data name="Migration_StoreMigrate" xml:space="preserve">
+    <value>Migrate</value>
+  </data>
+  <data name="Migration_StoreNotNow" xml:space="preserve">
+    <value>Not now</value>
+  </data>
+  <data name="Migration_StoreCloseInno" xml:space="preserve">
+    <value>Close the previous OpenClaw Companion app, then retry. Do not force-close it or uninstall it. This preview has not changed your setup.</value>
+  </data>
+  <data name="Migration_StoreRetry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
+  <data name="Migration_StoreAdoptionPending" xml:space="preserve">
+    <value>The previous app is closed and migration could proceed. This test build does not adopt your setup yet. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
+  <data name="Migration_StoreYes" xml:space="preserve">
+    <value>Yes:</value>
+  </data>
+  <data name="Migration_StoreNo" xml:space="preserve">
+    <value>No:</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>The previous app is older than this preview's required source version. Migration and normal Store startup are blocked. Use a verified migration-capable Inno release before testing migration. Your setup has not been changed.</value>

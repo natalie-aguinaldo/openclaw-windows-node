@@ -23,12 +23,20 @@ public sealed class InnoMigrationContractTests
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
         Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW\s+return false;\s+#else", helper);
         Assert.Contains("new StoreMigrationStartupCoordinator(", helper);
+        Assert.Contains("new StoreMigrationConsentCoordinator(", helper);
         Assert.Contains("decision.AllowsNormalStartup", helper);
         Assert.Contains("MigrationRecordCodec.PackageName", helper);
         Assert.Contains("MigrationRecordCodec.PackagePublisher", helper);
         Assert.DoesNotContain("MigrationPreparation", helper);
         Assert.DoesNotContain("File.Write", helper);
         Assert.DoesNotContain("SetAutoStart", helper);
+        Assert.Contains("Migration_StoreConsent", helper);
+        Assert.Contains("Migration_StoreCloseInno", helper);
+        Assert.Contains("Migration_StoreAdoptionPending", helper);
+        Assert.Contains("Mutex.OpenExisting(AppIdentity.MutexBaseName)", helper);
+        Assert.Contains("0x00000124", helper);
+        Assert.DoesNotContain("TaskDialogIndirect", helper);
+        Assert.DoesNotContain("Process.Kill", helper);
     }
 
     [Fact]

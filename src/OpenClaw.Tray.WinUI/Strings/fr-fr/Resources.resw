@@ -7126,7 +7126,31 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
     <value>Aperçu de la migration OpenClaw</value>
   </data>
   <data name="Migration_StorePreviewReady" xml:space="preserve">
-    <value>Une installation précédente compatible a été trouvée. Le démarrage normal est suspendu. Cette version de test ne migre pas encore votre configuration et ne demande pas votre consentement. Fermez cet aperçu et continuez à utiliser l'application précédente.</value>
+    <value>Une installation précédente compatible a été trouvée. Le démarrage normal est suspendu. Vous pouvez démarrer la migration ou choisir Pas maintenant pour continuer à utiliser l'application précédente.</value>
+  </data>
+  <data name="Migration_StoreConsent" xml:space="preserve">
+    <value>Une installation précédente compatible a été trouvée. Démarrez la migration uniquement lorsque vous êtes prêt. Cet aperçu ne modifiera pas encore votre configuration.</value>
+  </data>
+  <data name="Migration_StoreMigrate" xml:space="preserve">
+    <value>Migrer</value>
+  </data>
+  <data name="Migration_StoreNotNow" xml:space="preserve">
+    <value>Pas maintenant</value>
+  </data>
+  <data name="Migration_StoreCloseInno" xml:space="preserve">
+    <value>Fermez l'application OpenClaw Companion précédente, puis sélectionnez Réessayer. Ne la forcez pas à se fermer et ne la désinstallez pas. Cet aperçu n'a pas modifié votre configuration.</value>
+  </data>
+  <data name="Migration_StoreRetry" xml:space="preserve">
+    <value>Réessayer</value>
+  </data>
+  <data name="Migration_StoreAdoptionPending" xml:space="preserve">
+    <value>L'application précédente est fermée et la migration pourrait continuer. Cette version de test n'adopte pas encore votre configuration. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration_StoreYes" xml:space="preserve">
+    <value>Oui :</value>
+  </data>
+  <data name="Migration_StoreNo" xml:space="preserve">
+    <value>Non :</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>L'application précédente est antérieure à la version source requise par cet aperçu. La migration et le démarrage normal de la version du Store sont bloqués. Utilisez une version Inno vérifiée prenant en charge la migration avant de la tester. Votre configuration n'a pas été modifiée.</value>

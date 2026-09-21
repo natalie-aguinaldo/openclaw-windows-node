@@ -68,10 +68,11 @@ Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
 restart recovery, current-head guidance, and manual uninstall preservation.
 Passing unit or PowerShell contract tests is not signed-package migration proof.
 
-### Read-only Store startup preview
+### Store migration consent preview
 
-The first Store-side slice adds installation detection and startup admission,
-not the migration journey. **Ordinary builds remain unchanged.** There is no
+The Store-side preview adds installation detection, startup admission, and an
+explicit consent/close-Inno retry flow, not the migration journey. **Ordinary
+builds remain unchanged.** There is no
 production minimum source version, runtime toggle, or environment-variable
 bypass. Do not enable migration by choosing the current app version as a
 placeholder for a verified safeguard-containing Inno release.
@@ -105,10 +106,16 @@ The preview:
 - Stops before production instance forwarding, settings, gateway/node/MCP
   services, updates, or startup-task reconciliation when migration is needed.
   All normal launch, protocol, and startup-task activations use this gate.
-- Shows localized, read-only preview guidance and exits when dismissed.
-  Even valid Inno intent does not imply Store-side consent. Consent, adoption,
-  completion writing, manual-uninstall guidance, and finalization are not
-  implemented yet. Do not uninstall Inno based on this preview.
+- Shows a localized **Migrate / Not now** consent decision through native
+  **Yes / No** buttons. The dialog body explicitly maps Yes to Migrate and No
+  to Not now. A valid Inno intent does not replace that Store-side consent.
+- After consent, checks the production Inno mutex. While Inno is running, the
+  preview instructs the user to close it and maps **Yes / No** to
+  **Retry / Not now**. It never force-closes the source process.
+- When Inno is closed, shows that adoption is pending and exits. It does not
+  acquire exclusive migration ownership, adopt state, write completion,
+  provide uninstall guidance, or finalize migration. Do not uninstall Inno
+  based on this preview.
 - Preserves normal fresh-install behavior when there is no exact Inno
   registration and no pending migration record.
 

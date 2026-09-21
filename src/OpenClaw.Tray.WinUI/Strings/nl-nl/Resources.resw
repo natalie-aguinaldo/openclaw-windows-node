@@ -7127,7 +7127,31 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>OpenClaw-migratievoorbeeld</value>
   </data>
   <data name="Migration_StorePreviewReady" xml:space="preserve">
-    <value>Er is een ondersteunde vorige installatie gevonden. Normaal opstarten is gepauzeerd. Deze testversie migreert uw configuratie nog niet en vraagt nog geen toestemming. Sluit dit voorbeeld en blijf de vorige app gebruiken.</value>
+    <value>Er is een ondersteunde vorige installatie gevonden. Normaal opstarten is gepauzeerd. U kunt de migratie starten of Nu niet kiezen om de vorige app te blijven gebruiken.</value>
+  </data>
+  <data name="Migration_StoreConsent" xml:space="preserve">
+    <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent. Dit voorbeeld wijzigt uw configuratie nog niet.</value>
+  </data>
+  <data name="Migration_StoreMigrate" xml:space="preserve">
+    <value>Migreren</value>
+  </data>
+  <data name="Migration_StoreNotNow" xml:space="preserve">
+    <value>Nu niet</value>
+  </data>
+  <data name="Migration_StoreCloseInno" xml:space="preserve">
+    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze niet. Dit voorbeeld heeft uw configuratie niet gewijzigd.</value>
+  </data>
+  <data name="Migration_StoreRetry" xml:space="preserve">
+    <value>Opnieuw proberen</value>
+  </data>
+  <data name="Migration_StoreAdoptionPending" xml:space="preserve">
+    <value>De vorige app is gesloten en de migratie kan doorgaan. Deze testversie neemt uw configuratie nog niet over. Sluit dit voorbeeld. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
+  </data>
+  <data name="Migration_StoreYes" xml:space="preserve">
+    <value>Ja:</value>
+  </data>
+  <data name="Migration_StoreNo" xml:space="preserve">
+    <value>Nee:</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>De vorige app is ouder dan de bronversie die dit voorbeeld vereist. Migratie en normaal opstarten van de Store-versie zijn geblokkeerd. Gebruik een geverifieerde Inno-versie met migratieondersteuning voordat u migratie test. Uw configuratie is niet gewijzigd.</value>
