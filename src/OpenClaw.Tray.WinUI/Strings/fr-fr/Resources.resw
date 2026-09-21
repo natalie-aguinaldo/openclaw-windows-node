@@ -7146,6 +7146,12 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
   <data name="Migration_StoreAdoptionPending" xml:space="preserve">
     <value>L'application précédente est fermée et la migration pourrait continuer. Cette version de test n'adopte pas encore votre configuration. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
+  <data name="Migration_StorePrepared" xml:space="preserve">
+    <value>L'application précédente est fermée. OpenClaw a validé votre configuration actuelle et enregistré des données de préparation de migration protégées. Cette version de test n'adopte pas encore votre configuration. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration_StoreValidationFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu valider en toute sécurité la configuration précédente pour la migration. Aucune finalisation n'a été enregistrée et l'application précédente n'a pas été modifiée. Fermez cet aperçu et réessayez plus tard. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Oui :</value>
   </data>

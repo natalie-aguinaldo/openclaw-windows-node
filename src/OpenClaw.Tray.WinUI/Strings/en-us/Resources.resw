@@ -7210,6 +7210,12 @@ Make sure the gateway is running.</value>
   <data name="Migration_StoreAdoptionPending" xml:space="preserve">
     <value>The previous app is closed and migration could proceed. This test build does not adopt your setup yet. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
   </data>
+  <data name="Migration_StorePrepared" xml:space="preserve">
+    <value>The previous app is closed. OpenClaw validated your current setup and saved protected migration preparation data. This test build does not adopt your setup yet. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
+  <data name="Migration_StoreValidationFailed" xml:space="preserve">
+    <value>OpenClaw could not safely validate the previous setup for migration. No completion was recorded and the previous app was not changed. Close this preview and try again later. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Yes:</value>
   </data>

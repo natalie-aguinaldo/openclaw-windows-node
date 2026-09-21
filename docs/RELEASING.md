@@ -113,9 +113,10 @@ The preview:
   preview instructs the user to close it and maps **Yes / No** to
   **Retry / Not now**. It never force-closes the source process.
 - When Inno is closed, shows that adoption is pending and exits. It does not
-  acquire exclusive migration ownership, adopt state, write completion,
-  provide uninstall guidance, or finalize migration. Do not uninstall Inno
-  based on this preview.
+  acquire exclusive migration ownership, rechecks the exact source evidence,
+  and writes a protected, DPAPI-bound inventory intent. This is not state
+  adoption. It does not write completion, provide uninstall guidance, or
+  finalize migration. Do not uninstall Inno based on this preview.
 - Preserves normal fresh-install behavior when there is no exact Inno
   registration and no pending migration record.
 

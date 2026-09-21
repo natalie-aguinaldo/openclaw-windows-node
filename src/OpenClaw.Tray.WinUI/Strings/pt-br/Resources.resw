@@ -7200,6 +7200,12 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="Migration_StoreAdoptionPending" xml:space="preserve">
     <value>O aplicativo anterior foi fechado e a migração poderia continuar. Esta versão de teste ainda não adota sua configuração. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
+  <data name="Migration_StorePrepared" xml:space="preserve">
+    <value>O aplicativo anterior foi fechado. O OpenClaw validou sua configuração atual e salvou dados protegidos de preparação da migração. Esta versão de teste ainda não adota sua configuração. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration_StoreValidationFailed" xml:space="preserve">
+    <value>O OpenClaw não pôde validar com segurança a configuração anterior para a migração. Nenhuma conclusão foi registrada e o aplicativo anterior não foi alterado. Feche esta prévia e tente novamente mais tarde. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Sim:</value>
   </data>

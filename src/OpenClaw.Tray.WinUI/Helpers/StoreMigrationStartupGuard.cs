@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using OpenClaw.Connection.Migration;
+using OpenClaw.Shared;
 using OpenClawTray.Services;
 
 namespace OpenClawTray.Helpers;
@@ -38,8 +39,9 @@ internal static class StoreMigrationStartupGuard
         var logger = new AppLogger();
         var minimum = typeof(StoreMigrationStartupGuard).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
             .SingleOrDefault(attribute => attribute.Key == "StoreMigrationPreviewMinimumSourceVersion")?.Value;
+        var detector = new InnoInstallationDetector(localRoot, logger);
         var coordinator = new StoreMigrationStartupCoordinator(
-            new InnoInstallationDetector(localRoot, logger),
+            detector,
             new MigrationStartupRecordReader(binding, logger),
             logger);
         var decision = coordinator.Evaluate(true, minimum, binding.Architecture);
@@ -48,7 +50,7 @@ internal static class StoreMigrationStartupGuard
 
         if (decision.State == StoreMigrationStartupState.ConsentRequired)
         {
-            RunConsentWorkflow(decision);
+            RunConsentWorkflow(decision, binding, detector, logger);
             return true;
         }
 
@@ -71,7 +73,11 @@ internal static class StoreMigrationStartupGuard
             "OPENCLAW_TRAY_LOCALAPPDATA_DIR", "OPENCLAW_TRAY_LOCAL_DATA_DIR"
         }.Any(name => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(name)));
 
-    private static void RunConsentWorkflow(StoreMigrationStartupDecision admission)
+    private static void RunConsentWorkflow(
+        StoreMigrationStartupDecision admission,
+        MigrationBinding binding,
+        IInnoInstallationDetector detector,
+        IOpenClawLogger logger)
     {
         var coordinator = new StoreMigrationConsentCoordinator(new InnoMutexProbe());
         var consent = coordinator.Begin(admission, ShowChoice(
@@ -85,8 +91,32 @@ internal static class StoreMigrationStartupGuard
             consent = coordinator.Retry();
         }
 
-        if (consent.State == StoreMigrationConsentState.ReadyForAdoption)
-            ShowGuidance("Migration_StoreAdoptionPending");
+        if (consent.State != StoreMigrationConsentState.ReadyForAdoption ||
+            admission.Installation is null)
+            return;
+
+        var preparation = new StoreMigrationAdoptionPreparationCoordinator(
+            new InnoMutexLeaseProvider(), detector, new MigrationPreparation(binding), logger);
+        while (true)
+        {
+            var result = preparation.Prepare(admission.Installation);
+            switch (result.State)
+            {
+                case StoreMigrationPreparationState.Prepared:
+                    ShowGuidance("Migration_StorePrepared");
+                    return;
+                case StoreMigrationPreparationState.InnoRunning:
+                    if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
+                        return;
+                    continue;
+                case StoreMigrationPreparationState.SourceChanged:
+                    ShowGuidance("Migration_StoreUnsupported");
+                    return;
+                default:
+                    ShowGuidance("Migration_StoreValidationFailed");
+                    return;
+            }
+        }
     }
 
     private static bool ShowChoice(string contentKey, string primaryKey, string secondaryKey)
@@ -109,27 +139,48 @@ internal static class StoreMigrationStartupGuard
     {
         public bool IsRunning()
         {
+            using var lease = new InnoMutexLeaseProvider().TryAcquire();
+            return lease is null;
+        }
+    }
+
+    private sealed class InnoMutexLeaseProvider : IMigrationSourceLeaseProvider
+    {
+        public IMigrationSourceLease? TryAcquire()
+        {
             try
             {
-                using var mutex = Mutex.OpenExisting(AppIdentity.MutexBaseName);
-                if (!mutex.WaitOne(0))
-                    return true;
-                mutex.ReleaseMutex();
-                return false;
-            }
-            catch (WaitHandleCannotBeOpenedException)
-            {
-                return false;
-            }
-            catch (AbandonedMutexException)
-            {
-                return false;
+                var mutex = new Mutex(true, AppIdentity.MutexBaseName, out var createdNew);
+                if (createdNew)
+                    return new InnoMutexLease(mutex);
+
+                try
+                {
+                    if (mutex.WaitOne(0))
+                        return new InnoMutexLease(mutex);
+                }
+                catch (AbandonedMutexException)
+                {
+                    return new InnoMutexLease(mutex);
+                }
+
+                mutex.Dispose();
+                return null;
             }
             catch (UnauthorizedAccessException exception)
             {
-                Logger.Error($"Could not inspect the Inno instance mutex: {exception.Message}");
-                return true;
+                Logger.Error($"Could not acquire the Inno instance mutex: {exception.Message}");
+                return null;
             }
+        }
+    }
+
+    private sealed class InnoMutexLease(Mutex mutex) : IMigrationSourceLease
+    {
+        public void Dispose()
+        {
+            mutex.ReleaseMutex();
+            mutex.Dispose();
         }
     }
 

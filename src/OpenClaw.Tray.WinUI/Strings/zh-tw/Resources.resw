@@ -7146,6 +7146,12 @@
   <data name="Migration_StoreAdoptionPending" xml:space="preserve">
     <value>舊版應用程式已關閉，可以繼續移轉。此測試版本尚不會採用您的設定。請關閉此預覽。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
   </data>
+  <data name="Migration_StorePrepared" xml:space="preserve">
+    <value>舊版應用程式已關閉。OpenClaw 已驗證您目前的設定，並儲存了受保護的移轉準備資料。此測試版本尚不會採用您的設定。請關閉此預覽。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
+  </data>
+  <data name="Migration_StoreValidationFailed" xml:space="preserve">
+    <value>OpenClaw 無法安全驗證舊版設定是否可移轉。未記錄完成狀態，舊版應用程式也未被變更。請關閉此預覽，稍後再試。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>是：</value>
   </data>

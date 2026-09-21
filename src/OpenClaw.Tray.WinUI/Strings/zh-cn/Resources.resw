@@ -7146,6 +7146,12 @@
   <data name="Migration_StoreAdoptionPending" xml:space="preserve">
     <value>旧版应用已关闭，可以继续迁移。此测试版本尚不会采用您的配置。请关闭此预览。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
   </data>
+  <data name="Migration_StorePrepared" xml:space="preserve">
+    <value>旧版应用已关闭。OpenClaw 已验证您当前的配置并保存了受保护的迁移准备数据。此测试版本尚不会采用您的配置。请关闭此预览。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration_StoreValidationFailed" xml:space="preserve">
+    <value>OpenClaw 无法安全验证旧版配置是否可迁移。未记录完成状态，旧版应用也未被更改。请关闭此预览，稍后重试。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>是：</value>
   </data>

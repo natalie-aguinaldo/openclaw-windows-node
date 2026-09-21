@@ -27,15 +27,17 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("decision.AllowsNormalStartup", helper);
         Assert.Contains("MigrationRecordCodec.PackageName", helper);
         Assert.Contains("MigrationRecordCodec.PackagePublisher", helper);
-        Assert.DoesNotContain("MigrationPreparation", helper);
         Assert.DoesNotContain("File.Write", helper);
         Assert.DoesNotContain("SetAutoStart", helper);
         Assert.Contains("Migration_StoreConsent", helper);
         Assert.Contains("Migration_StoreCloseInno", helper);
-        Assert.Contains("Migration_StoreAdoptionPending", helper);
-        Assert.Contains("Mutex.OpenExisting(AppIdentity.MutexBaseName)", helper);
+        Assert.Contains("new InnoMutexLeaseProvider()", helper);
+        Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
+        Assert.Contains("new MigrationPreparation(binding)", helper);
         Assert.Contains("0x00000124", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
+        Assert.Contains("Migration_StorePrepared", helper);
+        Assert.Contains("Migration_StoreValidationFailed", helper);
         Assert.DoesNotContain("Process.Kill", helper);
     }
 
