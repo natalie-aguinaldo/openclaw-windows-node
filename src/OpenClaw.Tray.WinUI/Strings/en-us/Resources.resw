@@ -7247,4 +7247,18 @@ Choose Not now to exit this preview without starting migration and continue usin
   <data name="Migration_StorePending" xml:space="preserve">
     <value>A previous migration needs recovery or finalization. This test build cannot continue it or start normally. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
   </data>
+  <data name="Chat_Code_Copy" xml:space="preserve"><value>Copy code</value></data>
+  <data name="Chat_Code_Label" xml:space="preserve"><value>Code block</value></data>
+  <data name="Chat_Model_Current" xml:space="preserve"><value>Current model</value></data>
+  <data name="Chat_Model_Other" xml:space="preserve"><value>Other models</value></data>
+  <data name="Chat_Model_NoMatches" xml:space="preserve"><value>No matching models</value></data>
+  <data name="Chat_Model_Search" xml:space="preserve"><value>Search models</value></data>
+  <data name="Chat_Attachment_Remove" xml:space="preserve"><value>Remove attachment</value></data>
+  <data name="Chat_Timeline_Loading" xml:space="preserve"><value>Loading messages...</value></data>
+  <data name="Chat_Composer_QueuedCountSingle" xml:space="preserve"><value>1 queued message</value></data>
+  <data name="Chat_Copy_Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="Chat_Copy_Failed" xml:space="preserve"><value>Copy failed</value></data>
+  <data name="Chat_Composer_Effort_Title" xml:space="preserve"><value>Effort</value></data>
+  <data name="Chat_Composer_Effort_Faster" xml:space="preserve"><value>Faster</value></data>
+  <data name="Chat_Composer_Effort_Smarter" xml:space="preserve"><value>Smarter</value></data>
 </root>
