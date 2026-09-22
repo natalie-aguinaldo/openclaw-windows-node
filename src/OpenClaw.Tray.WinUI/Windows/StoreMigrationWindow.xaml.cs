@@ -2,9 +2,11 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Media;
 using OpenClaw.Shared;
 using OpenClawTray.Helpers;
 using OpenClawTray.Services;
+using WinUIEx;
 
 namespace OpenClawTray.Windows;
 
@@ -20,9 +22,16 @@ public sealed partial class StoreMigrationWindow : Window
     {
         InitializeComponent();
         _workflow = workflow;
-        Title = Heading.Text = LocalizationHelper.GetString("Migration2_Title");
+        Title = Heading.Text = TitleBarText.Text = LocalizationHelper.GetString("Migration2_Title");
         InstalledApps.Content = LocalizationHelper.GetString("Migration2_InstalledApps");
-        AppWindow.Resize(new global::Windows.Graphics.SizeInt32(640, 520));
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(TitleBarDrag);
+        SystemBackdrop = new MicaBackdrop();
+        this.SetWindowSize(720, 820);
+        var workArea = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary).WorkArea;
+        AppWindow.Resize(new global::Windows.Graphics.SizeInt32(
+            Math.Min(AppWindow.Size.Width, workArea.Width), Math.Min(AppWindow.Size.Height, workArea.Height)));
+        this.CenterOnScreen();
         AppWindow.Closing += OnClosing;
         Closed += OnClosed;
         _workflow.Changed += Render;

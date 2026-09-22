@@ -18,6 +18,20 @@ The setup flow walks users through:
 
 The setup flow no longer configures remote/manual gateways inline. The Welcome page's **Connect to an existing gateway** option routes through `AdvancedSetupPage`, closes setup, and opens the tray app's Connections tab.
 
+### Store migration preview
+
+The gated Inno-to-Store migration window reuses the wizard's visual design:
+Mica backdrop, mascot, centered heading, themed content card, and persistent
+footer actions. Its content scrolls independently so consent and recovery
+actions remain available in smaller windows or with enlarged text.
+
+This is a separate pre-start workflow, not a page in the setup pipeline.
+`StoreMigrationStartupGuard` and `StoreMigrationWorkflow` retain migration
+ownership; displaying the window does not construct `SetupWindow`, install a
+gateway, or start normal app services. Consent, retry, and uninstall verification
+are unchanged, and production migration remains disabled. See
+[Release migration gates](RELEASING.md) for preview-build requirements.
+
 ## Screen Details
 
 ### Welcome
