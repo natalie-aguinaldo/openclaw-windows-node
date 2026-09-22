@@ -58,7 +58,23 @@
     <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
   </PropertyGroup>
 
-  <!-- Read-only admission experiment; never enabled in a shipping configuration. -->
+  <!-- Migration previews are never enabled in a shipping configuration. -->
+  <PropertyGroup Condition="'$(InnoMigrationPreview)' == 'true'">
+    <DefineConstants>$(DefineConstants);INNO_MIGRATION_PREVIEW</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(InnoMigrationPreview)' == 'true'">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MigrationPreviewStoreProductId</_Parameter1>
+      <_Parameter2>$(MigrationPreviewStoreProductId)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <Target Name="ValidateInnoMigrationPreview" BeforeTargets="CoreCompile"
+          Condition="'$(InnoMigrationPreview)' == 'true'">
+    <Error Condition="'$(Configuration)' != 'Debug' or '$(PackageMsix)' == 'true' or '$(DevBuild)' == 'true'"
+           Text="Inno migration preview is restricted to Debug unpackaged builds with the production identity. It must not ship." />
+    <Error Condition="'$(MigrationPreviewStoreProductId)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MigrationPreviewStoreProductId)', '^[A-Z0-9]{12}$'))"
+           Text="MigrationPreviewStoreProductId must be the explicit 12-character Store product ID. No listing has been assigned by default." />
+  </Target>
   <PropertyGroup Condition="'$(StoreMigrationPreview)' == 'true'">
     <DefineConstants>$(DefineConstants);STORE_MIGRATION_PREVIEW</DefineConstants>
   </PropertyGroup>

@@ -19,11 +19,13 @@ submission. Dev-signed packages stay in Actions.
 
 ## Inno-to-Store migration foundation
 
-Issue #1374's foundation does not advertise or initiate migration. No Store
-action, MSIX importer, or completion writer is enabled by this change.
+Issue #1374's migration experience remains disabled in ordinary builds.
+The Store workflow and Inno handoff require separate explicit Debug preview
+builds. Neither the production source-version floor nor a Store listing ID
+has been assigned. Production enablement is a separate release decision.
 
-`MigrationPreparation.Prepare` is a non-UI API for a future explicitly consented
-Inno action. It inventories existing state without moving the WSL gateway or
+`MigrationPreparation.Prepare` is the non-UI inventory API used after explicit
+consent and verified source shutdown. It inventories state without moving the WSL gateway or
 Local AI payload. Its protected intent is stored under
 `%APPDATA%\OpenClawTray\store-migration\intent.dpapi`. Repeating preparation with
 unchanged state reuses the unexpired intent. Intent expires after 30 days; only
@@ -49,7 +51,7 @@ and exited processes do not block. Unresolved possible source processes still
 fail closed. The finalizer serializes with `prepare.lock`, rereads the
 DPAPI completion receipt under that lock, and recaptures the bounded migration
 inventory before applying the receipt's saved auto-start preference through the
-packaged startup API. It deletes intent followed by the same validated completion
+packaged startup API. It deletes explicit consent, intent, then the same validated completion
 receipt, so a crash after intent deletion retries from the retained receipt. It
 fails closed on source inspection, receipt, inventory, startup-preference, or
 cleanup failure and leaves the receipt for restart recovery. It never starts
@@ -95,11 +97,10 @@ Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
 restart recovery, current-head guidance, and manual uninstall preservation.
 Passing unit or PowerShell contract tests is not signed-package migration proof.
 
-### Store migration consent preview
+### Migration experience preview
 
-The Store-side preview adds installation detection, startup admission, and an
-explicit consent/close-Inno retry flow, not the migration journey. **Ordinary
-builds remain unchanged.** There is no
+The Store-side preview hosts a dedicated WinUI migration window before normal
+services start. **Ordinary builds remain unchanged.** There is no
 production minimum source version, runtime toggle, or environment-variable
 bypass. Do not enable migration by choosing the current app version as a
 placeholder for a verified safeguard-containing Inno release.
@@ -119,6 +120,34 @@ dotnet publish .\src\OpenClaw.Tray.WinUI\OpenClaw.Tray.WinUI.csproj `
   -p:StoreMigrationPreviewMinimumSourceVersion=<verified-test-source-version>
 ```
 
+The optional unpackaged Inno handoff is independently gated:
+
+```powershell
+dotnet publish .\src\OpenClaw.Tray.WinUI\OpenClaw.Tray.WinUI.csproj `
+  -c Debug -r win-x64 --self-contained -m:1 `
+  -p:PackageMsix=false -p:DevBuild=false -p:InnoMigrationPreview=true `
+  -p:MigrationPreviewStoreProductId=<explicit-12-character-Store-product-ID>
+```
+
+Use that payload only in a disposable, exact current-user Inno fixture.
+Release, packaged, and Dev-identity Inno previews fail the build. No product ID
+is supplied by default. Without one, Settings hides **Install Store version
+and migrate**. The ID accepts only 12 uppercase ASCII letters/digits and opens
+`ms-windows-store://pdp/?ProductId=...`; do not substitute a guessed listing.
+The shutdown receiver can still be exercised without a Store listing.
+
+The Settings action confirms explicit consent before saving `consent.dpapi`
+and opening the listing. This is a distinct `consent` record in the shared
+current-user DPAPI contract, not an inventory intent. It binds the exact
+source version, user, architecture, canonical paths and target package identity,
+expires after 30 days, and rejects a future creation time. Missing, expired,
+invalid or source-mismatched consent requires Store confirmation. Operational
+read failures block instead of silently consenting. Consent and completion
+remain independent: consent never authorizes destructive uninstall.
+Explicit confirmation does not overwrite corrupt consent. A rejected grant
+enters recovery with Close only; reopen after external recovery rather than
+cycling through a confirmation that cannot succeed.
+
 The preview:
 
 - Reads only the exact production Inno uninstall registration, not display-name
@@ -133,35 +162,46 @@ The preview:
 - Stops before production instance forwarding, settings, gateway/node/MCP
   services, updates, or startup-task reconciliation when migration is needed.
   All normal launch, protocol, and startup-task activations use this gate.
-- Shows a localized **Migrate / Not now** consent decision through native
-  **Yes / No** buttons. The dialog body explicitly maps Yes to Migrate and No
-  to Not now. A valid Inno intent does not replace that Store-side consent.
-- After consent, checks the production Inno mutex. While Inno is running, the
-  preview instructs the user to close it and maps **Yes / No** to
-  **Retry / Not now**. It never force-closes the source process.
+- Shows localized **Migrate / Not now** buttons unless valid explicit handoff
+  consent already exists. An inventory intent never replaces consent.
+  Keyboard focus defaults to Not now. Not now closes the Store window without
+  starting services or changing source state.
+- After consent, requests graceful exit through the existing current-user
+  activation pipe. This is a private fixed IPC message, not an `openclaw:`
+  route. Only the gated, exact Inno process accepts it after rechecking protected
+  consent, then delegates to the canonical app shutdown coordinator. The sender
+  bounds IPC to two seconds and checks mutex release for up to ten seconds.
+  Unsupported, unavailable or slow receivers leave **Close the previous app /
+  Retry** guidance. Sending the message alone is not proof of exit; source
+  ownership is checked again before preparation and completion. No force-kill.
 - When Inno is closed, the preview acquires exclusive migration ownership,
   rechecks exact source evidence, and writes a protected, DPAPI-bound inventory
   intent. It then captures the inventory again, requires its fingerprint to
   match the intent, and requires canonical operator credential resolution for
   the active saved gateway before atomically writing a protected completion
-  receipt. This is not state adoption. It does not start gateway, node, or MCP
+  receipt. Data is adopted in place. It does not start gateway, node, or MCP
   services; provision or repair gateways; delete source state; invoke uninstall;
-  or finalize migration. The receipt blocks normal Store startup and tells the
-  user to uninstall Inno manually. On a later Store start, only an exact
+  automatically. The receipt blocks normal Store startup and exposes **Open
+  Installed apps**. The user uninstalls Inno manually, then selects **Retry** or
+  reopens Store. Only an exact
   `NotInstalled` result plus absent canonical source payload/process/mutex
   evidence permits finalization. The finalizer does not acquire the Inno-visible
   mutex, serializes on `prepare.lock`, rereads and matches the durable completion
   receipt, recaptures the inventory fingerprint, applies the saved auto-start
   preference through the tray adapter, and clears records only after that call
-  succeeds.
+  succeeds. Successful finalization resumes the original launch, including any
+  pending protocol activation. Errors remain visible with Retry; state transitions
+  are announced to accessibility clients and no percentage is invented.
 - Preserves normal fresh-install behavior when there is no exact Inno
   registration and no pending migration record.
 
 This admission result is not an authorization to uninstall. The consent workflow
 reacquires exclusive ownership, revalidates source state, and writes completion
-only after its active-gateway credential check succeeds. Runtime state adoption,
-source-version enablement, and the complete recovery/finalization journey remain
-release gates.
+only after its active-gateway credential check succeeds. Official signed-package
+acceptance on x64 and ARM64, local and remote gateway continuity, the compatible
+Inno release floor, Store listing assignment, and production enablement remain
+release gates. UI tests with fake operations are not package-boundary or real
+migration proof.
 
 ## Release checklist
 

@@ -10,7 +10,7 @@ public sealed class InnoMigrationContractTests
     {
         var app = Read("src", "OpenClaw.Tray.WinUI", "App.xaml.cs");
         var launch = app[app.IndexOf("private async Task OnLaunchedAsync", StringComparison.Ordinal)..];
-        var guard = launch.IndexOf("StoreMigrationStartupGuard.ShouldStopLaunch()", StringComparison.Ordinal);
+        var guard = launch.IndexOf("await StoreMigrationStartupGuard.ShouldStopLaunchAsync(DeepLinkPipeName)", StringComparison.Ordinal);
         Assert.True(guard > launch.IndexOf("await CliUninstallHandler.RunAsync", StringComparison.Ordinal));
         Assert.True(guard < launch.IndexOf("GetProtocolActivationUri()", StringComparison.Ordinal));
         Assert.True(guard < launch.IndexOf("_mutex = new Mutex(", StringComparison.Ordinal));
@@ -22,33 +22,31 @@ public sealed class InnoMigrationContractTests
 
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
         Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW\s+return false;\s+#else", helper);
+        Assert.Contains("new StoreMigrationWorkflow(", helper);
+        Assert.Contains("new StoreMigrationWindow(", helper);
+        Assert.Contains("return !await window.ShowAsync()", helper);
+        Assert.DoesNotContain("MessageBoxW", helper);
+        helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationOperations.cs");
         Assert.Contains("new StoreMigrationStartupCoordinator(", helper);
         Assert.Contains("new StoreMigrationConsentCoordinator(", helper);
-        Assert.Contains("decision.AllowsNormalStartup", helper);
         Assert.Contains("MigrationRecordCodec.PackageName", helper);
         Assert.Contains("MigrationRecordCodec.PackagePublisher", helper);
         Assert.DoesNotContain("File.Write", helper);
         Assert.DoesNotContain("SetPackagedAutoStartAsync", helper);
-        Assert.Contains("Migration_StoreConsent", helper);
-        Assert.Contains("Migration_StoreCloseInno", helper);
         Assert.Contains("new InnoMutexLeaseProvider()", helper);
         Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
-        Assert.Contains("new MigrationPreparation(binding)", helper);
+        Assert.Contains("new MigrationPreparation(_binding!)", helper);
         Assert.Contains("new StoreMigrationCompletionCoordinator(", helper);
         Assert.Contains("new StoreMigrationFinalizationCoordinator(", helper);
         Assert.Contains("new MigrationFinalizationRecordCleaner(", helper);
-        Assert.Contains("new InnoSourceRemovalVerifier(binding, AppIdentity.MutexBaseName)", helper);
-        Assert.Contains("new MigrationInventoryCapture(binding)", helper);
-        Assert.Contains("records.Read().Status != MigrationStartupRecordStatus.Completed", helper);
+        Assert.Contains("new InnoSourceRemovalVerifier(_binding!, AppIdentity.MutexBaseName)", helper);
+        Assert.Contains("new MigrationInventoryCapture(_binding!)", helper);
         Assert.Contains("AutoStartManager.SetAutoStartAsync(enabled)", helper);
-        Assert.Contains("Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false)", helper);
+        Assert.DoesNotContain(".GetAwaiter().GetResult()", helper);
         Assert.Contains("new CredentialResolver(DeviceIdentityFileReader.Instance)", helper);
-        Assert.Contains("0x00000124", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
-        Assert.Contains("Migration_StoreValidationFailed", helper);
-        Assert.Contains("Migration_StoreAwaitingInnoRemoval", helper);
-        Assert.Contains("Migration_StoreFinalizationFailed", helper);
-        Assert.Contains("Migration_StoreCredentialUnavailable", helper);
+        Assert.Contains("RequestMigrationShutdownAsync", helper);
+        Assert.Contains("coordinator.Retry()", helper);
         Assert.DoesNotContain("Process.Kill", helper);
 
         var finalizer = Read("src", "OpenClaw.Connection", "Migration",
@@ -63,6 +61,51 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotContain("ReleaseMutex", finalizer);
         Assert.DoesNotContain("SettingsManager", finalizer);
         Assert.DoesNotContain("CliUninstall", finalizer);
+    }
+
+    [Fact]
+    public void InnoPreview_GatesHandoffAndUsesCanonicalShutdown()
+    {
+        var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationHandoff.cs");
+        Assert.Contains("#if INNO_MIGRATION_PREVIEW", helper);
+        Assert.Contains("!AppIdentity.IsDev && !PackageHelper.IsPackaged", helper);
+        Assert.Contains("!GatewayFixtureIsolation.IsEnabled", helper);
+        Assert.Contains(".HasValidConsent(installation.Version.ToString())", helper);
+        Assert.Contains("Environment.ProcessPath", helper);
+        var settings = Read("src", "OpenClaw.Tray.WinUI", "Pages", "SettingsPage.xaml.cs");
+        Assert.Contains("DefaultButton = ContentDialogButton.Close", settings);
+        Assert.True(settings.IndexOf("await confirmation.ShowAsync()", StringComparison.Ordinal) <
+            settings.IndexOf("await InnoMigrationHandoff.GrantAndLaunchAsync()", StringComparison.Ordinal));
+        Assert.True(helper.IndexOf(".Grant(", StringComparison.Ordinal) <
+            helper.IndexOf("Launcher.LaunchUriAsync", StringComparison.Ordinal));
+        var app = Read("src", "OpenClaw.Tray.WinUI", "App.xaml.cs");
+        Assert.Contains("InnoMigrationHandoff.CreateShutdownHandler(_dispatcherQueue!, ExitApplication)", app);
+        Assert.DoesNotContain("Process.Kill", helper);
+
+        var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
+        var target = project.Descendants("Target").Single(element =>
+            (string?)element.Attribute("Name") == "ValidateInnoMigrationPreview");
+        Assert.Contains("'$(Configuration)' != 'Debug'", target.ToString());
+        Assert.Contains("'$(PackageMsix)' == 'true'", target.ToString());
+        Assert.DoesNotContain(project.Descendants("InnoMigrationPreview"), element => element.Value == "true");
+        Assert.Empty(project.Descendants("MigrationPreviewStoreProductId"));
+    }
+
+    [Fact]
+    public void MigrationWindow_HasAccessibleNamedActionsAndNoInventedProgress()
+    {
+        var xaml = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml");
+        Assert.Contains("AutomationProperties.AutomationId=\"MigrationPrimary\"", xaml);
+        Assert.Contains("AutomationProperties.AutomationId=\"MigrationDismiss\"", xaml);
+        Assert.Contains("AutomationProperties.AutomationId=\"MigrationInstalledApps\"", xaml);
+        Assert.Contains("AutomationProperties.LiveSetting=\"Polite\"", xaml);
+        Assert.Contains("TextWrapping=\"Wrap\"", xaml);
+        Assert.DoesNotContain("ProgressBar", xaml);
+        var code = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml.cs");
+        Assert.Contains("ms-settings:appsfeatures", code);
+        Assert.Contains("StoreMigrationStage.AwaitingRemoval", code);
+        Assert.Contains("StoreMigrationStage.Consent or StoreMigrationStage.Recovery ? Dismiss : Primary", code);
+        Assert.Contains("args.Cancel = true", code);
     }
 
     [Fact]

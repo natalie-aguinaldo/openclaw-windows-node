@@ -45,6 +45,8 @@ namespace OpenClaw.Connection.Migration
     {
         public const string DirectoryName = "store-migration";
         public const string IntentFileName = "intent.dpapi";
+        public const string ConsentFileName = "consent.dpapi";
+        public const string ConsentFingerprint = "0000000000000000000000000000000000000000000000000000000000000000";
         public const string CompletionFileName = "completed.dpapi";
         public const string PackageName = "OpenClawFoundation.OpenClaw";
         public const string PackagePublisher = "CN=4BA40A7A-B719-4C40-BF91-84AF4F1136FC";
@@ -104,7 +106,7 @@ namespace OpenClaw.Connection.Migration
             return DecodeCore(bytes, expected, utcNow, false);
         }
 
-        // Only a newly confirmed preparation may renew an expired intent.
+        // Only a newly confirmed grant/preparation may renew expired consent/intent.
 #if NET10_0_OR_GREATER
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 #endif
@@ -222,6 +224,15 @@ namespace OpenClaw.Connection.Migration
                     (!renewConsent && utcNow >= record.ExpiresUtc) ||
                     record.TargetVersion != "" || string.IsNullOrWhiteSpace(record.InventoryJson))
                     throw new InvalidDataException("Migration intent is invalid or expired. Confirm migration again.");
+            }
+            else if (record.Kind == "consent")
+            {
+                // Consent authorizes later preparation, not an inventory snapshot or uninstall.
+                if (record.CreatedUtc > utcNow || record.ExpiresUtc != record.CreatedUtc.AddDays(30) ||
+                    (!renewConsent && utcNow >= record.ExpiresUtc) ||
+                    record.TargetVersion != "" || record.InventoryJson != "" ||
+                    record.Fingerprint != ConsentFingerprint || record.AutoStart)
+                    throw new InvalidDataException("Migration consent is invalid or expired. Confirm migration again.");
             }
             else if (record.Kind == "completed")
             {

@@ -7233,4 +7233,73 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Uma migração anterior precisa de recuperação ou finalização. Esta versão de teste não pode continuá-la nem iniciar normalmente. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
+  <data name="Migration2_Title" xml:space="preserve">
+    <value>Mudar para a versão da Store</value>
+  </data>
+  <data name="Migration2_Consent" xml:space="preserve">
+    <value>Migrar sua configuração existente do OpenClaw para a versão da Store? O OpenClaw fechará o aplicativo anterior e validará suas configurações e credenciais do gateway. Seu gateway, arquivos e modelos permanecerão no mesmo local. Após a migração, você deverá desinstalar o aplicativo anterior antes de usar a versão da Store.</value>
+  </data>
+  <data name="Migration2_Closing" xml:space="preserve">
+    <value>Solicitando o encerramento seguro do aplicativo anterior...</value>
+  </data>
+  <data name="Migration2_Preparing" xml:space="preserve">
+    <value>Validando sua configuração existente...</value>
+  </data>
+  <data name="Migration2_Completing" xml:space="preserve">
+    <value>Registrando a conclusão da migração...</value>
+  </data>
+  <data name="Migration2_Finalizing" xml:space="preserve">
+    <value>Verificando a desinstalação e finalizando a migração...</value>
+  </data>
+  <data name="Migration2_CloseInno" xml:space="preserve">
+    <value>Feche o aplicativo OpenClaw Companion anterior pelo menu na bandeja do sistema e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda.</value>
+  </data>
+  <data name="Migration2_AwaitingRemoval" xml:space="preserve">
+    <value>A conclusão da migração foi registrada. Desinstale apenas o aplicativo OpenClaw Companion anterior em Aplicativos instalados do Windows e selecione Tentar novamente. Mantenha a versão da Store instalada. Sua configuração migrada e seu gateway serão preservados. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration2_ValidationFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu concluir a migração com segurança. Não desinstale o aplicativo anterior nem execute a limpeza do gateway. Consulte o log do aplicativo, resolva o problema e tente novamente.</value>
+  </data>
+  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
+    <value>O gateway ativo não tem uma credencial salva utilizável. Feche esta janela e restaure a configuração do gateway no aplicativo anterior. Depois, tente a migração novamente. Não desinstale o aplicativo anterior ainda.</value>
+  </data>
+  <data name="Migration2_UpdateRequired" xml:space="preserve">
+    <value>Primeiro, atualize o aplicativo anterior para uma versão compatível com suporte à migração. Sua configuração não foi alterada.</value>
+  </data>
+  <data name="Migration2_Unsupported" xml:space="preserve">
+    <value>Esta instalação não pode ser migrada com segurança. Apenas a instalação padrão para o mesmo usuário do Windows e com arquitetura correspondente é compatível. Sua configuração não foi alterada.</value>
+  </data>
+  <data name="Migration2_InspectionFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu verificar com segurança a instalação ou os registros de migração. A inicialização normal está pausada. Consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration2_Recovery" xml:space="preserve">
+    <value>Esta migração precisa de recuperação. A inicialização normal está pausada. Consulte o log do aplicativo. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration2_FinalizationFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu finalizar a migração. O recibo de conclusão foi preservado para recuperação. Consulte o log do aplicativo e tente novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration2_InstalledApps" xml:space="preserve">
+    <value>Abrir Aplicativos instalados</value>
+  </data>
+  <data name="Migration2_LaunchFailed" xml:space="preserve">
+    <value>O Windows não conseguiu abrir a página solicitada. Tente novamente ou abra Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados manualmente se a migração estiver concluída.</value>
+  </data>
+  <data name="Migration2_InnoAction" xml:space="preserve">
+    <value>Instalar a versão da Store e migrar</value>
+  </data>
+  <data name="Migration2_InnoConsent" xml:space="preserve">
+    <value>Abrir a Microsoft Store e autorizar a migração desta configuração do OpenClaw? Depois que você instalar e abrir a versão da Store, ela poderá fechar este aplicativo e realizar a migração sem pedir autorização novamente por 30 dias. Seu gateway, arquivos e modelos permanecerão no mesmo local. Não desinstale este aplicativo até que a versão da Store confirme a conclusão da migração.</value>
+  </data>
+  <data name="Migration2_InnoGranted" xml:space="preserve">
+    <value>O consentimento para migração foi salvo. Instale e abra a versão da Store para continuar. Mantenha este aplicativo instalado até que a conclusão da migração seja confirmada.</value>
+  </data>
+  <data name="Migration2_InnoFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu salvar o consentimento para migração ou abrir a página do aplicativo na Store. Consulte o log do aplicativo e tente novamente. Não desinstale este aplicativo.</value>
+  </data>
+  <data name="Migration2_Close" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="Migration2_Busy" xml:space="preserve">
+    <value>Aguarde a conclusão desta etapa.</value>
+  </data>
 </root>

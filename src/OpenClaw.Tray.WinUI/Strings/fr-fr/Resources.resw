@@ -7179,4 +7179,73 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Une migration précédente nécessite une récupération ou une finalisation. Cette version de test ne peut ni la poursuivre ni démarrer normalement. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
+  <data name="Migration2_Title" xml:space="preserve">
+    <value>Passer à la version du Store</value>
+  </data>
+  <data name="Migration2_Consent" xml:space="preserve">
+    <value>Migrer votre configuration OpenClaw existante vers la version du Store ? OpenClaw fermera l'application précédente et validera vos paramètres et les informations d'identification de votre passerelle. Votre passerelle, vos fichiers et vos modèles resteront en place. Après la migration, vous devrez désinstaller l'application précédente avant d'utiliser la version du Store.</value>
+  </data>
+  <data name="Migration2_Closing" xml:space="preserve">
+    <value>Demande de fermeture sécurisée de l'application précédente...</value>
+  </data>
+  <data name="Migration2_Preparing" xml:space="preserve">
+    <value>Validation de votre configuration existante...</value>
+  </data>
+  <data name="Migration2_Completing" xml:space="preserve">
+    <value>Enregistrement de la fin de la migration...</value>
+  </data>
+  <data name="Migration2_Finalizing" xml:space="preserve">
+    <value>Vérification de la désinstallation et finalisation de la migration...</value>
+  </data>
+  <data name="Migration2_CloseInno" xml:space="preserve">
+    <value>Fermez l'application OpenClaw Companion précédente depuis son menu dans la zone de notification, puis choisissez Réessayer. Ne forcez pas sa fermeture et ne la désinstallez pas encore.</value>
+  </data>
+  <data name="Migration2_AwaitingRemoval" xml:space="preserve">
+    <value>La fin de la migration a été enregistrée. Désinstallez uniquement l'application OpenClaw Companion précédente dans Applications installées de Windows, puis choisissez Réessayer. Gardez la version du Store installée. Votre configuration migrée et votre passerelle seront conservées. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration2_ValidationFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu terminer la migration en toute sécurité. Ne désinstallez pas l'application précédente et ne lancez pas le nettoyage de la passerelle. Consultez le journal de l'application, résolvez le problème et réessayez.</value>
+  </data>
+  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
+    <value>La passerelle active ne dispose d'aucune information d'identification enregistrée utilisable. Fermez cette fenêtre et restaurez la configuration de la passerelle dans l'application précédente, puis réessayez la migration. Ne désinstallez pas encore l'application précédente.</value>
+  </data>
+  <data name="Migration2_UpdateRequired" xml:space="preserve">
+    <value>Mettez d'abord l'application précédente à jour vers une version compatible prenant en charge la migration. Votre configuration n'a pas été modifiée.</value>
+  </data>
+  <data name="Migration2_Unsupported" xml:space="preserve">
+    <value>Cette installation ne peut pas être migrée en toute sécurité. Seule l'installation par défaut pour le même utilisateur Windows et avec une architecture correspondante est prise en charge. Votre configuration n'a pas été modifiée.</value>
+  </data>
+  <data name="Migration2_InspectionFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu vérifier en toute sécurité l'installation ou les enregistrements de migration. Le démarrage normal est suspendu. Consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration2_Recovery" xml:space="preserve">
+    <value>Cette migration nécessite une récupération. Le démarrage normal est suspendu. Consultez le journal de l'application. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration2_FinalizationFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu terminer la migration. Le reçu de fin de migration a été conservé pour permettre une récupération. Consultez le journal de l'application et réessayez. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration2_InstalledApps" xml:space="preserve">
+    <value>Ouvrir Applications installées</value>
+  </data>
+  <data name="Migration2_LaunchFailed" xml:space="preserve">
+    <value>Windows n'a pas pu ouvrir la page demandée. Réessayez ou ouvrez manuellement Paramètres Windows &gt; Applications &gt; Applications installées si la migration est terminée.</value>
+  </data>
+  <data name="Migration2_InnoAction" xml:space="preserve">
+    <value>Installer la version du Store et migrer</value>
+  </data>
+  <data name="Migration2_InnoConsent" xml:space="preserve">
+    <value>Ouvrir le Microsoft Store et autoriser la migration de cette configuration OpenClaw ? Après son installation et son ouverture, la version du Store pourra fermer cette application et effectuer la migration sans redemander votre accord pendant 30 jours. Votre passerelle, vos fichiers et vos modèles resteront en place. Ne désinstallez pas cette application tant que la version du Store n'a pas confirmé la fin de la migration.</value>
+  </data>
+  <data name="Migration2_InnoGranted" xml:space="preserve">
+    <value>Le consentement à la migration a été enregistré. Installez et ouvrez la version du Store pour continuer. Gardez cette application installée jusqu'à la confirmation de la fin de la migration.</value>
+  </data>
+  <data name="Migration2_InnoFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu enregistrer le consentement à la migration ou ouvrir la fiche du Store. Consultez le journal de l'application et réessayez. Ne désinstallez pas cette application.</value>
+  </data>
+  <data name="Migration2_Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="Migration2_Busy" xml:space="preserve">
+    <value>Veuillez patienter jusqu'à la fin de cette étape.</value>
+  </data>
 </root>

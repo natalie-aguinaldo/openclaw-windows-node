@@ -32,6 +32,11 @@
                            Margin="0,0,0,8"/>
 
                 <!-- ═════════ General ═════════ -->
+                <Button x:Name="StoreMigrationAction" Visibility="Collapsed"
+                        Click="OnStoreMigration" HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="SettingsStoreMigration"/>
+                <InfoBar x:Name="StoreMigrationStatus" IsOpen="False" IsClosable="True"/>
+
                 <TextBlock x:Uid="SettingsPage_General" Text="General" Style="{StaticResource BodyStrongTextBlockStyle}"
                            Margin="{StaticResource SectionHeaderMargin}"/>
 

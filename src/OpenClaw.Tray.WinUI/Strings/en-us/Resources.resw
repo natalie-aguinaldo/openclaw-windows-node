@@ -7243,4 +7243,73 @@ Make sure the gateway is running.</value>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>A previous migration needs recovery or finalization. This test build cannot continue it or start normally. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
   </data>
+  <data name="Migration2_Title" xml:space="preserve">
+    <value>Move to the Store version</value>
+  </data>
+  <data name="Migration2_Consent" xml:space="preserve">
+    <value>Migrate your existing OpenClaw setup to the Store version? OpenClaw will close the previous app and validate your settings and gateway credentials. Your gateway, files, and models stay in place. After migration, you must uninstall the previous app before using the Store version.</value>
+  </data>
+  <data name="Migration2_Closing" xml:space="preserve">
+    <value>Asking the previous app to close safely...</value>
+  </data>
+  <data name="Migration2_Preparing" xml:space="preserve">
+    <value>Validating your existing setup...</value>
+  </data>
+  <data name="Migration2_Completing" xml:space="preserve">
+    <value>Recording migration completion...</value>
+  </data>
+  <data name="Migration2_Finalizing" xml:space="preserve">
+    <value>Checking removal and finishing migration...</value>
+  </data>
+  <data name="Migration2_CloseInno" xml:space="preserve">
+    <value>Close the previous OpenClaw Companion app from its tray menu, then choose Retry. Do not force-close or uninstall it yet.</value>
+  </data>
+  <data name="Migration2_AwaitingRemoval" xml:space="preserve">
+    <value>Migration completion was recorded. Uninstall only the previous OpenClaw Companion app in Windows Installed apps, then choose Retry. Keep the Store version installed. Your migrated setup and gateway will be preserved. Do not delete migration data or run gateway cleanup.</value>
+  </data>
+  <data name="Migration2_ValidationFailed" xml:space="preserve">
+    <value>OpenClaw could not safely complete migration. Do not uninstall the previous app or run gateway cleanup. Check the app log, resolve the problem, and retry.</value>
+  </data>
+  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
+    <value>The active gateway has no usable saved credential. Close this window and restore the gateway configuration in the previous app, then retry migration. Do not uninstall the previous app yet.</value>
+  </data>
+  <data name="Migration2_UpdateRequired" xml:space="preserve">
+    <value>Update the previous app to a supported migration-capable version first. Your setup has not been changed.</value>
+  </data>
+  <data name="Migration2_Unsupported" xml:space="preserve">
+    <value>This installation cannot be migrated safely. Only the default installation for the same Windows user and matching architecture is supported. Your setup has not been changed.</value>
+  </data>
+  <data name="Migration2_InspectionFailed" xml:space="preserve">
+    <value>OpenClaw could not safely inspect the installation or migration records. Normal startup is paused. Check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
+  </data>
+  <data name="Migration2_Recovery" xml:space="preserve">
+    <value>This migration needs recovery. Normal startup is paused. Check the app log. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
+  <data name="Migration2_FinalizationFailed" xml:space="preserve">
+    <value>OpenClaw could not finish migration. The completion receipt was kept for recovery. Check the app log and retry. Do not delete migration data or run gateway cleanup.</value>
+  </data>
+  <data name="Migration2_InstalledApps" xml:space="preserve">
+    <value>Open Installed apps</value>
+  </data>
+  <data name="Migration2_LaunchFailed" xml:space="preserve">
+    <value>Windows could not open the requested page. Try again, or open Windows Settings &gt; Apps &gt; Installed apps manually if migration is complete.</value>
+  </data>
+  <data name="Migration2_InnoAction" xml:space="preserve">
+    <value>Install Store version and migrate</value>
+  </data>
+  <data name="Migration2_InnoConsent" xml:space="preserve">
+    <value>Open the Microsoft Store and authorize migration of this OpenClaw setup? After you install and open the Store version, it can close this app and migrate without asking again for 30 days. Your gateway, files, and models stay in place. Do not uninstall this app until the Store version confirms migration completion.</value>
+  </data>
+  <data name="Migration2_InnoGranted" xml:space="preserve">
+    <value>Migration consent was saved. Install and open the Store version to continue. Keep this app installed until migration completion is confirmed.</value>
+  </data>
+  <data name="Migration2_InnoFailed" xml:space="preserve">
+    <value>OpenClaw could not save migration consent or open the Store listing. Check the app log and retry. Do not uninstall this app.</value>
+  </data>
+  <data name="Migration2_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Migration2_Busy" xml:space="preserve">
+    <value>Please wait for this step to finish.</value>
+  </data>
 </root>

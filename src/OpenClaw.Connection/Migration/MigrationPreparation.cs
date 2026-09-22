@@ -1,5 +1,4 @@
 using System.Runtime.Versioning;
-using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text.Json;
 
@@ -21,7 +20,7 @@ public sealed class MigrationPreparation(MigrationBinding binding, TimeProvider?
             throw new InvalidOperationException("Migration preparation must use the current Windows user.");
         var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         MigrationRecordCodec.RejectReparsePoints(directory);
-        CreateProtectedDirectory(directory);
+        MigrationRecordStorage.CreateProtectedDirectory(directory);
         var lockPath = Path.Combine(directory, "prepare.lock");
         MigrationRecordCodec.RejectReparsePoints(lockPath);
         using var migrationLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
@@ -61,46 +60,7 @@ public sealed class MigrationPreparation(MigrationBinding binding, TimeProvider?
             InventoryJson = JsonSerializer.Serialize(inventory)
         };
         var bytes = MigrationRecordCodec.Encode(record, now);
-        var temporaryPath = Path.Combine(directory, $".{Guid.NewGuid():N}.tmp");
-        try
-        {
-            using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            {
-                stream.Write(bytes);
-                stream.Flush(flushToDisk: true);
-            }
-            File.Move(temporaryPath, intentPath, overwrite: true);
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath))
-                File.Delete(temporaryPath);
-        }
+        MigrationRecordStorage.WriteAtomic(intentPath, bytes);
         return record;
-    }
-
-    private static void CreateProtectedDirectory(string directory)
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        var owner = identity.User ?? throw new InvalidOperationException("Cannot resolve the current Windows user.");
-        var security = new DirectorySecurity();
-        security.SetOwner(owner);
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        foreach (var sid in new[]
-        {
-            owner,
-            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
-            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null)
-        })
-        {
-            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl,
-                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                PropagationFlags.None, AccessControlType.Allow));
-        }
-        var info = new DirectoryInfo(directory);
-        if (!info.Exists)
-            info.Create(security);
-        else
-            info.SetAccessControl(security);
     }
 }

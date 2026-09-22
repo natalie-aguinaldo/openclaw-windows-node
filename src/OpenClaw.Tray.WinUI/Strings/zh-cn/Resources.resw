@@ -7179,4 +7179,73 @@
   <data name="Migration_StorePending" xml:space="preserve">
     <value>之前的迁移需要恢复或完成。此测试版本无法继续该迁移或正常启动。请关闭此预览。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
   </data>
+  <data name="Migration2_Title" xml:space="preserve">
+    <value>迁移到 Store 版本</value>
+  </data>
+  <data name="Migration2_Consent" xml:space="preserve">
+    <value>要将现有 OpenClaw 配置迁移到 Store 版本吗？OpenClaw 将关闭旧版应用并验证您的设置和网关凭据。您的网关、文件和模型将保留在原处。迁移后，您必须先卸载旧版应用，才能使用 Store 版本。</value>
+  </data>
+  <data name="Migration2_Closing" xml:space="preserve">
+    <value>正在请求旧版应用安全关闭...</value>
+  </data>
+  <data name="Migration2_Preparing" xml:space="preserve">
+    <value>正在验证您的现有配置...</value>
+  </data>
+  <data name="Migration2_Completing" xml:space="preserve">
+    <value>正在记录迁移完成状态...</value>
+  </data>
+  <data name="Migration2_Finalizing" xml:space="preserve">
+    <value>正在检查卸载状态并完成迁移...</value>
+  </data>
+  <data name="Migration2_CloseInno" xml:space="preserve">
+    <value>请通过托盘菜单关闭旧版 OpenClaw Companion 应用，然后选择“重试”。暂时不要强制关闭或卸载该应用。</value>
+  </data>
+  <data name="Migration2_AwaitingRemoval" xml:space="preserve">
+    <value>已记录迁移完成状态。请在 Windows 的“已安装的应用”中仅卸载旧版 OpenClaw Companion 应用，然后选择“重试”。请保留已安装的 Store 版本。已迁移的配置和网关将予以保留。请勿删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration2_ValidationFailed" xml:space="preserve">
+    <value>OpenClaw 无法安全完成迁移。请勿卸载旧版应用或运行网关清理。请查看应用日志，解决问题后重试。</value>
+  </data>
+  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
+    <value>活动网关没有可用的已保存凭据。请关闭此窗口，在旧版应用中恢复网关配置，然后重试迁移。暂时不要卸载旧版应用。</value>
+  </data>
+  <data name="Migration2_UpdateRequired" xml:space="preserve">
+    <value>请先将旧版应用更新到受支持且具备迁移功能的版本。您的配置未被更改。</value>
+  </data>
+  <data name="Migration2_Unsupported" xml:space="preserve">
+    <value>无法安全迁移此安装。仅支持同一 Windows 用户且体系结构匹配的默认安装。您的配置未被更改。</value>
+  </data>
+  <data name="Migration2_InspectionFailed" xml:space="preserve">
+    <value>OpenClaw 无法安全检查安装或迁移记录。正常启动已暂停。请先查看应用日志再重试。请勿删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration2_Recovery" xml:space="preserve">
+    <value>此迁移需要恢复。正常启动已暂停。请查看应用日志。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration2_FinalizationFailed" xml:space="preserve">
+    <value>OpenClaw 无法完成迁移。完成收据已保留以供恢复。请查看应用日志并重试。请勿删除迁移数据或运行网关清理。</value>
+  </data>
+  <data name="Migration2_InstalledApps" xml:space="preserve">
+    <value>打开“已安装的应用”</value>
+  </data>
+  <data name="Migration2_LaunchFailed" xml:space="preserve">
+    <value>Windows 无法打开请求的页面。请重试，或在迁移完成后手动打开 Windows 设置 &gt; 应用 &gt; 已安装的应用。</value>
+  </data>
+  <data name="Migration2_InnoAction" xml:space="preserve">
+    <value>安装 Store 版本并迁移</value>
+  </data>
+  <data name="Migration2_InnoConsent" xml:space="preserve">
+    <value>要打开 Microsoft Store 并授权迁移此 OpenClaw 配置吗？安装并打开 Store 版本后，它可以在 30 天内关闭此应用并执行迁移，无需再次征求您的同意。您的网关、文件和模型将保留在原处。在 Store 版本确认迁移完成之前，请勿卸载此应用。</value>
+  </data>
+  <data name="Migration2_InnoGranted" xml:space="preserve">
+    <value>已保存迁移授权。请安装并打开 Store 版本以继续。在确认迁移完成之前，请保留此应用。</value>
+  </data>
+  <data name="Migration2_InnoFailed" xml:space="preserve">
+    <value>OpenClaw 无法保存迁移授权或打开 Store 中的应用页面。请查看应用日志并重试。请勿卸载此应用。</value>
+  </data>
+  <data name="Migration2_Close" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Migration2_Busy" xml:space="preserve">
+    <value>请等待此步骤完成。</value>
+  </data>
 </root>

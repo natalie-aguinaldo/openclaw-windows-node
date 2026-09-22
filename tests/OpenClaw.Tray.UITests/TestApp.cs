@@ -22,8 +22,18 @@ namespace OpenClaw.Tray.UITests;
 /// visual tree even before the merge happens — assertions on text content,
 /// hierarchy, and click handlers don't depend on theme styles.
 /// </summary>
-internal sealed class TestApp : Application
+internal sealed class TestApp : Application, IXamlMetadataProvider
 {
+    // Compiled production XAML needs its generated metadata even though tests
+    // deliberately do not construct the production App or run its startup.
+    private readonly OpenClawTray.OpenClaw_Tray_WinUI_XamlTypeInfo.XamlMetaDataProvider _metadata = new();
+
+    public IXamlType GetXamlType(Type type) => _metadata.GetXamlType(type);
+
+    public IXamlType GetXamlType(string fullName) => _metadata.GetXamlType(fullName);
+
+    public XmlnsDefinition[] GetXmlnsDefinitions() => _metadata.GetXmlnsDefinitions();
+
     private static readonly (string Key, Windows.UI.Color Color)[] FluentBrushFallbacks =
     [
         ("SolidBackgroundFillColorBaseBrush", Colors.White),
