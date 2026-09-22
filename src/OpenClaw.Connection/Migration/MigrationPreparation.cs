@@ -1,6 +1,4 @@
 using System.Runtime.Versioning;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Text.Json;
 
 namespace OpenClaw.Connection.Migration;
@@ -16,16 +14,16 @@ public sealed class MigrationPreparation(MigrationBinding binding, TimeProvider?
 
     public MigrationRecord Prepare(string sourceVersion)
     {
-        using var identity = WindowsIdentity.GetCurrent();
-        if (binding.UserSid != identity.User?.Value)
-            throw new InvalidOperationException("Migration preparation must use the current Windows user.");
-        var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
-        MigrationRecordCodec.RejectReparsePoints(directory);
-        CreateProtectedDirectory(directory);
-        var lockPath = Path.Combine(directory, "prepare.lock");
-        MigrationRecordCodec.RejectReparsePoints(lockPath);
-        using var migrationLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using var migrationLock = AcquireLock();
+        return PrepareUnderLock(sourceVersion);
+    }
 
+    internal FileStream AcquireLock() => MigrationOperationLock.AcquireExclusive(binding);
+
+    // The coordinator owns the lock through source inspection and publication.
+    internal MigrationRecord PrepareUnderLock(string sourceVersion)
+    {
+        var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         var completedPath = Path.Combine(directory, MigrationRecordCodec.CompletionFileName);
         // Even an invalid receipt needs explicit recovery, not an overwritten attempt.
         if (Path.Exists(completedPath))
@@ -77,30 +75,5 @@ public sealed class MigrationPreparation(MigrationBinding binding, TimeProvider?
                 File.Delete(temporaryPath);
         }
         return record;
-    }
-
-    private static void CreateProtectedDirectory(string directory)
-    {
-        using var identity = WindowsIdentity.GetCurrent();
-        var owner = identity.User ?? throw new InvalidOperationException("Cannot resolve the current Windows user.");
-        var security = new DirectorySecurity();
-        security.SetOwner(owner);
-        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
-        foreach (var sid in new[]
-        {
-            owner,
-            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
-            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null)
-        })
-        {
-            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl,
-                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                PropagationFlags.None, AccessControlType.Allow));
-        }
-        var info = new DirectoryInfo(directory);
-        if (!info.Exists)
-            info.Create(security);
-        else
-            info.SetAccessControl(security);
     }
 }

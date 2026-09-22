@@ -35,6 +35,7 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
         Assert.Contains("new MigrationPreparation(binding)", helper);
         Assert.Contains("new StoreMigrationCompletionCoordinator(", helper);
+        Assert.Contains("while (result.State == StoreMigrationCompletionState.InnoRunning)", helper);
         Assert.Contains("new StoreMigrationFinalizationCoordinator(", helper);
         Assert.Contains("new MigrationFinalizationRecordCleaner(", helper);
         Assert.Contains("new InnoSourceRemovalVerifier(binding, AppIdentity.MutexBaseName)", helper);
@@ -87,10 +88,10 @@ public sealed class InnoMigrationContractTests
     {
         var app = Read("src", "OpenClaw.Tray.WinUI", "App.xaml.cs");
         var launch = app[app.IndexOf("private async Task OnLaunchedAsync", StringComparison.Ordinal)..];
-        var guard = launch.IndexOf("InnoMigrationStartupGuard.ShouldStopLaunch()", StringComparison.Ordinal);
+        var guard = launch.IndexOf("InnoMigrationStartupGuard.ShouldStopLaunch(out _innoMigrationLease)", StringComparison.Ordinal);
         Assert.True(guard > launch.IndexOf("await CliUninstallHandler.RunAsync", StringComparison.Ordinal));
         Assert.True(guard > launch.IndexOf("_mutex = new Mutex(true, mutexName", StringComparison.Ordinal));
-        Assert.Contains("if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch())", launch);
+        Assert.Contains("if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch(out _innoMigrationLease))", launch);
         Assert.True(guard < launch.IndexOf("new ActivationRouter(", StringComparison.Ordinal));
         Assert.True(guard < launch.IndexOf("new SettingsManager()", StringComparison.Ordinal));
         Assert.DoesNotContain("MigrationRecordCodec", app);
@@ -98,6 +99,14 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("AppIdentity.IsDev || PackageHelper.IsPackaged", helper);
         Assert.Contains("MigrationRecordCodec.ReadCompletion", helper);
         Assert.Contains("Migration_InnoCompleted", helper);
+        Assert.Contains("GatewayFixtureIsolation.IsEnabled", helper);
+        var acquire = helper.IndexOf("runtimeLease = MigrationOperationLock.AcquireRuntime(binding)", StringComparison.Ordinal);
+        Assert.True(acquire > 0 && acquire < helper.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal));
+        var lockFailure = helper[acquire..helper.IndexOf("var path =", StringComparison.Ordinal)];
+        Assert.Contains("InvalidDataException", lockFailure);
+        Assert.Contains("return ShowGuidance(\"Migration_InnoCheckFailed\")", lockFailure);
+        Assert.DoesNotContain("_innoMigrationLease", Read("src", "OpenClaw.Tray.WinUI", "App.AppShutdownCoordinator.cs"));
+        Assert.DoesNotContain("_innoMigrationLease?.Dispose", app);
     }
 
     [Fact]

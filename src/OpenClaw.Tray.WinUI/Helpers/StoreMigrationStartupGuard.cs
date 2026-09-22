@@ -151,10 +151,15 @@ internal static class StoreMigrationStartupGuard
             new CredentialResolver(DeviceIdentityFileReader.Instance),
             logger);
         var result = completion.Complete(installation, targetVersion);
+        while (result.State == StoreMigrationCompletionState.InnoRunning)
+        {
+            if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
+                return;
+            result = completion.Complete(installation, targetVersion);
+        }
         ShowGuidance(result.State switch
         {
             StoreMigrationCompletionState.Completed => "Migration_StoreAwaitingInnoRemoval",
-            StoreMigrationCompletionState.InnoRunning => "Migration_StoreCloseInno",
             StoreMigrationCompletionState.NoActiveGateway or StoreMigrationCompletionState.CredentialUnavailable
                 => "Migration_StoreCredentialUnavailable",
             StoreMigrationCompletionState.SourceChanged => "Migration_StoreUnsupported",

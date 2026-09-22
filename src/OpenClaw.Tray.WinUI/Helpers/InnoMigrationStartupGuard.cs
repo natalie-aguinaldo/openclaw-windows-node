@@ -3,25 +3,42 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using OpenClaw.Connection.Migration;
+using OpenClaw.Shared;
 using OpenClawTray.Services;
 
 namespace OpenClawTray.Helpers;
 
 internal static class InnoMigrationStartupGuard
 {
-    public static bool ShouldStopLaunch()
+    public static bool ShouldStopLaunch(out IDisposable? runtimeLease)
     {
-        if (AppIdentity.IsDev || PackageHelper.IsPackaged)
+        runtimeLease = null;
+        if (AppIdentity.IsDev || PackageHelper.IsPackaged || GatewayFixtureIsolation.IsEnabled)
             return false;
 
+        using var identity = WindowsIdentity.GetCurrent();
         var binding = new MigrationBinding
         {
             InstallDirectory = AppContext.BaseDirectory,
             RoamingDirectory = AppIdentity.ResolveRoamingDataDirectory(),
             LocalDirectory = AppIdentity.ResolveSetupLocalDataDirectory(),
             Architecture = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant(),
-            UserSid = WindowsIdentity.GetCurrent().User?.Value ?? ""
+            UserSid = identity.User?.Value ?? ""
         };
+        // Acquisition must precede the receipt check, including when no receipt exists yet.
+        // App retains this handle until process exit, even if startup or shutdown fails.
+        try
+        {
+            runtimeLease = MigrationOperationLock.AcquireRuntime(binding);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
+                                   InvalidDataException or ArgumentException or NotSupportedException or
+                                   InvalidOperationException or System.Security.SecurityException)
+        {
+            Logger.Error($"Migration runtime lock unavailable ({ex.GetType().Name}); Inno startup blocked.");
+            return ShowGuidance("Migration_InnoCheckFailed");
+        }
+
         var path = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
             MigrationRecordCodec.CompletionFileName);
         string resourceKey;
@@ -45,6 +62,11 @@ internal static class InnoMigrationStartupGuard
             resourceKey = "Migration_InnoCheckFailed";
         }
 
+        return ShowGuidance(resourceKey);
+    }
+
+    private static bool ShowGuidance(string resourceKey)
+    {
         if (MessageBoxW(IntPtr.Zero, LocalizationHelper.GetString(resourceKey),
                 AppIdentity.DisplayName, 0x00000040) == 0)
             Logger.Error($"Could not show migration startup guidance (Win32 {Marshal.GetLastWin32Error()}).");

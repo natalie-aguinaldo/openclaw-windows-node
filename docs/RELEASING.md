@@ -83,13 +83,31 @@ remain unchanged. Explicit `--uninstall --confirm-destructive` remains a
 complete-removal operation and intentionally does not honor migration receipts.
 
 Inno acquires a read-only, read-shared handle on `store-migration\prepare.lock`
-before uninstall begins and retains it through payload/registration removal.
+before its normal startup receipt check and retains it until process exit, including
+failed startup or shutdown. The handle is deliberately not released by managed
+shutdown because a failed service disposal could leave state writers alive.
+Dev, packaged, and validated browse-only fixture runs do not take this Inno
+runtime lease; other isolated profiles use their resolved data directory.
+Uninstall also acquires a read-only, read-shared handle before effects and retains
+it through payload/registration removal.
 The cleanup script joins that lock (and also locks when invoked independently)
 before checking the receipt, retaining its handle until cleanup exits. These
 handles exclude Store's exclusive preparation/completion/finalization handle.
 An unavailable lock stops uninstall before effects; it never permits an unlocked
 fallback. Completion re-detects the exact source only after acquiring the lock,
 so an uninstall-first run cannot authorize a receipt from stale source evidence.
+Preparation likewise re-detects source evidence under the exclusive file lock.
+Both preparation and completion inspect the exact source image across all Windows
+sessions under that lock, using the same fail-closed process policy as finalization.
+Running sources and busy locks return the close-Inno/Retry decision; uncertain
+process inspection blocks migration without publishing a record.
+
+The file handle, not the session-local single-instance mutex, provides continuous
+cross-session exclusion for participating Inno releases. Process inspection is a
+compatibility backstop for already-running older sources, not a lease preventing
+an older binary from starting after the scan. Production's minimum source version
+must therefore identify a verified release containing the lifetime-lock safeguard.
+Do not enable migration for older nonparticipating releases.
 
 Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
 restart recovery, current-head guidance, and manual uninstall preservation.
