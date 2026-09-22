@@ -35,8 +35,11 @@ temporary file followed by atomic rename.
 ownership, a fresh strict inventory matching the protected intent, and canonical
 operator credential resolution for the active saved gateway. No active gateway
 or unresolved credential fails closed without a receipt. The atomic writer never
-replaces an existing receipt. It has no wall-clock expiry: a delay before manual
-Inno removal must not re-enable destructive cleanup. Finalization after verified
+replaces an existing receipt. Completed-receipt reads are independent of the
+current wall clock: neither delayed removal nor a backward clock correction may
+re-enable destructive cleanup. New records still reject future creation times,
+and intent expiry and renewal checks remain unchanged. Cryptographic, identity,
+path, and structural validation still apply to every read. Finalization after verified
 Inno removal owns receipt and intent cleanup. A Store preview finalizer rechecks
 the exact source registration and then verifies the canonical source executable,
 uninstaller, process image, and mutex have disappeared. It observes the mutex

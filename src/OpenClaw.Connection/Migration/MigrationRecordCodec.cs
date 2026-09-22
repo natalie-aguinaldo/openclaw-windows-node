@@ -58,6 +58,8 @@ namespace OpenClaw.Connection.Migration
         public static byte[] Encode(MigrationRecord record, DateTime utcNow)
         {
             Validate(record, record.Binding, utcNow);
+            if (record.CreatedUtc > utcNow)
+                throw new InvalidDataException("Invalid migration creation time.");
             byte[] plain;
             using (var stream = new MemoryStream())
             {
@@ -205,7 +207,7 @@ namespace OpenClaw.Connection.Migration
                 !SamePath(record.Binding.RoamingDirectory, expected.RoamingDirectory) ||
                 !SamePath(record.Binding.LocalDirectory, expected.LocalDirectory))
                 throw new InvalidDataException("Migration record does not match this installation or Windows user.");
-            if (record.CreatedUtc.Kind != DateTimeKind.Utc || record.CreatedUtc > utcNow ||
+            if (record.CreatedUtc.Kind != DateTimeKind.Utc ||
                 record.CreatedUtc < new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc))
                 throw new InvalidDataException("Invalid migration creation time.");
             if (record.Fingerprint.Length != 64)
@@ -216,13 +218,14 @@ namespace OpenClaw.Connection.Migration
 
             if (record.Kind == "intent")
             {
-                if (record.ExpiresUtc != record.CreatedUtc.AddDays(30) || (!renewConsent && utcNow >= record.ExpiresUtc) ||
+                if (record.CreatedUtc > utcNow || record.ExpiresUtc != record.CreatedUtc.AddDays(30) ||
+                    (!renewConsent && utcNow >= record.ExpiresUtc) ||
                     record.TargetVersion != "" || string.IsNullOrWhiteSpace(record.InventoryJson))
                     throw new InvalidDataException("Migration intent is invalid or expired. Confirm migration again.");
             }
             else if (record.Kind == "completed")
             {
-                // A receipt must never age into destructive uninstall while the user waits.
+                // Neither aging nor a backward clock correction may re-enable destructive uninstall.
                 if (record.ExpiresUtc.Ticks != DateTime.MaxValue.Ticks ||
                     !Version.TryParse(record.TargetVersion, out version) || record.InventoryJson != "")
                     throw new InvalidDataException("Invalid completed migration receipt.");

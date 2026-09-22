@@ -43,13 +43,38 @@ public sealed class MigrationRecordTests
             MigrationRecordCodec.DecodeForRenewedConsent(bytes, record.Binding, Now.AddDays(31)).MigrationId);
     }
 
-    [Fact]
-    public void Completion_DoesNotExpireWhileAwaitingUninstall()
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-3600)]
+    [InlineData(-315360000)]
+    [InlineData(315360000)]
+    public void Completion_RemainsValidRegardlessOfClockChanges(int secondsAfterCompletion)
     {
         using var temp = new TempDirectory();
         var record = CreateRecord(temp, "completed");
         var bytes = MigrationRecordCodec.Encode(record, Now);
-        Assert.Equal("completed", MigrationRecordCodec.Decode(bytes, record.Binding, Now.AddYears(10)).Kind);
+        var receiptPath = temp.Combine("completed.dpapi");
+        File.WriteAllBytes(receiptPath, bytes);
+
+        var decoded = MigrationRecordCodec.ReadCompletion(
+            receiptPath, record.Binding, Now.AddSeconds(secondsAfterCompletion));
+
+        Assert.Equal("completed", decoded.Kind);
+        Assert.Equal(record.MigrationId, decoded.MigrationId);
+        Assert.Equal(record.CreatedUtc, decoded.CreatedUtc);
+        Assert.Equal(bytes, File.ReadAllBytes(receiptPath));
+    }
+
+    [Fact]
+    public void Intent_StillRejectsFutureCreationAfterClockRollback()
+    {
+        using var temp = new TempDirectory();
+        var record = CreateRecord(temp, "intent");
+        var bytes = MigrationRecordCodec.Encode(record, Now);
+
+        Assert.Throws<InvalidDataException>(() => MigrationRecordCodec.Decode(bytes, record.Binding, Now.AddSeconds(-1)));
+        Assert.Throws<InvalidDataException>(() =>
+            MigrationRecordCodec.DecodeForRenewedConsent(bytes, record.Binding, Now.AddSeconds(-1)));
     }
 
     [Theory]
@@ -72,6 +97,7 @@ public sealed class MigrationRecordTests
             case "architecture": record.Binding.Architecture = "arm64"; break;
         }
         Assert.Throws<InvalidDataException>(() => MigrationRecordCodec.Decode(bytes, record.Binding, Now));
+        Assert.Throws<InvalidDataException>(() => MigrationRecordCodec.Decode(bytes, record.Binding, Now.AddSeconds(-1)));
     }
 
     [Theory]
@@ -133,13 +159,17 @@ public sealed class MigrationRecordTests
     }
 
     [Theory]
-    [InlineData("completed", 10)]
-    [InlineData("intent", 0)]
-    [InlineData("missing", 0)]
-    [InlineData("corrupt", 0)]
-    [InlineData("wrong-path", 0)]
-    [InlineData("missing-codec", 2)]
-    public async Task WindowsPowerShellChecker_UsesTheSameContract(string kind, int expectedExit)
+    [InlineData("completed", 10, false)]
+    [InlineData("intent", 0, false)]
+    [InlineData("missing", 0, false)]
+    [InlineData("corrupt", 0, false)]
+    [InlineData("wrong-path", 0, false)]
+    [InlineData("missing-codec", 2, false)]
+    [InlineData("completed", 10, true)]
+    [InlineData("intent", 0, true)]
+    [InlineData("corrupt", 0, true)]
+    [InlineData("wrong-path", 0, true)]
+    public async Task WindowsPowerShellChecker_UsesTheSameContract(string kind, int expectedExit, bool clockRollback)
     {
         using var temp = new TempDirectory();
         var root = RepositoryRoot();
@@ -148,14 +178,15 @@ public sealed class MigrationRecordTests
         if (kind != "missing-codec")
             File.Copy(Path.Combine(root, "src", "OpenClaw.Connection", "Migration", "MigrationRecordCodec.cs"),
                 Path.Combine(record.Binding.InstallDirectory, "MigrationRecordCodec.cs"));
-        record.CreatedUtc = DateTime.UtcNow.AddMinutes(-1);
+        // Encode at an injected later time to simulate rollback without changing Windows' clock.
+        record.CreatedUtc = clockRollback ? DateTime.UtcNow.AddHours(1) : DateTime.UtcNow.AddMinutes(-1);
         if (kind == "intent")
             record.ExpiresUtc = record.CreatedUtc.AddDays(30);
         var directory = Path.Combine(record.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         Directory.CreateDirectory(directory);
         if (kind != "missing")
         {
-            var bytes = kind == "corrupt" ? new byte[] { 1, 2, 3 } : MigrationRecordCodec.Encode(record, DateTime.UtcNow);
+            var bytes = kind == "corrupt" ? new byte[] { 1, 2, 3 } : MigrationRecordCodec.Encode(record, record.CreatedUtc);
             File.WriteAllBytes(Path.Combine(directory, MigrationRecordCodec.CompletionFileName), bytes);
         }
         var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
@@ -185,15 +216,18 @@ public sealed class MigrationRecordTests
     }
 
     [Theory]
-    [InlineData(null, 10)]
-    [InlineData(FileShare.Read, 10)]
-    [InlineData(FileShare.None, 1)]
-    public async Task CleanupScript_CompletedReceiptPreservesFilesWithoutCallingWsl(FileShare? parentShare, int expectedExit)
+    [InlineData(null, 10, false)]
+    [InlineData(FileShare.Read, 10, false)]
+    [InlineData(FileShare.None, 1, false)]
+    [InlineData(null, 10, true)]
+    [InlineData(FileShare.Read, 10, true)]
+    public async Task CleanupScript_CompletedReceiptPreservesFilesWithoutCallingWsl(
+        FileShare? parentShare, int expectedExit, bool clockRollback)
     {
         using var temp = new TempDirectory();
         var root = RepositoryRoot();
         var record = CreateRecord(temp, "completed");
-        record.CreatedUtc = DateTime.UtcNow.AddMinutes(-1);
+        record.CreatedUtc = clockRollback ? DateTime.UtcNow.AddHours(1) : DateTime.UtcNow.AddMinutes(-1);
         Directory.CreateDirectory(record.Binding.InstallDirectory);
         Directory.CreateDirectory(record.Binding.LocalDirectory);
         File.Copy(Path.Combine(root, "src", "OpenClaw.Connection", "Migration", "MigrationRecordCodec.cs"),
@@ -203,7 +237,7 @@ public sealed class MigrationRecordTests
         var directory = Path.Combine(record.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         Directory.CreateDirectory(directory);
         File.WriteAllBytes(Path.Combine(directory, MigrationRecordCodec.CompletionFileName),
-            MigrationRecordCodec.Encode(record, DateTime.UtcNow));
+            MigrationRecordCodec.Encode(record, record.CreatedUtc));
         using var parentLock = parentShare is { } share
             ? new FileStream(Path.Combine(directory, "prepare.lock"), FileMode.OpenOrCreate,
                 share == FileShare.Read ? FileAccess.Read : FileAccess.ReadWrite, share)
