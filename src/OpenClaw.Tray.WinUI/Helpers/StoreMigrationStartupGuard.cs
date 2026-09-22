@@ -97,12 +97,11 @@ internal static class StoreMigrationStartupGuard
         IOpenClawLogger logger)
     {
         var coordinator = new StoreMigrationConsentCoordinator(new InnoMutexProbe());
-        var consent = coordinator.Begin(admission, ShowChoice(
-            "Migration_StoreConsent", "Migration_StoreMigrate", "Migration_StoreNotNow"));
+        var consent = coordinator.Begin(admission, ShowChoice("Migration_StoreConsent"));
 
         while (consent.State == StoreMigrationConsentState.WaitingForInnoExit)
         {
-            if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
+            if (!ShowChoice("Migration_StoreCloseInno"))
                 return;
 
             consent = coordinator.Retry();
@@ -123,7 +122,7 @@ internal static class StoreMigrationStartupGuard
                     CompletePreparedMigration(admission.Installation, binding, detector, logger);
                     return;
                 case StoreMigrationPreparationState.InnoRunning:
-                    if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
+                    if (!ShowChoice("Migration_StoreCloseInno"))
                         return;
                     continue;
                 case StoreMigrationPreparationState.SourceChanged:
@@ -153,7 +152,7 @@ internal static class StoreMigrationStartupGuard
         var result = completion.Complete(installation, targetVersion);
         while (result.State == StoreMigrationCompletionState.InnoRunning)
         {
-            if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
+            if (!ShowChoice("Migration_StoreCloseInno"))
                 return;
             result = completion.Complete(installation, targetVersion);
         }
@@ -190,11 +189,11 @@ internal static class StoreMigrationStartupGuard
             .GetResult();
     }
 
-    private static bool ShowChoice(string contentKey, string primaryKey, string secondaryKey)
+    private static bool ShowChoice(string contentKey)
     {
-        var content = $"{LocalizationHelper.GetString(contentKey)}\r\n\r\n" +
-            $"{LocalizationHelper.GetString("Migration_StoreYes")} {LocalizationHelper.GetString(primaryKey)}\r\n" +
-            $"{LocalizationHelper.GetString("Migration_StoreNo")} {LocalizationHelper.GetString(secondaryKey)}";
+        var content = LocalizationHelper.Format(contentKey,
+            LocalizationHelper.GetString("Migration_StoreYes"),
+            LocalizationHelper.GetString("Migration_StoreNo"));
         return MessageBoxW(IntPtr.Zero, content, LocalizationHelper.GetString("Migration_StorePreviewTitle"),
             0x00000124) == 6;
     }

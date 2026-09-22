@@ -151,17 +151,17 @@ The preview:
 - Stops before production instance forwarding, settings, gateway/node/MCP
   services, updates, or startup-task reconciliation when migration is needed.
   All normal launch, protocol, and startup-task activations use this gate.
-- Shows a localized **Migrate / Not now** consent decision through native
-  **Yes / No** buttons. The dialog body explicitly maps Yes to Migrate and No
-  to Not now. A valid Inno intent does not replace that Store-side consent.
+- Shows a localized consent decision through native **Yes / No** buttons.
+  The body refers directly to those buttons, without a separate action legend.
+  A valid Inno intent does not replace that Store-side consent.
   Before acceptance, every locale discloses protected migration records, the
   normal Inno startup block after successful validation, and the required manual
   uninstall followed by reopening Store. It explains preservation, no automatic
   uninstall, and the option to leave without starting migration. Retry guidance
   permits uninstall only after the preview reports recorded completion.
 - After consent, checks the production Inno mutex. While Inno is running, the
-  preview instructs the user to close it and maps **Yes / No** to
-  **Retry / Not now**. It never force-closes the source process.
+  preview instructs the user to close it, choose **Yes** to retry, or choose
+  **No** to exit the preview. It never force-closes the source process.
 - When Inno is closed, the preview acquires exclusive migration ownership,
   rechecks exact source evidence, and writes a protected, DPAPI-bound inventory
   intent. It then captures the inventory again, requires its fingerprint to

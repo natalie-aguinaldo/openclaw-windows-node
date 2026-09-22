@@ -98,11 +98,22 @@ public sealed class InnoMigrationContractTests
         string Value(string key) => resources.Root!.Elements("data")
             .Single(element => (string?)element.Attribute("name") == key).Element("value")!.Value;
 
-        var consent = Value("Migration_StoreConsent");
+        var yes = Value("Migration_StoreYes");
+        var no = Value("Migration_StoreNo");
+        Assert.DoesNotContain(":", yes + no);
+        Assert.DoesNotContain("：", yes + no);
+        var consent = string.Format(Value("Migration_StoreConsent"), yes, no);
+        var retry = string.Format(Value("Migration_StoreCloseInno"), yes, no);
         Assert.Contains(startupBlock, consent);
         Assert.Contains(removal, consent);
-        Assert.Contains(Value("Migration_StoreMigrate"), consent);
-        Assert.Contains(Value("Migration_StoreNotNow"), consent);
+        Assert.Contains(yes, consent);
+        Assert.Contains(no, consent);
+        Assert.Contains(yes, retry);
+        Assert.Contains(no, retry);
+        Assert.Contains("{0}", Value("Migration_StoreConsent"));
+        Assert.Contains("{1}", Value("Migration_StoreConsent"));
+        Assert.Contains("{0}", Value("Migration_StoreCloseInno"));
+        Assert.Contains("{1}", Value("Migration_StoreCloseInno"));
         Assert.DoesNotContain(oldConsent, consent);
         Assert.DoesNotContain(oldRetry, Value("Migration_StoreCloseInno"));
         if (locale == "en-us")
@@ -115,6 +126,20 @@ public sealed class InnoMigrationContractTests
             Assert.Contains("without starting migration", consent);
             Assert.Contains("Uninstall only after", Value("Migration_StoreCloseInno"));
         }
+    }
+
+    [Fact]
+    public void StorePreviewChoices_UseNativeYesNoWithoutActionLegends()
+    {
+        var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
+        var choice = helper[helper.IndexOf("private static bool ShowChoice(", StringComparison.Ordinal)..
+            helper.IndexOf("private static void ShowGuidance(", StringComparison.Ordinal)];
+        Assert.Contains("ShowChoice(string contentKey)", choice);
+        Assert.Contains("LocalizationHelper.Format(contentKey,", choice);
+        Assert.DoesNotContain("primaryKey", choice);
+        Assert.DoesNotContain("secondaryKey", choice);
+        Assert.DoesNotContain("\\r\\n", choice);
+        Assert.Contains("0x00000124) == 6", choice);
     }
 
     [Fact]

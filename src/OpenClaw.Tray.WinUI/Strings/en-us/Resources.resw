@@ -7195,9 +7195,9 @@ Make sure the gateway is running.</value>
   <data name="Migration_StoreConsent" xml:space="preserve">
     <value>A supported previous installation was found. Start migration only when you are ready.
 
-Choosing Migrate validates your setup and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally. You must then uninstall the previous app through Windows Settings &gt; Apps &gt; Installed apps and reopen the Store app to finish migration. Your setup and gateway will be preserved; nothing is uninstalled automatically.
+Choosing {0} validates your setup and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally. You must then uninstall the previous app through Windows Settings &gt; Apps &gt; Installed apps and reopen the Store app to finish migration. Your setup and gateway will be preserved; nothing is uninstalled automatically.
 
-Choose Not now to exit this preview without starting migration and continue using the previous app.</value>
+Choose {1} to exit this preview without starting migration and continue using the previous app.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrate</value>
@@ -7206,7 +7206,7 @@ Choose Not now to exit this preview without starting migration and continue usin
     <value>Not now</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Close the previous OpenClaw Companion app, then retry. Do not force-close it or uninstall it yet. Uninstall only after this preview tells you migration completion has been recorded.</value>
+    <value>Close the previous OpenClaw Companion app, then choose {0} to retry. Choose {1} to exit this preview. Do not force-close the previous app or uninstall it yet. Uninstall only after this preview tells you migration completion has been recorded.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Retry</value>
@@ -7227,10 +7227,10 @@ Choose Not now to exit this preview without starting migration and continue usin
     <value>OpenClaw recorded migration completion and preserved your setup. Close this preview, uninstall the previous OpenClaw Companion app through Windows Settings, then open the Store version. Do not delete migration data or run gateway cleanup.</value>
   </data>
   <data name="Migration_StoreYes" xml:space="preserve">
-    <value>Yes:</value>
+    <value>Yes</value>
   </data>
   <data name="Migration_StoreNo" xml:space="preserve">
-    <value>No:</value>
+    <value>No</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>The previous app is older than this preview's required source version. Migration and normal Store startup are blocked. Use a verified migration-capable Inno release before testing migration. Your setup has not been changed.</value>
