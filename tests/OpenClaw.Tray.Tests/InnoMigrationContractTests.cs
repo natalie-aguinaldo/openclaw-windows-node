@@ -83,6 +83,40 @@ public sealed class InnoMigrationContractTests
         Assert.Empty(project.Descendants("StoreMigrationPreviewMinimumSourceVersion"));
     }
 
+    [Theory]
+    [InlineData("en-us", "blocked from starting normally", "uninstall the previous app", "This preview will not change your setup yet.", "This preview has not changed your setup.")]
+    [InlineData("fr-fr", "ne pourra plus démarrer normalement", "désinstaller l'application précédente", "Cet aperçu ne modifiera pas encore votre configuration.", "Cet aperçu n'a pas modifié votre configuration.")]
+    [InlineData("nl-nl", "niet meer normaal kunnen starten", "de vorige app verwijderen", "Dit voorbeeld wijzigt uw configuratie nog niet.", "Dit voorbeeld heeft uw configuratie niet gewijzigd.")]
+    [InlineData("pt-br", "não poderá mais iniciar normalmente", "desinstalar o aplicativo anterior", "Esta prévia ainda não alterará sua configuração.", "Esta prévia não alterou sua configuração.")]
+    [InlineData("zh-cn", "旧版应用将无法正常启动", "卸载旧版应用", "此预览尚不会更改您的配置。", "此预览未更改您的配置。")]
+    [InlineData("zh-tw", "舊版應用程式將無法正常啟動", "解除安裝舊版應用程式", "此預覽尚不會變更您的設定。", "此預覽未變更您的設定。")]
+    public void Consent_DisclosesStartupBlockAndRequiredRemovalInEveryLocale(
+        string locale, string startupBlock, string removal, string oldConsent, string oldRetry)
+    {
+        var resources = System.Xml.Linq.XDocument.Parse(
+            Read("src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
+        string Value(string key) => resources.Root!.Elements("data")
+            .Single(element => (string?)element.Attribute("name") == key).Element("value")!.Value;
+
+        var consent = Value("Migration_StoreConsent");
+        Assert.Contains(startupBlock, consent);
+        Assert.Contains(removal, consent);
+        Assert.Contains(Value("Migration_StoreMigrate"), consent);
+        Assert.Contains(Value("Migration_StoreNotNow"), consent);
+        Assert.DoesNotContain(oldConsent, consent);
+        Assert.DoesNotContain(oldRetry, Value("Migration_StoreCloseInno"));
+        if (locale == "en-us")
+        {
+            Assert.Contains("protected migration records", consent);
+            Assert.Contains("If validation succeeds", consent);
+            Assert.Contains("reopen the Store app to finish migration", consent);
+            Assert.Contains("Your setup and gateway will be preserved", consent);
+            Assert.Contains("nothing is uninstalled automatically", consent);
+            Assert.Contains("without starting migration", consent);
+            Assert.Contains("Uninstall only after", Value("Migration_StoreCloseInno"));
+        }
+    }
+
     [Fact]
     public void CompletedMigrationGuard_PrecedesSettingsAndActivation()
     {

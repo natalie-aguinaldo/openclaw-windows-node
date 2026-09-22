@@ -7183,7 +7183,11 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Uma instalação anterior compatível foi encontrada. A inicialização normal está pausada. Você pode iniciar a migração ou escolher Agora não para continuar usando o aplicativo anterior.</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>Uma instalação anterior compatível foi encontrada. Inicie a migração apenas quando estiver pronto. Esta prévia ainda não alterará sua configuração.</value>
+    <value>Uma instalação anterior compatível foi encontrada. Inicie a migração apenas quando estiver pronto.
+
+Escolher Migrar valida sua configuração e salva registros de migração protegidos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente. Você deverá então desinstalar o aplicativo anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e reabrir o aplicativo da Store para concluir a migração. Sua configuração e seu gateway serão preservados; nada será desinstalado automaticamente.
+
+Escolha Agora não para sair desta prévia sem iniciar a migração e continuar usando o aplicativo anterior.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrar</value>
@@ -7192,7 +7196,7 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Agora não</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Feche o aplicativo OpenClaw Companion anterior e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo. Esta prévia não alterou sua configuração.</value>
+    <value>Feche o aplicativo OpenClaw Companion anterior e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda. Desinstale somente depois que esta prévia informar que a conclusão da migração foi registrada.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Tentar novamente</value>

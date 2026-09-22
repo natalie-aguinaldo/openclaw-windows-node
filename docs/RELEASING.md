@@ -154,6 +154,11 @@ The preview:
 - Shows a localized **Migrate / Not now** consent decision through native
   **Yes / No** buttons. The dialog body explicitly maps Yes to Migrate and No
   to Not now. A valid Inno intent does not replace that Store-side consent.
+  Before acceptance, every locale discloses protected migration records, the
+  normal Inno startup block after successful validation, and the required manual
+  uninstall followed by reopening Store. It explains preservation, no automatic
+  uninstall, and the option to leave without starting migration. Retry guidance
+  permits uninstall only after the preview reports recorded completion.
 - After consent, checks the production Inno mutex. While Inno is running, the
   preview instructs the user to close it and maps **Yes / No** to
   **Retry / Not now**. It never force-closes the source process.

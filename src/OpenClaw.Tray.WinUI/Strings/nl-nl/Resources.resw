@@ -7130,7 +7130,11 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Er is een ondersteunde vorige installatie gevonden. Normaal opstarten is gepauzeerd. U kunt de migratie starten of Nu niet kiezen om de vorige app te blijven gebruiken.</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent. Dit voorbeeld wijzigt uw configuratie nog niet.</value>
+    <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent.
+
+Als u Migreren kiest, wordt uw configuratie gecontroleerd en worden beveiligde migratiegegevens opgeslagen. Als de controle slaagt, zal de vorige app niet meer normaal kunnen starten. U moet dan de vorige app verwijderen via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps en de Store-app opnieuw openen om de migratie af te ronden. Uw configuratie en gateway blijven behouden; er wordt niets automatisch verwijderd.
+
+Kies Nu niet om dit voorbeeld te sluiten zonder de migratie te starten en de vorige app te blijven gebruiken.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migreren</value>
@@ -7139,7 +7143,7 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Nu niet</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze niet. Dit voorbeeld heeft uw configuratie niet gewijzigd.</value>
+    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze nog niet. Verwijder de app pas nadat dit voorbeeld meldt dat de voltooiing van de migratie is vastgelegd.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Opnieuw proberen</value>
