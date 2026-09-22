@@ -34,10 +34,13 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new InnoMutexLeaseProvider()", helper);
         Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
         Assert.Contains("new MigrationPreparation(binding)", helper);
+        Assert.Contains("new StoreMigrationCompletionCoordinator(", helper);
+        Assert.Contains("new CredentialResolver(DeviceIdentityFileReader.Instance)", helper);
         Assert.Contains("0x00000124", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
-        Assert.Contains("Migration_StorePrepared", helper);
         Assert.Contains("Migration_StoreValidationFailed", helper);
+        Assert.Contains("Migration_StoreAwaitingInnoRemoval", helper);
+        Assert.Contains("Migration_StoreCredentialUnavailable", helper);
         Assert.DoesNotContain("Process.Kill", helper);
     }
 

@@ -7152,6 +7152,12 @@
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw 無法安全驗證舊版設定是否可移轉。未記錄完成狀態，舊版應用程式也未被變更。請關閉此預覽，稍後再試。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
   </data>
+  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
+    <value>OpenClaw 無法解析作用中閘道的認證。未記錄完成狀態，舊版應用程式也未被變更。請關閉此預覽，還原作用中閘道設定後再試。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
+  </data>
+  <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
+    <value>OpenClaw 已記錄移轉完成並保留您的設定。請關閉此預覽，透過 Windows 設定解除安裝舊版 OpenClaw Companion 應用程式，然後開啟 Store 版本。請勿刪除移轉資料或執行閘道清理。</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>是：</value>
   </data>

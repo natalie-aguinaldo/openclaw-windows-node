@@ -7206,6 +7206,12 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>O OpenClaw não pôde validar com segurança a configuração anterior para a migração. Nenhuma conclusão foi registrada e o aplicativo anterior não foi alterado. Feche esta prévia e tente novamente mais tarde. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
+  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
+    <value>O OpenClaw não conseguiu resolver uma credencial para o gateway ativo. Nenhuma conclusão foi registrada e o aplicativo anterior não foi alterado. Feche esta prévia e restaure a configuração do gateway ativo antes de tentar novamente. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
+  <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
+    <value>O OpenClaw registrou a conclusão da migração e preservou sua configuração. Feche esta prévia, desinstale o aplicativo OpenClaw Companion anterior nas Configurações do Windows e abra a versão da Store. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Sim:</value>
   </data>

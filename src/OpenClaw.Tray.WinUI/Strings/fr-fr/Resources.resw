@@ -7152,6 +7152,12 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu valider en toute sécurité la configuration précédente pour la migration. Aucune finalisation n'a été enregistrée et l'application précédente n'a pas été modifiée. Fermez cet aperçu et réessayez plus tard. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
+  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
+    <value>OpenClaw n'a pas pu résoudre un identifiant pour la passerelle active. Aucune finalisation n'a été enregistrée et l'application précédente n'a pas été modifiée. Fermez cet aperçu et restaurez la configuration de la passerelle active avant de réessayer. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
+  <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
+    <value>OpenClaw a enregistré la fin de la migration et préservé votre configuration. Fermez cet aperçu, désinstallez l'application OpenClaw Companion précédente dans les paramètres Windows, puis ouvrez la version du Store. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Oui :</value>
   </data>

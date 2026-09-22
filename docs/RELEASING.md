@@ -31,11 +31,14 @@ new consent may renew it. Corrupt records require explicit recovery rather than
 silent replacement. Preparation is serialized and writes via a flushed sibling
 temporary file followed by atomic rename.
 
-`completed.dpapi` is a separate receipt, reserved for the future MSIX importer
-after successful validation. It has no wall-clock expiry: a delay before manual
+`completed.dpapi` is a separate receipt, written only after exclusive source
+ownership, a fresh strict inventory matching the protected intent, and canonical
+operator credential resolution for the active saved gateway. No active gateway
+or unresolved credential fails closed without a receipt. The atomic writer never
+replaces an existing receipt. It has no wall-clock expiry: a delay before manual
 Inno removal must not re-enable destructive cleanup. Finalization after verified
-Inno removal owns receipt and intent cleanup. Completion and failed-attempt
-recovery are not implemented by the foundation.
+Inno removal owns receipt and intent cleanup. Failed-attempt recovery and
+finalization are not implemented by the preview.
 
 Records use a versioned binary envelope protected by current-user DPAPI. They
 bind the migration ID, source version, architecture, Windows SID, canonical
@@ -112,18 +115,23 @@ The preview:
 - After consent, checks the production Inno mutex. While Inno is running, the
   preview instructs the user to close it and maps **Yes / No** to
   **Retry / Not now**. It never force-closes the source process.
-- When Inno is closed, shows that adoption is pending and exits. It does not
-  acquire exclusive migration ownership, rechecks the exact source evidence,
-  and writes a protected, DPAPI-bound inventory intent. This is not state
-  adoption. It does not write completion, provide uninstall guidance, or
-  finalize migration. Do not uninstall Inno based on this preview.
+- When Inno is closed, the preview acquires exclusive migration ownership,
+  rechecks exact source evidence, and writes a protected, DPAPI-bound inventory
+  intent. It then captures the inventory again, requires its fingerprint to
+  match the intent, and requires canonical operator credential resolution for
+  the active saved gateway before atomically writing a protected completion
+  receipt. This is not state adoption. It does not start gateway, node, or MCP
+  services; provision or repair gateways; delete source state; invoke uninstall;
+  or finalize migration. The receipt blocks normal Store startup and tells the
+  user to uninstall Inno manually.
 - Preserves normal fresh-install behavior when there is no exact Inno
   registration and no pending migration record.
 
-This admission result is not an exclusive lease or authorization to uninstall.
-The later consent workflow must reacquire exclusive ownership and revalidate
-the source before adopting state. Runtime record writers, source-version
-enablement, and the complete recovery/finalization journey remain release gates.
+This admission result is not an authorization to uninstall. The consent workflow
+reacquires exclusive ownership, revalidates source state, and writes completion
+only after its active-gateway credential check succeeds. Runtime state adoption,
+source-version enablement, and the complete recovery/finalization journey remain
+release gates.
 
 ## Release checklist
 

@@ -1,0 +1,170 @@
+using System.Runtime.Versioning;
+using OpenClaw.Connection.Migration;
+using OpenClaw.Shared;
+using OpenClaw.TestSupport;
+
+namespace OpenClaw.Connection.Tests;
+
+[SupportedOSPlatform("windows")]
+[Collection("Migration preparation")]
+public sealed class StoreMigrationCompletionCoordinatorTests
+{
+    [Fact]
+    public void NoActiveGateway_FailsClosedWithoutWritingReceipt()
+    {
+        using var fixture = new Fixture();
+        fixture.Prepare();
+
+        var result = fixture.Complete();
+
+        Assert.Equal(StoreMigrationCompletionState.NoActiveGateway, result.State);
+        fixture.AssertNoReceipt();
+    }
+
+    [Fact]
+    public void UnresolvedActiveGateway_FailsClosedWithoutWritingReceipt()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway();
+        fixture.Prepare();
+
+        var result = fixture.Complete();
+
+        Assert.Equal(StoreMigrationCompletionState.CredentialUnavailable, result.State);
+        fixture.AssertNoReceipt();
+    }
+
+    [Fact]
+    public void ChangedPreparedInventory_CannotComplete()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        File.WriteAllText(Path.Combine(fixture.Binding.RoamingDirectory, "settings.json"), """{"AutoStart":true}""");
+
+        var result = fixture.Complete();
+
+        Assert.Equal(StoreMigrationCompletionState.SourceChanged, result.State);
+        fixture.AssertNoReceipt();
+    }
+
+    [Fact]
+    public void ResolvedDeviceCredential_WritesAtomicCompletionWithoutDeletingIntent()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared", deviceToken: "paired-device");
+        var intent = fixture.Prepare();
+
+        var result = fixture.Complete();
+
+        var receipt = Assert.IsType<MigrationRecord>(result.Receipt);
+        Assert.Equal(StoreMigrationCompletionState.Completed, result.State);
+        Assert.Equal(intent.MigrationId, receipt.MigrationId);
+        Assert.Equal(intent.SourceVersion, receipt.SourceVersion);
+        Assert.Equal("2026.9.18.0", receipt.TargetVersion);
+        Assert.Equal(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), receipt.ExpiresUtc);
+        var completionPath = Path.Combine(fixture.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+            MigrationRecordCodec.CompletionFileName);
+        var completed = MigrationRecordCodec.ReadCompletion(completionPath, fixture.Binding, DateTime.UtcNow);
+        Assert.Equal(intent.MigrationId, completed.MigrationId);
+        Assert.True(File.Exists(Path.Combine(fixture.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+            MigrationRecordCodec.IntentFileName)));
+        Assert.Empty(Directory.GetFiles(Path.Combine(fixture.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName),
+            "*.tmp"));
+    }
+
+    [Fact]
+    public void ExistingReceipt_IsNeverReplaced()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        var completed = Assert.IsType<MigrationRecord>(fixture.Complete().Receipt);
+        var completionPath = Path.Combine(fixture.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+            MigrationRecordCodec.CompletionFileName);
+        var original = File.ReadAllBytes(completionPath);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new MigrationCompletionReceiptWriter(fixture.Binding).Write(completed));
+
+        Assert.Equal(original, File.ReadAllBytes(completionPath));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(completionPath)!, "*.tmp"));
+    }
+
+    private sealed class Fixture : IDisposable
+    {
+        private readonly TempDirectory _temp = new();
+        private readonly EnvironmentScope _environment;
+        private readonly InnoInstallation _installation = new(
+            @"C:\fixture\OpenClawTray", @"C:\fixture\OpenClawTray\OpenClaw.Tray.WinUI.exe",
+            @"C:\fixture\OpenClawTray\unins000.exe", "x64", new Version(2026, 9, 17, 0));
+
+        public Fixture()
+        {
+            _environment = new EnvironmentScope().Set("OPENCLAW_STATE_DIR", null).Set("OPENCLAW_HOME", null);
+            Binding = MigrationRecordTests.CreateRecord(_temp, "intent").Binding;
+            Directory.CreateDirectory(Binding.RoamingDirectory);
+            Directory.CreateDirectory(Binding.LocalDirectory);
+            File.WriteAllText(Path.Combine(Binding.RoamingDirectory, "settings.json"), """{"AutoStart":false}""");
+        }
+
+        public MigrationBinding Binding { get; }
+
+        public void AddActiveGateway(string? sharedToken = null, string? deviceToken = null)
+        {
+            const string gatewayId = "12345678-1234-1234-1234-123456789abc";
+            var registry = new GatewayRegistry(Binding.RoamingDirectory);
+            registry.AddOrUpdate(new GatewayRecord
+            {
+                Id = gatewayId,
+                Url = "wss://gateway.example.test",
+                SharedGatewayToken = sharedToken,
+            });
+            registry.SetActive(gatewayId);
+            registry.Save();
+            if (deviceToken is not null)
+            {
+                var identity = new DeviceIdentity(registry.GetIdentityDirectory(gatewayId));
+                identity.Initialize();
+                identity.StoreDeviceToken(deviceToken);
+            }
+        }
+
+        public MigrationRecord Prepare() =>
+            new MigrationPreparation(Binding).Prepare(_installation.Version.ToString());
+
+        public StoreMigrationCompletionDecision Complete() =>
+            new StoreMigrationCompletionCoordinator(
+                new LeaseProvider(),
+                new Detector(_installation),
+                Binding,
+                new CredentialResolver(DeviceIdentityFileReader.Instance),
+                NullLogger.Instance)
+            .Complete(_installation, "2026.9.18.0");
+
+        public void AssertNoReceipt() =>
+            Assert.False(File.Exists(Path.Combine(Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+                MigrationRecordCodec.CompletionFileName)));
+
+        public void Dispose()
+        {
+            _environment.Dispose();
+            _temp.Dispose();
+        }
+    }
+
+    private sealed class LeaseProvider : IMigrationSourceLeaseProvider
+    {
+        public IMigrationSourceLease TryAcquire() => new Lease();
+    }
+
+    private sealed class Lease : IMigrationSourceLease
+    {
+        public void Dispose() { }
+    }
+
+    private sealed class Detector(InnoInstallation installation) : IInnoInstallationDetector
+    {
+        public InnoInstallationDetection Detect() => new(InnoInstallationStatus.Detected, installation);
+    }
+}

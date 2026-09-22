@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using OpenClaw.Connection;
 using OpenClaw.Connection.Migration;
 using OpenClaw.Shared;
 using OpenClawTray.Services;
@@ -59,6 +60,7 @@ internal static class StoreMigrationStartupGuard
             StoreMigrationStartupState.UpdateInno => "Migration_StoreUpdateRequired",
             StoreMigrationStartupState.UnsupportedInstallation => "Migration_StoreUnsupported",
             StoreMigrationStartupState.InspectionFailed => "Migration_StoreInspectionFailed",
+            StoreMigrationStartupState.AwaitingInnoRemoval => "Migration_StoreAwaitingInnoRemoval",
             _ => "Migration_StorePending"
         });
         return true;
@@ -103,7 +105,7 @@ internal static class StoreMigrationStartupGuard
             switch (result.State)
             {
                 case StoreMigrationPreparationState.Prepared:
-                    ShowGuidance("Migration_StorePrepared");
+                    CompletePreparedMigration(admission.Installation, binding, detector, logger);
                     return;
                 case StoreMigrationPreparationState.InnoRunning:
                     if (!ShowChoice("Migration_StoreCloseInno", "Migration_StoreRetry", "Migration_StoreNotNow"))
@@ -117,6 +119,32 @@ internal static class StoreMigrationStartupGuard
                     return;
             }
         }
+    }
+
+    private static void CompletePreparedMigration(
+        InnoInstallation installation,
+        MigrationBinding binding,
+        IInnoInstallationDetector detector,
+        IOpenClawLogger logger)
+    {
+        var version = global::Windows.ApplicationModel.Package.Current.Id.Version;
+        var targetVersion = $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
+        var completion = new StoreMigrationCompletionCoordinator(
+            new InnoMutexLeaseProvider(),
+            detector,
+            binding,
+            new CredentialResolver(DeviceIdentityFileReader.Instance),
+            logger);
+        var result = completion.Complete(installation, targetVersion);
+        ShowGuidance(result.State switch
+        {
+            StoreMigrationCompletionState.Completed => "Migration_StoreAwaitingInnoRemoval",
+            StoreMigrationCompletionState.InnoRunning => "Migration_StoreCloseInno",
+            StoreMigrationCompletionState.NoActiveGateway or StoreMigrationCompletionState.CredentialUnavailable
+                => "Migration_StoreCredentialUnavailable",
+            StoreMigrationCompletionState.SourceChanged => "Migration_StoreUnsupported",
+            _ => "Migration_StoreValidationFailed"
+        });
     }
 
     private static bool ShowChoice(string contentKey, string primaryKey, string secondaryKey)

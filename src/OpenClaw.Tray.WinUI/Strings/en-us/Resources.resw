@@ -7216,6 +7216,12 @@ Make sure the gateway is running.</value>
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw could not safely validate the previous setup for migration. No completion was recorded and the previous app was not changed. Close this preview and try again later. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
   </data>
+  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
+    <value>OpenClaw could not resolve a credential for the active gateway. No completion was recorded and the previous app was not changed. Close this preview and restore the active gateway configuration before retrying. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+  </data>
+  <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
+    <value>OpenClaw recorded migration completion and preserved your setup. Close this preview, uninstall the previous OpenClaw Companion app through Windows Settings, then open the Store version. Do not delete migration data or run gateway cleanup.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Yes:</value>
   </data>

@@ -7153,6 +7153,12 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw kon de vorige configuratie niet veilig valideren voor migratie. Er is geen voltooiing vastgelegd en de vorige app is niet gewijzigd. Sluit dit voorbeeld en probeer het later opnieuw. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
   </data>
+  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
+    <value>OpenClaw kon geen referentie voor de actieve gateway oplossen. Er is geen voltooiing vastgelegd en de vorige app is niet gewijzigd. Sluit dit voorbeeld en herstel de configuratie van de actieve gateway voordat u het opnieuw probeert. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
+  </data>
+  <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
+    <value>OpenClaw heeft de voltooiing van de migratie vastgelegd en uw configuratie behouden. Sluit dit voorbeeld, verwijder de vorige OpenClaw Companion-app via Windows-instellingen en open daarna de Store-versie. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+  </data>
   <data name="Migration_StoreYes" xml:space="preserve">
     <value>Ja:</value>
   </data>
