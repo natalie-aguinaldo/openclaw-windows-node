@@ -40,7 +40,10 @@ Inno removal must not re-enable destructive cleanup. Finalization after verified
 Inno removal owns receipt and intent cleanup. A Store preview finalizer rechecks
 the exact source registration and then verifies the canonical source executable,
 uninstaller, process image, and mutex have disappeared. It observes the mutex
-without acquiring it. The finalizer serializes with `prepare.lock`, rereads the
+without acquiring it. Process inspection uses limited-query image access across
+all sessions; unrelated paths, proven other-user candidates without an image,
+and exited processes do not block. Unresolved possible source processes still
+fail closed. The finalizer serializes with `prepare.lock`, rereads the
 DPAPI completion receipt under that lock, and recaptures the bounded migration
 inventory before applying the receipt's saved auto-start preference through the
 packaged startup API. It deletes intent followed by the same validated completion
@@ -75,6 +78,15 @@ before destructive work and propagates preservation as exit 10, not cleanup
 success. Without valid completion, the existing interactive/silent choices
 remain unchanged. Explicit `--uninstall --confirm-destructive` remains a
 complete-removal operation and intentionally does not honor migration receipts.
+
+Inno acquires a read-only, read-shared handle on `store-migration\prepare.lock`
+before uninstall begins and retains it through payload/registration removal.
+The cleanup script joins that lock (and also locks when invoked independently)
+before checking the receipt, retaining its handle until cleanup exits. These
+handles exclude Store's exclusive preparation/completion/finalization handle.
+An unavailable lock stops uninstall before effects; it never permits an unlocked
+fallback. Completion re-detects the exact source only after acquiring the lock,
+so an uninstall-first run cannot authorize a receipt from stale source evidence.
 
 Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
 restart recovery, current-head guidance, and manual uninstall preservation.

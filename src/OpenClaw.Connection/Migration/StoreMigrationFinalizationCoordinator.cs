@@ -60,17 +60,48 @@ public interface IStoreMigrationRecordCleaner
     void ClearCompleted(MigrationRecord receipt);
 }
 
+internal enum InnoSourceProcessState
+{
+    Exited,
+    ImageResolved,
+    OwnedByOtherUser,
+    Unresolved
+}
+
+internal sealed record InnoSourceProcessCandidate(InnoSourceProcessState State, string? ImagePath = null);
+
+internal interface IInnoSourceProcessInspector
+{
+    IEnumerable<InnoSourceProcessCandidate> FindSameNameProcesses();
+}
+
 /// <summary>
 /// Checks only the canonical source executable, uninstaller, process image, and instance mutex.
 /// It never acquires or holds the source mutex.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public sealed class InnoSourceRemovalVerifier(MigrationBinding binding, string mutexName) : IInnoSourceRemovalVerifier
+public sealed class InnoSourceRemovalVerifier : IInnoSourceRemovalVerifier
 {
-    private readonly string _sourceDirectory = CanonicalizeDirectory(binding.InstallDirectory);
-    private readonly string _mutexName = string.IsNullOrWhiteSpace(mutexName)
-        ? throw new ArgumentException("Source mutex name is required.", nameof(mutexName))
-        : mutexName;
+    private readonly string _sourceDirectory;
+    private readonly string _mutexName;
+    private readonly IInnoSourceProcessInspector _processes;
+
+    public InnoSourceRemovalVerifier(MigrationBinding binding, string mutexName)
+        : this(binding, mutexName, new WindowsInnoSourceProcessInspector(binding.UserSid))
+    {
+    }
+
+    internal InnoSourceRemovalVerifier(
+        MigrationBinding binding,
+        string mutexName,
+        IInnoSourceProcessInspector processes)
+    {
+        _sourceDirectory = CanonicalizeDirectory(binding.InstallDirectory);
+        _mutexName = string.IsNullOrWhiteSpace(mutexName)
+            ? throw new ArgumentException("Source mutex name is required.", nameof(mutexName))
+            : mutexName;
+        _processes = processes ?? throw new ArgumentNullException(nameof(processes));
+    }
 
     public InnoSourceRemovalStatus VerifyRemoved()
     {
@@ -83,14 +114,26 @@ public sealed class InnoSourceRemovalVerifier(MigrationBinding binding, string m
             if (File.Exists(executable) || File.Exists(uninstaller))
                 return InnoSourceRemovalStatus.SourcePresent;
 
-            foreach (var process in Process.GetProcessesByName("OpenClaw.Tray.WinUI"))
+            foreach (var process in _processes.FindSameNameProcesses())
             {
-                using (process)
+                switch (process.State)
                 {
-                    var imagePath = Path.GetFullPath(process.MainModule?.FileName
-                        ?? throw new InvalidOperationException("Source process has no image path."));
-                    if (string.Equals(imagePath, executable, StringComparison.OrdinalIgnoreCase))
-                        return InnoSourceRemovalStatus.SourcePresent;
+                    case InnoSourceProcessState.Exited:
+                    case InnoSourceProcessState.OwnedByOtherUser:
+                        continue;
+                    case InnoSourceProcessState.ImageResolved:
+                        if (process.ImagePath is null)
+                            return InnoSourceRemovalStatus.InspectionFailed;
+                        if (string.Equals(Path.GetFullPath(process.ImagePath), executable,
+                            StringComparison.OrdinalIgnoreCase))
+                        {
+                            return InnoSourceRemovalStatus.SourcePresent;
+                        }
+                        continue;
+                    default:
+                        // A same-name process owned by this user or whose owner cannot be
+                        // determined could be the source in another session.
+                        return InnoSourceRemovalStatus.InspectionFailed;
                 }
             }
 
@@ -111,6 +154,142 @@ public sealed class InnoSourceRemovalVerifier(MigrationBinding binding, string m
             throw new ArgumentException("Source installation directory must be absolute.", nameof(directory));
         return Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
     }
+}
+
+[SupportedOSPlatform("windows")]
+internal sealed class WindowsInnoSourceProcessInspector(string expectedUserSid) : IInnoSourceProcessInspector
+{
+    private const uint ProcessQueryLimitedInformation = 0x1000;
+    private const uint TokenQuery = 0x0008;
+    private const int TokenUser = 1;
+    private const int ErrorAccessDenied = 5;
+    private const int ErrorInvalidParameter = 87;
+    private const int ErrorInsufficientBuffer = 122;
+    private const int ErrorNotFound = 1168;
+
+    public IEnumerable<InnoSourceProcessCandidate> FindSameNameProcesses()
+    {
+        var candidates = new List<InnoSourceProcessCandidate>();
+        foreach (var process in Process.GetProcessesByName("OpenClaw.Tray.WinUI"))
+        {
+            using (process)
+            {
+                int processId;
+                try
+                {
+                    processId = process.Id;
+                }
+                catch (InvalidOperationException)
+                {
+                    candidates.Add(new(InnoSourceProcessState.Exited));
+                    continue;
+                }
+
+                candidates.Add(Inspect(processId));
+            }
+        }
+        return candidates;
+    }
+
+    private InnoSourceProcessCandidate Inspect(int processId)
+    {
+        var process = OpenProcess(ProcessQueryLimitedInformation, false, processId);
+        if (process == IntPtr.Zero)
+        {
+            var error = Marshal.GetLastWin32Error();
+            return error is ErrorInvalidParameter or ErrorNotFound
+                ? new(InnoSourceProcessState.Exited)
+                : new(InnoSourceProcessState.Unresolved);
+        }
+
+        try
+        {
+            if (TryGetImagePath(process, out var imagePath))
+                return new(InnoSourceProcessState.ImageResolved, imagePath);
+
+            return TryGetOwnerSid(process, out var ownerSid) &&
+                   !string.Equals(ownerSid, expectedUserSid, StringComparison.OrdinalIgnoreCase)
+                ? new(InnoSourceProcessState.OwnedByOtherUser)
+                : new(InnoSourceProcessState.Unresolved);
+        }
+        finally
+        {
+            CloseHandle(process);
+        }
+    }
+
+    private static bool TryGetImagePath(IntPtr process, out string? imagePath)
+    {
+        for (var capacity = 512; capacity <= 32768; capacity *= 2)
+        {
+            var buffer = new System.Text.StringBuilder(capacity);
+            var length = capacity;
+            if (QueryFullProcessImageName(process, 0, buffer, ref length))
+            {
+                imagePath = buffer.ToString(0, length);
+                return true;
+            }
+            if (Marshal.GetLastWin32Error() != ErrorInsufficientBuffer)
+                break;
+        }
+
+        imagePath = null;
+        return false;
+    }
+
+    private static bool TryGetOwnerSid(IntPtr process, out string? ownerSid)
+    {
+        ownerSid = null;
+        if (!OpenProcessToken(process, TokenQuery, out var token))
+            return false;
+
+        try
+        {
+            _ = GetTokenInformation(token, TokenUser, IntPtr.Zero, 0, out var size);
+            if (size == 0)
+                return false;
+
+            var buffer = Marshal.AllocHGlobal((int)size);
+            try
+            {
+                if (!GetTokenInformation(token, TokenUser, buffer, size, out _))
+                    return false;
+                var sid = Marshal.ReadIntPtr(buffer);
+                ownerSid = new System.Security.Principal.SecurityIdentifier(sid).Value;
+                return true;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+        finally
+        {
+            CloseHandle(token);
+        }
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryFullProcessImageName(
+        IntPtr process, uint flags, System.Text.StringBuilder imagePath, ref int size);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool OpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetTokenInformation(
+        IntPtr tokenHandle, int tokenInformationClass, IntPtr tokenInformation,
+        uint tokenInformationLength, out uint returnLength);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr handle);
 }
 
 /// <summary>

@@ -650,8 +650,27 @@ function Remove-GatewayDirectory {
     throw "Failed to remove gateway directory '$gatewayDirectory': $lastError"
 }
 
+$migrationOperationLock = $null
 try {
     if ($DataDirectoryName -eq 'OpenClawTray') {
+        $lockDirectory = Join-Path (Resolve-AppDataDir) 'store-migration'
+        $lockPath = Join-Path $lockDirectory 'prepare.lock'
+        $current = [IO.Path]::GetFullPath($lockPath)
+        while (-not [string]::IsNullOrEmpty($current)) {
+            try {
+                if (([IO.File]::GetAttributes($current) -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    throw 'Migration lock paths must not contain reparse points.'
+                }
+            } catch [IO.FileNotFoundException] {
+            } catch [IO.DirectoryNotFoundException] {
+            }
+            $current = [IO.Path]::GetDirectoryName($current)
+        }
+        $null = [IO.Directory]::CreateDirectory($lockDirectory)
+        # Join the Inno parent's read lock, or protect a standalone cleanup.
+        # Store preparation/completion/finalization require an exclusive handle.
+        $migrationOperationLock = [IO.FileStream]::new(
+            $lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::Read, [IO.FileShare]::Read)
         $checker = Join-Path $AppRoot 'Test-InnoMigration.ps1'
         if (-not (Test-Path -LiteralPath $checker -PathType Leaf)) {
             throw 'Migration preservation checker is missing. Gateway cleanup was not started.'
@@ -717,4 +736,8 @@ try {
     Write-GatewayResult -Succeeded $false -ExitCode 1 -Message $message
     Write-Warning $message
     exit 1
+} finally {
+    if ($null -ne $migrationOperationLock) {
+        $migrationOperationLock.Dispose()
+    }
 }

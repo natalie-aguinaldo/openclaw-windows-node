@@ -91,6 +91,61 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(completionPath)!, "*.tmp"));
     }
 
+    [Fact]
+    public void UninstallReadHandles_BlockCompletionUntilSourceRemoval()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        var detector = new CallbackDetector(() => new(InnoInstallationStatus.NotInstalled));
+
+        using (fixture.OpenUninstallLock())
+        {
+        // The Inno parent and cleanup child can coexist, but Store cannot
+        // publish completion after the uninstaller's preservation check.
+        using (fixture.OpenUninstallLock())
+        {
+            Assert.Equal(StoreMigrationCompletionState.ValidationFailed, fixture.Complete(detector).State);
+            Assert.Equal(0, detector.Calls);
+            fixture.AssertNoReceipt();
+        }
+        Assert.Equal(StoreMigrationCompletionState.ValidationFailed, fixture.Complete(detector).State);
+        }
+
+        Assert.Equal(StoreMigrationCompletionState.SourceChanged, fixture.Complete(detector).State);
+        Assert.Equal(1, detector.Calls);
+        fixture.AssertNoReceipt();
+    }
+
+    [Fact]
+    public void Completion_OwnsExclusiveLockBeforeRecheckingSource()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        var detector = new CallbackDetector(() =>
+        {
+        Assert.Throws<IOException>(() => fixture.OpenUninstallLock());
+        return new(InnoInstallationStatus.Detected, fixture.Installation);
+        });
+
+        Assert.Equal(StoreMigrationCompletionState.Completed, fixture.Complete(detector).State);
+        using var uninstall = fixture.OpenUninstallLock();
+        Assert.True(File.Exists(Path.Combine(fixture.Binding.RoamingDirectory,
+        MigrationRecordCodec.DirectoryName, MigrationRecordCodec.CompletionFileName)));
+    }
+
+    [Fact]
+    public void FailedCompletion_ReleasesLockForUninstall()
+    {
+        using var fixture = new Fixture();
+        fixture.Prepare();
+
+        Assert.Equal(StoreMigrationCompletionState.NoActiveGateway, fixture.Complete().State);
+        using var uninstall = fixture.OpenUninstallLock();
+        fixture.AssertNoReceipt();
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly TempDirectory _temp = new();
@@ -109,6 +164,11 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         }
 
         public MigrationBinding Binding { get; }
+        public InnoInstallation Installation => _installation;
+
+        public FileStream OpenUninstallLock() => new(
+            Path.Combine(Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName, "prepare.lock"),
+            FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
 
         public void AddActiveGateway(string? sharedToken = null, string? deviceToken = null)
         {
@@ -133,10 +193,10 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         public MigrationRecord Prepare() =>
             new MigrationPreparation(Binding).Prepare(_installation.Version.ToString());
 
-        public StoreMigrationCompletionDecision Complete() =>
+        public StoreMigrationCompletionDecision Complete(IInnoInstallationDetector? detector = null) =>
             new StoreMigrationCompletionCoordinator(
                 new LeaseProvider(),
-                new Detector(_installation),
+                detector ?? new Detector(_installation),
                 Binding,
                 new CredentialResolver(DeviceIdentityFileReader.Instance),
                 NullLogger.Instance)
@@ -166,5 +226,16 @@ public sealed class StoreMigrationCompletionCoordinatorTests
     private sealed class Detector(InnoInstallation installation) : IInnoInstallationDetector
     {
         public InnoInstallationDetection Detect() => new(InnoInstallationStatus.Detected, installation);
+    }
+
+    private sealed class CallbackDetector(Func<InnoInstallationDetection> detect) : IInnoInstallationDetector
+    {
+        public int Calls { get; private set; }
+
+        public InnoInstallationDetection Detect()
+        {
+            Calls++;
+            return detect();
+        }
     }
 }

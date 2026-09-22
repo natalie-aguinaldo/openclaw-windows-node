@@ -167,9 +167,34 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("if ($migrationResult -eq 10)", main);
         Assert.Contains("exit 10", main);
         Assert.Contains("if ($migrationResult -ne 0)", main);
+        Assert.True(main.IndexOf("$migrationOperationLock = [IO.FileStream]::new(", StringComparison.Ordinal) <
+                    main.IndexOf("$checker =", StringComparison.Ordinal));
+        Assert.Contains("[IO.FileMode]::OpenOrCreate, [IO.FileAccess]::Read, [IO.FileShare]::Read", main);
+        Assert.Matches(@"finally\s*\{\s*if \(\$null -ne \$migrationOperationLock\) \{\s*" +
+                       @"\$migrationOperationLock.Dispose\(\)", main);
         var logger = script[script.IndexOf("function Write-GatewayLog", StringComparison.Ordinal)..
             script.IndexOf("function Add-CleanupWarning", StringComparison.Ordinal)];
         Assert.DoesNotContain("Test-InnoMigration", logger);
+    }
+
+    [Fact]
+    public void Installer_HoldsMigrationLockThroughEntireUninstall()
+    {
+        var installer = Read("installer.iss");
+        var initialize = installer[installer.IndexOf("function InitializeUninstall:", StringComparison.Ordinal)..
+            installer.IndexOf("procedure DeinitializeUninstall;", StringComparison.Ordinal)];
+        Assert.Contains("#ifndef DevBuild", initialize);
+        Assert.Contains(@"{userappdata}\{#MyInstallDir}\store-migration", initialize);
+        Assert.Contains(@"'\prepare.lock'", initialize);
+        Assert.Contains("Result := MigrationPathIsOrdinary(LockPath);", initialize);
+        Assert.Contains("Result := ForceDirectories(Directory);", initialize);
+        Assert.Matches(@"OpenMigrationOperationFile\(\s*LockPath, \$80000000, 1, 0, 4, \$80, 0\)", initialize);
+        Assert.Contains("Result := MigrationOperationHandle <> THandle(-1);", initialize);
+        Assert.Contains("MigrationOperationLocked := Result;", initialize);
+        Assert.Contains("if not Result then", initialize);
+        Assert.Matches(@"procedure DeinitializeUninstall;\s*begin\s*if MigrationOperationLocked then\s*begin\s*" +
+                       @"CloseMigrationOperationFile\(MigrationOperationHandle\);", installer);
+        Assert.Single(Regex.Matches(installer, @"CloseMigrationOperationFile\(MigrationOperationHandle\)"));
     }
 
     [Fact]

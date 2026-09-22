@@ -184,8 +184,11 @@ public sealed class MigrationRecordTests
         Assert.True(process.ExitCode == expectedExit, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
     }
 
-    [Fact]
-    public async Task CleanupScript_CompletedReceiptPreservesFilesWithoutCallingWsl()
+    [Theory]
+    [InlineData(null, 10)]
+    [InlineData(FileShare.Read, 10)]
+    [InlineData(FileShare.None, 1)]
+    public async Task CleanupScript_CompletedReceiptPreservesFilesWithoutCallingWsl(FileShare? parentShare, int expectedExit)
     {
         using var temp = new TempDirectory();
         var root = RepositoryRoot();
@@ -201,6 +204,10 @@ public sealed class MigrationRecordTests
         Directory.CreateDirectory(directory);
         File.WriteAllBytes(Path.Combine(directory, MigrationRecordCodec.CompletionFileName),
             MigrationRecordCodec.Encode(record, DateTime.UtcNow));
+        using var parentLock = parentShare is { } share
+            ? new FileStream(Path.Combine(directory, "prepare.lock"), FileMode.OpenOrCreate,
+                share == FileShare.Read ? FileAccess.Read : FileAccess.ReadWrite, share)
+            : null;
         var sentinel = Path.Combine(record.Binding.RoamingDirectory, "settings.json");
         File.WriteAllText(sentinel, "{\"testSentinel\":true}");
         var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
@@ -231,10 +238,13 @@ public sealed class MigrationRecordTests
         var stderr = process.StandardError.ReadToEndAsync();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         await process.WaitForExitAsync(timeout.Token);
-        Assert.True(process.ExitCode == 10, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
+        Assert.True(process.ExitCode == expectedExit, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
         Assert.Equal("{\"testSentinel\":true}", File.ReadAllText(sentinel));
         Assert.DoesNotContain("Starting local gateway cleanup", File.ReadAllText(
             Path.Combine(record.Binding.InstallDirectory, "uninstall-gateway-wsl.log")));
+        parentLock?.Dispose();
+        using var releasedLock = new FileStream(Path.Combine(directory, "prepare.lock"),
+            FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 
     internal static MigrationRecord CreateRecord(TempDirectory temp, string kind)

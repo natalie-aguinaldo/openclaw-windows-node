@@ -10,6 +10,60 @@ namespace OpenClaw.Connection.Tests;
 public sealed class StoreMigrationFinalizationCoordinatorTests
 {
     [Fact]
+    public void SameNameProcessAtCanonicalSourcePath_BlocksRemoval()
+    {
+        using var fixture = new Fixture();
+
+        var result = VerifyProcesses(fixture, new InnoSourceProcessCandidate(
+            InnoSourceProcessState.ImageResolved,
+            Path.Combine(fixture.Binding.InstallDirectory, "OpenClaw.Tray.WinUI.exe")));
+
+        Assert.Equal(InnoSourceRemovalStatus.SourcePresent, result);
+    }
+
+    [Fact]
+    public void SameNameProcessAtUnrelatedPath_DoesNotBlockRemoval()
+    {
+        using var fixture = new Fixture();
+
+        var result = VerifyProcesses(fixture, new InnoSourceProcessCandidate(
+            InnoSourceProcessState.ImageResolved,
+            @"C:\OtherUser\OpenClaw.Tray.WinUI.exe"));
+
+        Assert.Equal(InnoSourceRemovalStatus.Removed, result);
+    }
+
+    [Fact]
+    public void InaccessibleSameNameProcessOwnedByOtherUser_DoesNotBlockRemoval()
+    {
+        using var fixture = new Fixture();
+
+        var result = VerifyProcesses(fixture, new InnoSourceProcessCandidate(InnoSourceProcessState.OwnedByOtherUser));
+
+        Assert.Equal(InnoSourceRemovalStatus.Removed, result);
+    }
+
+    [Fact]
+    public void UnresolvedSameNameProcess_FailsClosed()
+    {
+        using var fixture = new Fixture();
+
+        var result = VerifyProcesses(fixture, new InnoSourceProcessCandidate(InnoSourceProcessState.Unresolved));
+
+        Assert.Equal(InnoSourceRemovalStatus.InspectionFailed, result);
+    }
+
+    [Fact]
+    public void ExitedSameNameProcess_DoesNotBlockRemoval()
+    {
+        using var fixture = new Fixture();
+
+        var result = VerifyProcesses(fixture, new InnoSourceProcessCandidate(InnoSourceProcessState.Exited));
+
+        Assert.Equal(InnoSourceRemovalStatus.Removed, result);
+    }
+
+    [Fact]
     public async Task RegistryGoneButSourcePayloadRemains_WaitsWithoutMutation()
     {
         using var fixture = new Fixture();
@@ -201,6 +255,14 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         Assert.Equal(1, firstAutoStart.Calls);
     }
 
+    private static InnoSourceRemovalStatus VerifyProcesses(
+        Fixture fixture,
+        params InnoSourceProcessCandidate[] candidates) =>
+        new InnoSourceRemovalVerifier(
+            fixture.Binding,
+            $"OpenClawMigrationTest-{Guid.NewGuid():N}",
+            new ProcessInspector(candidates)).VerifyRemoved();
+
     private sealed class Fixture : IDisposable
     {
         private static readonly DateTime Now = new(2026, 9, 21, 0, 0, 0, DateTimeKind.Utc);
@@ -278,6 +340,12 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
     private sealed class SourceRemoval(InnoSourceRemovalStatus status) : IInnoSourceRemovalVerifier
     {
         public InnoSourceRemovalStatus VerifyRemoved() => status;
+    }
+
+    private sealed class ProcessInspector(
+        IEnumerable<InnoSourceProcessCandidate> candidates) : IInnoSourceProcessInspector
+    {
+        public IEnumerable<InnoSourceProcessCandidate> FindSameNameProcesses() => candidates;
     }
 
     private sealed class Inventory(string fingerprint) : IMigrationInventoryCapture

@@ -44,10 +44,6 @@ public sealed class StoreMigrationCompletionCoordinator(
         if (lease is null)
             return new(StoreMigrationCompletionState.InnoRunning);
 
-        var detected = detector.Detect();
-        if (detected.Status != InnoInstallationStatus.Detected || detected.Installation != expected)
-            return new(StoreMigrationCompletionState.SourceChanged);
-
         try
         {
             var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
@@ -55,6 +51,12 @@ public sealed class StoreMigrationCompletionCoordinator(
             var lockPath = Path.Combine(directory, "prepare.lock");
             MigrationRecordCodec.RejectReparsePoints(lockPath);
             using var migrationLock = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            // Uninstall owns this same file through source removal. Evidence from
+            // before acquiring the lock cannot authorize completion afterward.
+            var detected = detector.Detect();
+            if (detected.Status != InnoInstallationStatus.Detected || detected.Installation != expected)
+                return new(StoreMigrationCompletionState.SourceChanged);
 
             var intent = ReadIntent(directory);
             var inventory = MigrationInventory.Capture(binding.RoamingDirectory, binding.LocalDirectory);

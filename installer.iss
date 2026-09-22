@@ -134,6 +134,80 @@ var
   LocalGatewayCleanupChoiceInitialized: Boolean;
   LocalGatewayCleanupRequested: Boolean;
   LocalGatewayCleanupSucceeded: Boolean;
+  MigrationOperationHandle: THandle;
+  MigrationOperationLocked: Boolean;
+
+function OpenMigrationOperationFile(
+  FileName: String; DesiredAccess, ShareMode: LongWord; SecurityAttributes: Integer;
+  CreationDisposition, FlagsAndAttributes: LongWord; TemplateFile: THandle): THandle;
+  external 'CreateFileW@kernel32.dll stdcall';
+function CloseMigrationOperationFile(Handle: THandle): Boolean;
+  external 'CloseHandle@kernel32.dll stdcall';
+function MigrationPathAttributes(FileName: String): LongWord;
+  external 'GetFileAttributesW@kernel32.dll stdcall';
+
+function MigrationPathIsOrdinary(Path: String): Boolean;
+var
+  Attributes: LongWord;
+  Parent: String;
+begin
+  Result := False;
+  while Path <> '' do
+  begin
+    Attributes := MigrationPathAttributes(Path);
+    if Attributes = $FFFFFFFF then
+    begin
+      if (DLLGetLastError <> 2) and (DLLGetLastError <> 3) then
+        Exit;
+    end
+    else if (Attributes and $400) <> 0 then
+      Exit;
+    Parent := ExtractFileDir(Path);
+    if Parent = Path then
+      Break;
+    Path := Parent;
+  end;
+  Result := True;
+end;
+
+function InitializeUninstall: Boolean;
+var
+  Directory: String;
+  LockPath: String;
+begin
+  Result := True;
+#ifndef DevBuild
+  Directory := ExpandConstant('{userappdata}\{#MyInstallDir}\store-migration');
+  LockPath := Directory + '\prepare.lock';
+  Result := MigrationPathIsOrdinary(LockPath);
+  if Result then
+    Result := ForceDirectories(Directory);
+  if Result then
+  begin
+    // Shared read handles allow our cleanup child to join, but exclude Store's
+    // FileShare.None writer. Keep this handle through registry/payload removal.
+    MigrationOperationHandle := OpenMigrationOperationFile(
+      LockPath, $80000000, 1, 0, 4, $80, 0);
+    Result := MigrationOperationHandle <> THandle(-1);
+    MigrationOperationLocked := Result;
+  end;
+  if not Result then
+  begin
+    Log('Could not lock migration state. Uninstall stopped before changing the installation.');
+    if not UninstallSilent() then
+      MsgBox('OpenClaw migration is busy or its state cannot be accessed. Close the Store migration preview and retry uninstall.', mbError, MB_OK);
+  end;
+#endif
+end;
+
+procedure DeinitializeUninstall;
+begin
+  if MigrationOperationLocked then
+  begin
+    CloseMigrationOperationFile(MigrationOperationHandle);
+    MigrationOperationLocked := False;
+  end;
+end;
 
 #if vcRedist != ""
 procedure InstallVCRuntime;
