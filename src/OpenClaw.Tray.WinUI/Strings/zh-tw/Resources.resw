@@ -7173,6 +7173,9 @@
   <data name="Migration_StoreInspectionFailed" xml:space="preserve">
     <value>移轉預覽無法安全檢查舊版安裝或移轉記錄。正常啟動已遭封鎖。請關閉此預覽並查看應用程式記錄後重試。請勿刪除移轉資料或執行閘道清理。</value>
   </data>
+  <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
+    <value>OpenClaw 無法安全完成移轉。正常啟動已遭封鎖，移轉收據已保留以供復原。請關閉此預覽，稍後再試。請勿刪除移轉資料或執行閘道清理。</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>先前的移轉需要復原或完成。此測試版本無法繼續該移轉或正常啟動。請關閉此預覽。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
   </data>

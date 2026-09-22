@@ -7237,6 +7237,9 @@ Make sure the gateway is running.</value>
   <data name="Migration_StoreInspectionFailed" xml:space="preserve">
     <value>The migration preview could not safely inspect the previous installation or migration records. Normal startup is blocked. Close this preview and check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
   </data>
+  <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
+    <value>OpenClaw could not safely finish the completed migration. Normal startup is blocked and the migration receipt was kept for recovery. Close this preview and try again later. Do not delete migration data or run gateway cleanup.</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>A previous migration needs recovery or finalization. This test build cannot continue it or start normally. Close this preview. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
   </data>

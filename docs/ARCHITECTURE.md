@@ -83,7 +83,7 @@ These are the canonical homes. Do not reintroduce private copies elsewhere.
 | Exactly-once ordered app shutdown sequencing | `AppShutdownCoordinator` | authoritative |
 | App composition-root startup sequencing | `AppBootstrapper` (planned) | planned |
 | Inno migration records, preparation, and pre-start completion guard | `MigrationRecordCodec`, `MigrationPreparation`, `MigrationInventory`, `InnoMigrationStartupGuard` | authoritative |
-| Read-only Store migration startup admission | `InnoInstallationDetector`, `MigrationStartupRecordReader`, `StoreMigrationStartupCoordinator`, `StoreMigrationStartupGuard` | authoritative |
+| Store migration startup admission and finalization | `InnoInstallationDetector`, `InnoSourceRemovalVerifier`, `MigrationStartupRecordReader`, `MigrationInventoryCapture`, `StoreMigrationStartupCoordinator`, `StoreMigrationFinalizationCoordinator`, `StoreMigrationStartupGuard` | authoritative |
 | Windows node connection generation, cancellation, start ordering, recovery, events, and telemetry | `NodeConnectionCoordinator` | authoritative |
 | Bootstrap/shared/device credential handoff, durable clear gate, and operator token recovery timing | `BootstrapTokenLifecycle` | authoritative |
 | Device role-upgrade approval, confirmation, and bounded node reconnect queue | `DevicePairApprovalCoordinator` | authoritative |

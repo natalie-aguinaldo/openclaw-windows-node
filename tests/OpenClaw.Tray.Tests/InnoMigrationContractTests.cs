@@ -28,20 +28,41 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("MigrationRecordCodec.PackageName", helper);
         Assert.Contains("MigrationRecordCodec.PackagePublisher", helper);
         Assert.DoesNotContain("File.Write", helper);
-        Assert.DoesNotContain("SetAutoStart", helper);
+        Assert.DoesNotContain("SetPackagedAutoStartAsync", helper);
         Assert.Contains("Migration_StoreConsent", helper);
         Assert.Contains("Migration_StoreCloseInno", helper);
         Assert.Contains("new InnoMutexLeaseProvider()", helper);
         Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
         Assert.Contains("new MigrationPreparation(binding)", helper);
         Assert.Contains("new StoreMigrationCompletionCoordinator(", helper);
+        Assert.Contains("new StoreMigrationFinalizationCoordinator(", helper);
+        Assert.Contains("new MigrationFinalizationRecordCleaner(", helper);
+        Assert.Contains("new InnoSourceRemovalVerifier(binding, AppIdentity.MutexBaseName)", helper);
+        Assert.Contains("new MigrationInventoryCapture(binding)", helper);
+        Assert.Contains("records.Read().Status != MigrationStartupRecordStatus.Completed", helper);
+        Assert.Contains("AutoStartManager.SetAutoStartAsync(enabled)", helper);
+        Assert.Contains("Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false)", helper);
         Assert.Contains("new CredentialResolver(DeviceIdentityFileReader.Instance)", helper);
         Assert.Contains("0x00000124", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
         Assert.Contains("Migration_StoreValidationFailed", helper);
         Assert.Contains("Migration_StoreAwaitingInnoRemoval", helper);
+        Assert.Contains("Migration_StoreFinalizationFailed", helper);
         Assert.Contains("Migration_StoreCredentialUnavailable", helper);
         Assert.DoesNotContain("Process.Kill", helper);
+
+        var finalizer = Read("src", "OpenClaw.Connection", "Migration",
+            "StoreMigrationFinalizationCoordinator.cs");
+        Assert.Contains("IStoreMigrationAutoStartApplier", finalizer);
+        Assert.Contains("IInnoSourceRemovalVerifier", finalizer);
+        Assert.Contains("MigrationInventory.Capture", finalizer);
+        Assert.Contains("new Mutex(false, _mutexName, out var createdNew)", finalizer);
+        Assert.DoesNotContain("IMigrationSourceLeaseProvider", finalizer);
+        Assert.DoesNotContain("InnoMutex", finalizer);
+        Assert.DoesNotContain("WaitOne", finalizer);
+        Assert.DoesNotContain("ReleaseMutex", finalizer);
+        Assert.DoesNotContain("SettingsManager", finalizer);
+        Assert.DoesNotContain("CliUninstall", finalizer);
     }
 
     [Fact]

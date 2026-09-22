@@ -49,6 +49,21 @@ internal static class StoreMigrationStartupGuard
         if (decision.AllowsNormalStartup)
             return false;
 
+        if (decision.State == StoreMigrationStartupState.FinalizationRequired)
+        {
+            var finalization = FinalizeCompletedMigration(binding, detector, logger);
+            if (finalization.AllowsNormalStartup)
+                return false;
+
+            ShowGuidance(finalization.State switch
+            {
+                StoreMigrationFinalizationState.AwaitingInnoRemoval => "Migration_StoreAwaitingInnoRemoval",
+                StoreMigrationFinalizationState.InspectionFailed => "Migration_StoreInspectionFailed",
+                _ => "Migration_StoreFinalizationFailed"
+            });
+            return true;
+        }
+
         if (decision.State == StoreMigrationStartupState.ConsentRequired)
         {
             RunConsentWorkflow(decision, binding, detector, logger);
@@ -147,6 +162,29 @@ internal static class StoreMigrationStartupGuard
         });
     }
 
+    private static StoreMigrationFinalizationDecision FinalizeCompletedMigration(
+        MigrationBinding binding,
+        IInnoInstallationDetector detector,
+        IOpenClawLogger logger)
+    {
+        var records = new MigrationStartupRecordReader(binding, logger);
+        if (records.Read().Status != MigrationStartupRecordStatus.Completed)
+            return new(StoreMigrationFinalizationState.InspectionFailed);
+
+        return new StoreMigrationFinalizationCoordinator(
+                binding,
+                detector,
+                new InnoSourceRemovalVerifier(binding, AppIdentity.MutexBaseName),
+                records,
+                new MigrationInventoryCapture(binding),
+                new StoreMigrationAutoStartApplier(),
+                new MigrationFinalizationRecordCleaner(binding),
+                logger)
+            .FinalizeAsync()
+            .GetAwaiter()
+            .GetResult();
+    }
+
     private static bool ShowChoice(string contentKey, string primaryKey, string secondaryKey)
     {
         var content = $"{LocalizationHelper.GetString(contentKey)}\r\n\r\n" +
@@ -170,6 +208,12 @@ internal static class StoreMigrationStartupGuard
             using var lease = new InnoMutexLeaseProvider().TryAcquire();
             return lease is null;
         }
+    }
+
+    private sealed class StoreMigrationAutoStartApplier : IStoreMigrationAutoStartApplier
+    {
+        public async Task ApplyAsync(bool enabled) =>
+            await Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false);
     }
 
     private sealed class InnoMutexLeaseProvider : IMigrationSourceLeaseProvider

@@ -37,8 +37,17 @@ operator credential resolution for the active saved gateway. No active gateway
 or unresolved credential fails closed without a receipt. The atomic writer never
 replaces an existing receipt. It has no wall-clock expiry: a delay before manual
 Inno removal must not re-enable destructive cleanup. Finalization after verified
-Inno removal owns receipt and intent cleanup. Failed-attempt recovery and
-finalization are not implemented by the preview.
+Inno removal owns receipt and intent cleanup. A Store preview finalizer rechecks
+the exact source registration and then verifies the canonical source executable,
+uninstaller, process image, and mutex have disappeared. It observes the mutex
+without acquiring it. The finalizer serializes with `prepare.lock`, rereads the
+DPAPI completion receipt under that lock, and recaptures the bounded migration
+inventory before applying the receipt's saved auto-start preference through the
+packaged startup API. It deletes intent followed by the same validated completion
+receipt, so a crash after intent deletion retries from the retained receipt. It
+fails closed on source inspection, receipt, inventory, startup-preference, or
+cleanup failure and leaves the receipt for restart recovery. It never starts
+runtime services or invokes uninstall.
 
 Records use a versioned binary envelope protected by current-user DPAPI. They
 bind the migration ID, source version, architecture, Windows SID, canonical
@@ -123,7 +132,13 @@ The preview:
   receipt. This is not state adoption. It does not start gateway, node, or MCP
   services; provision or repair gateways; delete source state; invoke uninstall;
   or finalize migration. The receipt blocks normal Store startup and tells the
-  user to uninstall Inno manually.
+  user to uninstall Inno manually. On a later Store start, only an exact
+  `NotInstalled` result plus absent canonical source payload/process/mutex
+  evidence permits finalization. The finalizer does not acquire the Inno-visible
+  mutex, serializes on `prepare.lock`, rereads and matches the durable completion
+  receipt, recaptures the inventory fingerprint, applies the saved auto-start
+  preference through the tray adapter, and clears records only after that call
+  succeeds.
 - Preserves normal fresh-install behavior when there is no exact Inno
   registration and no pending migration record.
 

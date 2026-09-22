@@ -7227,6 +7227,9 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="Migration_StoreInspectionFailed" xml:space="preserve">
     <value>A prévia da migração não conseguiu verificar com segurança a instalação anterior ou os registros de migração. A inicialização normal está bloqueada. Feche esta prévia e consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
+  <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu concluir a migração com segurança. A inicialização normal está bloqueada e o recibo de migração foi preservado para recuperação. Feche esta prévia e tente novamente mais tarde. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Uma migração anterior precisa de recuperação ou finalização. Esta versão de teste não pode continuá-la nem iniciar normalmente. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>

@@ -7173,6 +7173,9 @@ Le binaire wxc-exec est introuvable. {1} S'il s'agit d'une build développeur, c
   <data name="Migration_StoreInspectionFailed" xml:space="preserve">
     <value>L'aperçu de migration n'a pas pu vérifier en toute sécurité l'installation précédente ou les enregistrements de migration. Le démarrage normal est bloqué. Fermez cet aperçu et consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
+  <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu terminer la migration en toute sécurité. Le démarrage normal est bloqué et le reçu de migration a été conservé pour récupération. Fermez cet aperçu et réessayez plus tard. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Une migration précédente nécessite une récupération ou une finalisation. Cette version de test ne peut ni la poursuivre ni démarrer normalement. Fermez cet aperçu. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>

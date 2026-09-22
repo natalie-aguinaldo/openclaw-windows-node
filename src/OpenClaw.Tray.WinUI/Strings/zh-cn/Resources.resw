@@ -7173,6 +7173,9 @@
   <data name="Migration_StoreInspectionFailed" xml:space="preserve">
     <value>迁移预览无法安全检查旧版安装或迁移记录。正常启动已被阻止。请关闭此预览并查看应用日志后重试。请勿删除迁移数据或运行网关清理。</value>
   </data>
+  <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
+    <value>OpenClaw 无法安全完成迁移。正常启动已被阻止，迁移收据已保留以供恢复。请关闭此预览，稍后重试。请勿删除迁移数据或运行网关清理。</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>之前的迁移需要恢复或完成。此测试版本无法继续该迁移或正常启动。请关闭此预览。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
   </data>
