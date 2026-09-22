@@ -11,7 +11,7 @@ internal static class InnoMigrationHandoff
     {
         get
         {
-#if INNO_MIGRATION_PREVIEW
+#if INNO_MIGRATION_PREVIEW || INNO_MIGRATION_RELEASE
             return !AppIdentity.IsDev && !PackageHelper.IsPackaged &&
                 !GatewayFixtureIsolation.IsEnabled && !MigrationEnvironment.HasPathOverride;
 #else
@@ -21,7 +21,7 @@ internal static class InnoMigrationHandoff
     }
 
     public static bool IsAvailable => IsEnabled && StoreMigrationListing.TryCreateUri(
-        MigrationEnvironment.Metadata("MigrationPreviewStoreProductId"), out _);
+        MigrationEnvironment.StoreProductId, out _);
 
     public static Action? CreateShutdownHandler(DispatcherQueue dispatcher, Action exit) =>
         IsEnabled ? () =>
@@ -50,9 +50,9 @@ internal static class InnoMigrationHandoff
     public static async Task<string> GrantAndLaunchAsync()
     {
         if (!IsAvailable || !StoreMigrationListing.TryCreateUri(
-                MigrationEnvironment.Metadata("MigrationPreviewStoreProductId"), out var uri))
+                MigrationEnvironment.StoreProductId, out var uri))
         {
-            Logger.Error("Migration Store entry point is unavailable or has no configured preview product ID.");
+            Logger.Error("Migration Store entry point is unavailable or has no configured product ID.");
             return "Migration2_InnoFailed";
         }
 
@@ -74,7 +74,7 @@ internal static class InnoMigrationHandoff
     private static (MigrationBinding Binding, InnoInstallation Installation) InspectOwnInstallation()
     {
         if (!IsEnabled)
-            throw new InvalidOperationException("Inno migration preview is disabled.");
+            throw new InvalidOperationException("Inno migration handoff is disabled.");
         var binding = MigrationEnvironment.CreateBinding();
         var detected = MigrationEnvironment.CreateDetector().Detect();
         if (detected.Status != InnoInstallationStatus.Detected || detected.Installation is not { } installation ||
@@ -82,6 +82,11 @@ internal static class InnoMigrationHandoff
             !string.Equals(Path.GetFullPath(Environment.ProcessPath ?? ""),
                 Path.Combine(binding.InstallDirectory, "OpenClaw.Tray.WinUI.exe"), StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("This process is not the supported current-user Inno installation.");
+#if INNO_MIGRATION_RELEASE
+        if (!MigrationVersionPolicy.TryParseReleaseVersion(MigrationEnvironment.MinimumSourceVersion, out var minimum) ||
+            installation.Version < minimum)
+            throw new InvalidOperationException("This Inno installation does not meet the approved migration source-version floor.");
+#endif
         return (binding, installation);
     }
 }

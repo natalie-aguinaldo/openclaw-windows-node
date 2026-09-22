@@ -21,7 +21,7 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotContain("new StoreMigrationStartupCoordinator(", app);
 
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
-        Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW\s+return false;\s+#else", helper);
+        Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW && !STORE_MIGRATION_RELEASE\s+return false;\s+#else", helper);
         Assert.Contains("new StoreMigrationWorkflow(", helper);
         Assert.Contains("new StoreMigrationWindow(", helper);
         Assert.Contains("return !await window.ShowAsync()", helper);
@@ -31,6 +31,7 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new StoreMigrationConsentCoordinator(", helper);
         Assert.Contains("MigrationRecordCodec.PackageName", helper);
         Assert.Contains("MigrationRecordCodec.PackagePublisher", helper);
+        Assert.Contains(".Evaluate(true, MigrationEnvironment.MinimumSourceVersion, _binding.Architecture)", helper);
         Assert.DoesNotContain("File.Write", helper);
         Assert.DoesNotContain("SetPackagedAutoStartAsync", helper);
         Assert.Contains("new InnoMutexLeaseProvider()", helper);
@@ -67,7 +68,7 @@ public sealed class InnoMigrationContractTests
     public void InnoPreview_GatesHandoffAndUsesCanonicalShutdown()
     {
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationHandoff.cs");
-        Assert.Contains("#if INNO_MIGRATION_PREVIEW", helper);
+        Assert.Contains("#if INNO_MIGRATION_PREVIEW || INNO_MIGRATION_RELEASE", helper);
         Assert.Contains("!AppIdentity.IsDev && !PackageHelper.IsPackaged", helper);
         Assert.Contains("!GatewayFixtureIsolation.IsEnabled", helper);
         Assert.Contains(".HasValidConsent(installation.Version.ToString())", helper);
@@ -81,6 +82,10 @@ public sealed class InnoMigrationContractTests
         var app = Read("src", "OpenClaw.Tray.WinUI", "App.xaml.cs");
         Assert.Contains("InnoMigrationHandoff.CreateShutdownHandler(_dispatcherQueue!, ExitApplication)", app);
         Assert.DoesNotContain("Process.Kill", helper);
+        Assert.Contains("MigrationEnvironment.StoreProductId", helper);
+        Assert.Contains("#if INNO_MIGRATION_RELEASE", helper);
+        Assert.Contains("MigrationVersionPolicy.TryParseReleaseVersion(MigrationEnvironment.MinimumSourceVersion", helper);
+        Assert.Contains("installation.Version < minimum", helper);
 
         var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
         var target = project.Descendants("Target").Single(element =>
@@ -89,6 +94,17 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("'$(PackageMsix)' == 'true'", target.ToString());
         Assert.DoesNotContain(project.Descendants("InnoMigrationPreview"), element => element.Value == "true");
         Assert.Empty(project.Descendants("MigrationPreviewStoreProductId"));
+    }
+
+    [Fact]
+    public void ReleaseMetadata_DoesNotFallBackToPreviewValues()
+    {
+        var environment = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "MigrationEnvironment.cs");
+        Assert.Matches(
+            """#if STORE_MIGRATION_RELEASE \|\| INNO_MIGRATION_RELEASE\s+public static string\? MinimumSourceVersion => Metadata\("MigrationMinimumSourceVersion"\);\s+public static string\? StoreProductId => Metadata\("MigrationStoreProductId"\);\s+#else""",
+            environment);
+        Assert.Contains("Metadata(\"StoreMigrationPreviewMinimumSourceVersion\")", environment);
+        Assert.Contains("Metadata(\"MigrationPreviewStoreProductId\")", environment);
     }
 
     [Fact]

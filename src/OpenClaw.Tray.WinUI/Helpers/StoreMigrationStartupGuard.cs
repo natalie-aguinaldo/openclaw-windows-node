@@ -9,7 +9,7 @@ internal static class StoreMigrationStartupGuard
 {
     public static async Task<bool> ShouldStopLaunchAsync(string pipeName)
     {
-#if !STORE_MIGRATION_PREVIEW
+#if !STORE_MIGRATION_PREVIEW && !STORE_MIGRATION_RELEASE
         return false;
 #else
         if (!PackageHelper.IsPackaged || AppIdentity.IsDev)

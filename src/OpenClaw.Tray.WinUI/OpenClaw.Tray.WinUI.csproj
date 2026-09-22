@@ -58,6 +58,47 @@
     <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
   </PropertyGroup>
 
+  <!-- Release wiring stays dormant until the approved source floor, listing and proof are available. -->
+  <PropertyGroup>
+    <MigrationReleaseEnabled Condition="'$(MigrationReleaseEnabled)' == ''">false</MigrationReleaseEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MigrationReleaseEnabled)' == 'true' and '$(PackageMsix)' == 'true'">
+    <DefineConstants>$(DefineConstants);STORE_MIGRATION_RELEASE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MigrationReleaseEnabled)' == 'true' and '$(PackageMsix)' != 'true'">
+    <DefineConstants>$(DefineConstants);INNO_MIGRATION_RELEASE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MigrationReleaseEnabled)' == 'true'">
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MigrationStoreProductId</_Parameter1>
+      <_Parameter2>$(MigrationStoreProductId)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>MigrationMinimumSourceVersion</_Parameter1>
+      <_Parameter2>$(MigrationMinimumSourceVersion)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <Target Name="ValidateMigrationRelease" BeforeTargets="CoreCompile">
+    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(MigrationReleaseEnabled)', '\A(?i:true|false)\z'))"
+           Code="OCMIG001" Text="MigrationReleaseEnabled must be true or false." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and ('$(Configuration)' != 'Release' or '$(DevBuild)' == 'true')"
+           Code="OCMIG002" Text="Production migration requires a Release build with the production identity." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and ('$(StoreMigrationPreview)' == 'true' or '$(InnoMigrationPreview)' == 'true')"
+           Code="OCMIG003" Text="Production migration cannot be combined with a migration preview." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and '$(RuntimeIdentifier)' != 'win-x64' and '$(RuntimeIdentifier)' != 'win-arm64'"
+           Code="OCMIG004" Text="Production migration supports only win-x64 and win-arm64." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and '$(PackageMsix)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(PackageMsix)', '\A(?i:true|false)\z'))"
+           Code="OCMIG005" Text="Production migration requires an unambiguous PackageMsix value." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MigrationStoreProductId)', '\A[A-Z0-9]{12}\z'))"
+           Code="OCMIG006" Text="Production migration requires the assigned 12-character MigrationStoreProductId. No listing is supplied by default." />
+    <Error Condition="'$(MigrationReleaseEnabled)' == 'true' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(MigrationMinimumSourceVersion)', '\A[1-9][0-9]*\.[0-9]+\.[0-9]+(\.[0-9]+)?\z'))"
+           Code="OCMIG007" Text="Production migration requires an approved stable numeric MigrationMinimumSourceVersion. No source release is supplied by default." />
+    <PropertyGroup Condition="'$(MigrationReleaseEnabled)' == 'true'">
+      <!-- Also reject numeric components outside System.Version's range. -->
+      <_MigrationMinimumSourceVersionValidated>$([System.Version]::Parse('$(MigrationMinimumSourceVersion)'))</_MigrationMinimumSourceVersionValidated>
+    </PropertyGroup>
+  </Target>
+
   <!-- Migration previews are never enabled in a shipping configuration. -->
   <PropertyGroup Condition="'$(InnoMigrationPreview)' == 'true'">
     <DefineConstants>$(DefineConstants);INNO_MIGRATION_PREVIEW</DefineConstants>

@@ -24,7 +24,7 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
         _binding ??= MigrationEnvironment.CreateBinding();
         _detector ??= MigrationEnvironment.CreateDetector();
         return new StoreMigrationStartupCoordinator(_detector, new MigrationStartupRecordReader(_binding, _logger), _logger)
-            .Evaluate(true, MigrationEnvironment.Metadata("StoreMigrationPreviewMinimumSourceVersion"), _binding.Architecture);
+            .Evaluate(true, MigrationEnvironment.MinimumSourceVersion, _binding.Architecture);
     }
 
     public bool HasConsent(InnoInstallation installation) =>

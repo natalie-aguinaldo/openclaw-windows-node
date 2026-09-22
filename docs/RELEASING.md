@@ -20,8 +20,9 @@ submission. Dev-signed packages stay in Actions.
 ## Inno-to-Store migration foundation
 
 Issue #1374's migration experience remains disabled in ordinary builds.
-The Store workflow and Inno handoff require separate explicit Debug preview
-builds. Neither the production source-version floor nor a Store listing ID
+The Store workflow and Inno handoff can be exercised in separate explicit Debug
+preview builds. Dormant Release wiring is available for the future approved
+rollout, but neither the production source-version floor nor a Store listing ID
 has been assigned. Production enablement is a separate release decision.
 
 `MigrationPreparation.Prepare` is the non-UI inventory API used after explicit
@@ -100,10 +101,11 @@ Passing unit or PowerShell contract tests is not signed-package migration proof.
 ### Migration experience preview
 
 The Store-side preview hosts a dedicated WinUI migration window before normal
-services start. **Ordinary builds remain unchanged.** There is no
-production minimum source version, runtime toggle, or environment-variable
-bypass. Do not enable migration by choosing the current app version as a
-placeholder for a verified safeguard-containing Inno release.
+services start. **Ordinary builds remain unchanged.** There is no assigned
+production minimum source version or runtime toggle. Runtime environment
+variables cannot enable a compiled-out workflow. Do not enable migration by
+choosing the current app version as a placeholder for a verified
+safeguard-containing Inno release.
 
 An explicit test build may set `StoreMigrationPreview=true` and
 `StoreMigrationPreviewMinimumSourceVersion` to a three- or four-part numeric
@@ -202,6 +204,72 @@ acceptance on x64 and ARM64, local and remote gateway continuity, the compatible
 Inno release floor, Store listing assignment, and production enablement remain
 release gates. UI tests with fake operations are not package-boundary or real
 migration proof.
+
+### Production wiring draft (disabled)
+
+`MigrationReleaseEnabled` defaults to `false`. No release workflow currently
+sets it to `true`, and there are no default values for `MigrationStoreProductId`
+or `MigrationMinimumSourceVersion`. Merely supplying those values does not
+enable migration. The existing Debug preview flags keep their non-shipping
+restrictions and do not supply missing production values.
+
+The future production build inputs are:
+
+| Input | Requirement |
+| --- | --- |
+| `MigrationReleaseEnabled` | Explicit `true` only after release approval; default is `false`. |
+| `MigrationStoreProductId` | Actual assigned 12-character Store product ID. |
+| `MigrationMinimumSourceVersion` | Approved stable three- or four-part numeric Inno version containing the preservation safeguards. Never use the fixture version as evidence. |
+| `Configuration`, `DevBuild` | `Release`, production identity only. |
+| `RuntimeIdentifier` | `win-x64` or `win-arm64`. |
+| `PackageMsix` | `true` selects the Store startup gate; `false` or omitted selects the Inno handoff. |
+
+`ValidateMigrationRelease` runs before compilation and rejects missing or
+malformed release values, unsupported build configurations/architectures, and
+mixing production with either preview flag. It emits only the selected host's
+compile-time symbol and embeds the exact production values. Both paths reuse
+the same migration workflow, consent, records, source inspection, and
+finalization owners as the previews. The Inno handoff also verifies that its
+detected source version meets the embedded production floor before granting
+consent or accepting a shutdown request.
+
+These build checks validate configuration, **not release approval or proof**.
+A syntactically valid test ID and version do not demonstrate that a Store
+listing exists or that an Inno release is safe. Do not distribute enabled
+candidate builds or add these inputs to release workflows before acceptance.
+The draft itself neither publishes a package nor changes an installed app.
+
+Release order and outstanding acceptance:
+
+1. Land the foundation and experience changes, including required fixes.
+2. Publish and verify the compatible signed Inno release. Record its version,
+   commit, installer hashes/signatures, and the user-accepted update or manual
+   installer path by which existing users obtain it. Preservation safeguards
+   can ship while the handoff stays disabled.
+3. Obtain the real Store listing and exact candidate packages. Record package
+   versions, identities, hashes, signatures, and native x64/ARM64 proof hosts.
+4. Prove the complete journey on each matching architecture, including
+   Inno-origin consent with no second prompt, Store-origin consent and Not now,
+   graceful shutdown/manual Retry, receipt restart recovery, uninstall
+   preservation, and finalization. Confirm neither app resumes normal
+   production operation while completed migration awaits Inno removal.
+5. Prove an existing managed WSL gateway remains the same distro with its data
+   and contained Node.js, reconnects, and remains manageable. Separately prove
+   a real remote gateway on a host without WSL or local Node.js. Verify settings,
+   credentials, identity, approvals, Local AI configuration, and any existing
+   Windows Node.js installation remain intact.
+6. Prove saved startup preferences both on and off, actual sign-in and
+   `openclaw:` activation, pending activation continuation, unsupported source
+   versions/architectures, and failed/interrupted recovery. Collect current
+   keyboard/Narrator, high-DPI, and translated UI evidence.
+7. After acceptance, approve the exact source floor and listing, enable the
+   intended production builds in a reviewed release change, and verify official
+   Store-distributed acceptance before general rollout.
+
+Older users need not all update before rollout: Store admission must block
+unsafe older Inno versions with update guidance. Do not lower the floor to
+admit them. A draft PR may prepare the wiring, tests, and checklist before the
+release prerequisites exist, but remains disabled and is not acceptance proof.
 
 ## Release checklist
 

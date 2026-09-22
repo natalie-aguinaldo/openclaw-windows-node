@@ -7,6 +7,14 @@ namespace OpenClawTray.Helpers;
 
 internal static class MigrationEnvironment
 {
+#if STORE_MIGRATION_RELEASE || INNO_MIGRATION_RELEASE
+    public static string? MinimumSourceVersion => Metadata("MigrationMinimumSourceVersion");
+    public static string? StoreProductId => Metadata("MigrationStoreProductId");
+#else
+    public static string? MinimumSourceVersion => Metadata("StoreMigrationPreviewMinimumSourceVersion");
+    public static string? StoreProductId => Metadata("MigrationPreviewStoreProductId");
+#endif
+
     public static bool HasPathOverride =>
         new[]
         {

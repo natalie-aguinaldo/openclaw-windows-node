@@ -66,6 +66,7 @@ public sealed class StoreMigrationStartupCoordinatorTests
 
     [Theory]
     [InlineData("2026.8.31.0", "x64", "x64", StoreMigrationStartupState.UpdateInno)]
+    [InlineData("2026.8.31.0", "arm64", "arm64", StoreMigrationStartupState.UpdateInno)]
     [InlineData("2026.9.1.0", "x64", "x64", StoreMigrationStartupState.ConsentRequired)]
     [InlineData("2026.9.2.0", "x64", "x64", StoreMigrationStartupState.ConsentRequired)]
     [InlineData("2026.9.1.0", "arm64", "arm64", StoreMigrationStartupState.ConsentRequired)]
