@@ -164,8 +164,49 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
             cleaner);
 
         Assert.Equal(StoreMigrationFinalizationState.StartupPreferenceFailed, result.State);
+        // The receipt is kept so the preference retries next launch, but a failed
+        // cosmetic preference must never block the app: Inno removal is already proven.
+        Assert.True(result.AllowsNormalStartup);
         Assert.Equal(0, cleaner.Calls);
         Assert.True(File.Exists(fixture.CompletionPath));
+    }
+
+    [Fact]
+    public async Task StartupPreferenceRefusal_CleansReceiptAndAllowsStartup()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords(autoStart: true);
+        var cleaner = new Cleaner();
+
+        var result = await fixture.FinalizeAsync(
+            new(InnoInstallationStatus.NotInstalled),
+            new SourceRemoval(InnoSourceRemovalStatus.Removed),
+            new AutoStart(new StoreMigrationAutoStartRefusedException(
+                "Windows startup is disabled by the user.")),
+            cleaner);
+
+        Assert.Equal(StoreMigrationFinalizationState.StartupPreferenceRefused, result.State);
+        Assert.True(result.AllowsNormalStartup);
+        Assert.Equal(1, cleaner.Calls);
+    }
+
+    [Fact]
+    public async Task StartupPreferenceRefusal_RemovesReceiptSoLaunchIsNotBlockedAgain()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords(autoStart: true);
+
+        var result = await fixture.FinalizeAsync(
+            new(InnoInstallationStatus.NotInstalled),
+            new SourceRemoval(InnoSourceRemovalStatus.Removed),
+            new AutoStart(new StoreMigrationAutoStartRefusedException(
+                "Windows startup is disabled by policy.")));
+
+        Assert.Equal(StoreMigrationFinalizationState.StartupPreferenceRefused, result.State);
+        Assert.True(result.AllowsNormalStartup);
+        Assert.False(File.Exists(fixture.IntentPath));
+        Assert.False(File.Exists(fixture.CompletionPath));
+        Assert.Equal(MigrationStartupRecordStatus.None, fixture.ReadRecords().Status);
     }
 
     [Fact]

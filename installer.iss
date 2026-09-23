@@ -102,9 +102,9 @@ Name: "startupicon"; Description: "Start {#MyAppName} when Windows starts"; Grou
 ; WinUI Tray app - include all files (WinUI needs DLLs, not single-file)
 Source: "{#publish}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; WSL gateway uninstall helper copied to {tmp} by [Code] during uninstall.
-Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion
-Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
+Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
+Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
 #if vcRedist != ""
 Source: "{#vcRedist}"; DestDir: "{tmp}"; DestName: "vc_redist.exe"; Flags: deleteafterinstall; AfterInstall: InstallVCRuntime
 #endif
@@ -275,6 +275,17 @@ begin
   Log('Migration preservation check returned ' + IntToStr(Result) + '.');
 end;
 
+procedure WarnMigrationCheckUnavailable;
+begin
+  Log('Migration preservation check unavailable: skipping destructive gateway cleanup.');
+  if not UninstallSilent() then
+    MsgBox(
+      'Setup could not confirm whether your OpenClaw data was migrated to the Store app.' + #13#10#13#10 +
+      'The local WSL gateway and its generated state were left in place so nothing is lost. ' +
+      'Removing them manually is described in the OpenClaw uninstall documentation.',
+      mbInformation, MB_OK);
+end;
+
 procedure EnsureLocalGatewayCleanupChoice;
 var
   MigrationResult: Integer;
@@ -291,7 +302,7 @@ begin
     if MigrationResult = 10 then
       Log('Completed Store migration: preserving generated state and local WSL gateway.')
     else
-      Log('Migration preservation check unavailable: skipping destructive gateway cleanup.');
+      WarnMigrationCheckUnavailable;
     Exit;
   end;
 
@@ -331,7 +342,7 @@ begin
 
   if not FileExists(SourceScriptPath) then
   begin
-    ResultCode := 2;
+    ResultCode := 102;
     Log('Local gateway cleanup script is missing: ' + SourceScriptPath);
     Result := False;
     Exit;
@@ -342,7 +353,7 @@ begin
 
   if not CopyFile(SourceScriptPath, TempScriptPath, False) then
   begin
-    ResultCode := 3;
+    ResultCode := 103;
     Log('Failed to copy local gateway cleanup script to: ' + TempScriptPath);
     Result := False;
     Exit;
@@ -399,6 +410,12 @@ begin
     begin
       LocalGatewayCleanupSucceeded := True;
       Log('Local gateway cleanup completed successfully.');
+      Exit;
+    end;
+
+    if Started and (ResultCode = 2) then
+    begin
+      WarnMigrationCheckUnavailable;
       Exit;
     end;
 

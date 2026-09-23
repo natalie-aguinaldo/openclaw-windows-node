@@ -160,15 +160,15 @@ public sealed class MigrationRecordTests
 
     [Theory]
     [InlineData("completed", 10, false)]
-    [InlineData("intent", 0, false)]
+    [InlineData("intent", 2, false)]
     [InlineData("missing", 0, false)]
-    [InlineData("corrupt", 0, false)]
-    [InlineData("wrong-path", 0, false)]
+    [InlineData("corrupt", 2, false)]
+    [InlineData("wrong-path", 2, false)]
     [InlineData("missing-codec", 2, false)]
     [InlineData("completed", 10, true)]
-    [InlineData("intent", 0, true)]
-    [InlineData("corrupt", 0, true)]
-    [InlineData("wrong-path", 0, true)]
+    [InlineData("intent", 2, true)]
+    [InlineData("corrupt", 2, true)]
+    [InlineData("wrong-path", 2, true)]
     public async Task WindowsPowerShellChecker_UsesTheSameContract(string kind, int expectedExit, bool clockRollback)
     {
         using var temp = new TempDirectory();
@@ -214,7 +214,7 @@ public sealed class MigrationRecordTests
     [Theory]
     [InlineData(null, 10, false)]
     [InlineData(FileShare.Read, 10, false)]
-    [InlineData(FileShare.None, 1, false)]
+    [InlineData(FileShare.None, 2, false)]
     [InlineData(null, 10, true)]
     [InlineData(FileShare.Read, 10, true)]
     public async Task CleanupScript_CompletedReceiptPreservesFilesWithoutCallingWsl(

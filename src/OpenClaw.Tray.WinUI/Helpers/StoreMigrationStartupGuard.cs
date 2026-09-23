@@ -53,7 +53,14 @@ internal static class StoreMigrationStartupGuard
         {
             var finalization = FinalizeCompletedMigration(binding, detector, logger);
             if (finalization.AllowsNormalStartup)
+            {
+                // A durable refusal is the one finalization outcome the user must act on
+                // themselves: only Windows can re-enable the startup task. Notify, then
+                // continue launching, because the migration itself succeeded.
+                if (finalization.State == StoreMigrationFinalizationState.StartupPreferenceRefused)
+                    ShowGuidance("Migration_StoreStartupRefused");
                 return false;
+            }
 
             ShowGuidance(finalization.State switch
             {
@@ -216,8 +223,17 @@ internal static class StoreMigrationStartupGuard
 
     private sealed class StoreMigrationAutoStartApplier : IStoreMigrationAutoStartApplier
     {
-        public async Task ApplyAsync(bool enabled) =>
-            await Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false);
+        public async Task ApplyAsync(bool enabled)
+        {
+            try
+            {
+                await Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false);
+            }
+            catch (AutoStartRefusedException exception) when (exception.IsDurable)
+            {
+                throw new StoreMigrationAutoStartRefusedException(exception.Message, exception);
+            }
+        }
     }
 
     private sealed class InnoMutexLeaseProvider : IMigrationSourceLeaseProvider
