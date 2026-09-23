@@ -7132,9 +7132,9 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
   <data name="Migration_StoreConsent" xml:space="preserve">
     <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent.
 
-Als u Migreren kiest, wordt uw configuratie gecontroleerd en worden beveiligde migratiegegevens opgeslagen. Als de controle slaagt, zal de vorige app niet meer normaal kunnen starten. U moet dan de vorige app verwijderen via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps en de Store-app opnieuw openen om de migratie af te ronden. Uw configuratie en gateway blijven behouden; er wordt niets automatisch verwijderd.
+Als u {0} kiest, wordt uw configuratie gecontroleerd en worden beveiligde migratiegegevens opgeslagen. Als de controle slaagt, zal de vorige app niet meer normaal kunnen starten. U moet dan de vorige app verwijderen via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps en de Store-app opnieuw openen om de migratie af te ronden. Uw configuratie en gateway blijven behouden; er wordt niets automatisch verwijderd.
 
-Kies Nu niet om dit voorbeeld te sluiten zonder de migratie te starten en de vorige app te blijven gebruiken.</value>
+Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige app te blijven gebruiken.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migreren</value>
@@ -7143,7 +7143,7 @@ Kies Nu niet om dit voorbeeld te sluiten zonder de migratie te starten en de vor
     <value>Nu niet</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze nog niet. Verwijder de app pas nadat dit voorbeeld meldt dat de voltooiing van de migratie is vastgelegd.</value>
+    <value>Sluit de vorige OpenClaw Companion-app en kies daarna {0} om het opnieuw te proberen. Kies {1} om dit voorbeeld te sluiten. Forceer niet dat de vorige app stopt en verwijder deze nog niet. Verwijder de app pas nadat dit voorbeeld meldt dat de voltooiing van de migratie is vastgelegd.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Opnieuw proberen</value>
@@ -7164,10 +7164,10 @@ Kies Nu niet om dit voorbeeld te sluiten zonder de migratie te starten en de vor
     <value>OpenClaw heeft de voltooiing van de migratie vastgelegd en uw configuratie behouden. Sluit dit voorbeeld, verwijder de vorige OpenClaw Companion-app via Windows-instellingen en open daarna de Store-versie. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration_StoreYes" xml:space="preserve">
-    <value>Ja:</value>
+    <value>Ja</value>
   </data>
   <data name="Migration_StoreNo" xml:space="preserve">
-    <value>Nee:</value>
+    <value>Nee</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>De vorige app is ouder dan de bronversie die dit voorbeeld vereist. Migratie en normaal opstarten van de Store-versie zijn geblokkeerd. Gebruik een geverifieerde Inno-versie met migratieondersteuning voordat u migratie test. Uw configuratie is niet gewijzigd.</value>
@@ -7265,4 +7265,18 @@ Kies Nu niet of sluit dit dialoogvenster om te annuleren zonder de migratie te s
   <data name="Migration2_Busy" xml:space="preserve">
     <value>Wacht totdat deze stap is voltooid.</value>
   </data>
+  <data name="Chat_Code_Copy" xml:space="preserve"><value>Code kopiëren</value></data>
+  <data name="Chat_Code_Label" xml:space="preserve"><value>Codeblok</value></data>
+  <data name="Chat_Model_Current" xml:space="preserve"><value>Huidig model</value></data>
+  <data name="Chat_Model_Other" xml:space="preserve"><value>Andere modellen</value></data>
+  <data name="Chat_Model_NoMatches" xml:space="preserve"><value>Geen overeenkomende modellen</value></data>
+  <data name="Chat_Model_Search" xml:space="preserve"><value>Modellen zoeken</value></data>
+  <data name="Chat_Attachment_Remove" xml:space="preserve"><value>Bijlage verwijderen</value></data>
+  <data name="Chat_Timeline_Loading" xml:space="preserve"><value>Berichten laden...</value></data>
+  <data name="Chat_Composer_QueuedCountSingle" xml:space="preserve"><value>1 bericht in wachtrij</value></data>
+  <data name="Chat_Copy_Copied" xml:space="preserve"><value>Gekopieerd</value></data>
+  <data name="Chat_Copy_Failed" xml:space="preserve"><value>Kopiëren mislukt</value></data>
+  <data name="Chat_Composer_Effort_Title" xml:space="preserve"><value>Denkinspanning</value></data>
+  <data name="Chat_Composer_Effort_Faster" xml:space="preserve"><value>Sneller</value></data>
+  <data name="Chat_Composer_Effort_Smarter" xml:space="preserve"><value>Grondiger</value></data>
 </root>

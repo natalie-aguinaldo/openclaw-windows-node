@@ -7195,9 +7195,9 @@ Make sure the gateway is running.</value>
   <data name="Migration_StoreConsent" xml:space="preserve">
     <value>A supported previous installation was found. Start migration only when you are ready.
 
-Choosing Migrate validates your setup and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally. You must then uninstall the previous app through Windows Settings &gt; Apps &gt; Installed apps and reopen the Store app to finish migration. Your setup and gateway will be preserved; nothing is uninstalled automatically.
+Choosing {0} validates your setup and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally. You must then uninstall the previous app through Windows Settings &gt; Apps &gt; Installed apps and reopen the Store app to finish migration. Your setup and gateway will be preserved; nothing is uninstalled automatically.
 
-Choose Not now to exit this preview without starting migration and continue using the previous app.</value>
+Choose {1} to exit this preview without starting migration and continue using the previous app.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrate</value>
@@ -7206,7 +7206,7 @@ Choose Not now to exit this preview without starting migration and continue usin
     <value>Not now</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Close the previous OpenClaw Companion app, then retry. Do not force-close it or uninstall it yet. Uninstall only after this preview tells you migration completion has been recorded.</value>
+    <value>Close the previous OpenClaw Companion app, then choose {0} to retry. Choose {1} to exit this preview. Do not force-close the previous app or uninstall it yet. Uninstall only after this preview tells you migration completion has been recorded.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Retry</value>
@@ -7227,10 +7227,10 @@ Choose Not now to exit this preview without starting migration and continue usin
     <value>OpenClaw recorded migration completion and preserved your setup. Close this preview, uninstall the previous OpenClaw Companion app through Windows Settings, then open the Store version. Do not delete migration data or run gateway cleanup.</value>
   </data>
   <data name="Migration_StoreYes" xml:space="preserve">
-    <value>Yes:</value>
+    <value>Yes</value>
   </data>
   <data name="Migration_StoreNo" xml:space="preserve">
-    <value>No:</value>
+    <value>No</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>The previous app is older than this preview's required source version. Migration and normal Store startup are blocked. Use a verified migration-capable Inno release before testing migration. Your setup has not been changed.</value>
@@ -7328,4 +7328,18 @@ Choose Not now or dismiss this dialog to cancel without starting migration.</val
   <data name="Migration2_Busy" xml:space="preserve">
     <value>Please wait for this step to finish.</value>
   </data>
+  <data name="Chat_Code_Copy" xml:space="preserve"><value>Copy code</value></data>
+  <data name="Chat_Code_Label" xml:space="preserve"><value>Code block</value></data>
+  <data name="Chat_Model_Current" xml:space="preserve"><value>Current model</value></data>
+  <data name="Chat_Model_Other" xml:space="preserve"><value>Other models</value></data>
+  <data name="Chat_Model_NoMatches" xml:space="preserve"><value>No matching models</value></data>
+  <data name="Chat_Model_Search" xml:space="preserve"><value>Search models</value></data>
+  <data name="Chat_Attachment_Remove" xml:space="preserve"><value>Remove attachment</value></data>
+  <data name="Chat_Timeline_Loading" xml:space="preserve"><value>Loading messages...</value></data>
+  <data name="Chat_Composer_QueuedCountSingle" xml:space="preserve"><value>1 queued message</value></data>
+  <data name="Chat_Copy_Copied" xml:space="preserve"><value>Copied</value></data>
+  <data name="Chat_Copy_Failed" xml:space="preserve"><value>Copy failed</value></data>
+  <data name="Chat_Composer_Effort_Title" xml:space="preserve"><value>Effort</value></data>
+  <data name="Chat_Composer_Effort_Faster" xml:space="preserve"><value>Faster</value></data>
+  <data name="Chat_Composer_Effort_Smarter" xml:space="preserve"><value>Smarter</value></data>
 </root>

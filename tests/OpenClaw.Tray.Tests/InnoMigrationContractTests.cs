@@ -142,11 +142,22 @@ public sealed class InnoMigrationContractTests
         string Value(string key) => resources.Root!.Elements("data")
             .Single(element => (string?)element.Attribute("name") == key).Element("value")!.Value;
 
-        var consent = Value("Migration_StoreConsent");
+        var yes = Value("Migration_StoreYes");
+        var no = Value("Migration_StoreNo");
+        Assert.DoesNotContain(":", yes + no);
+        Assert.DoesNotContain("：", yes + no);
+        var consent = string.Format(Value("Migration_StoreConsent"), yes, no);
+        var retry = string.Format(Value("Migration_StoreCloseInno"), yes, no);
         Assert.Contains(startupBlock, consent);
         Assert.Contains(removal, consent);
-        Assert.Contains(Value("Migration_StoreMigrate"), consent);
-        Assert.Contains(Value("Migration_StoreNotNow"), consent);
+        Assert.Contains(yes, consent);
+        Assert.Contains(no, consent);
+        Assert.Contains(yes, retry);
+        Assert.Contains(no, retry);
+        Assert.Contains("{0}", Value("Migration_StoreConsent"));
+        Assert.Contains("{1}", Value("Migration_StoreConsent"));
+        Assert.Contains("{0}", Value("Migration_StoreCloseInno"));
+        Assert.Contains("{1}", Value("Migration_StoreCloseInno"));
         Assert.DoesNotContain(oldConsent, consent);
         Assert.DoesNotContain(oldRetry, Value("Migration_StoreCloseInno"));
         if (locale == "en-us")
@@ -159,6 +170,21 @@ public sealed class InnoMigrationContractTests
             Assert.Contains("without starting migration", consent);
             Assert.Contains("Uninstall only after", Value("Migration_StoreCloseInno"));
         }
+    }
+
+    [Fact]
+    public void StoreMigrationChoices_UseDirectButtonLabelsWithoutNativeActionLegends()
+    {
+        var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
+        Assert.DoesNotContain("ShowChoice(", helper);
+        Assert.DoesNotContain("MessageBoxW", helper);
+        var window = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml.cs");
+        Assert.Contains("Primary.Content = LocalizationHelper.GetString(", window);
+        Assert.Contains("Dismiss.Content = LocalizationHelper.GetString(", window);
+        Assert.Contains("\"Migration_StoreMigrate\" : \"Migration_StoreRetry\"", window);
+        Assert.Contains("\"Migration_StoreNotNow\" : \"Migration2_Close\"", window);
+        Assert.DoesNotContain("Migration_StoreYes", window);
+        Assert.DoesNotContain("Migration_StoreNo\"", window);
     }
 
     [Fact]

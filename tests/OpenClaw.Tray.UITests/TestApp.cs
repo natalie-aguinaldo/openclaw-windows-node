@@ -25,7 +25,7 @@ namespace OpenClaw.Tray.UITests;
 internal sealed class TestApp : Application, IXamlMetadataProvider
 {
     // Compiled production XAML needs its generated metadata even though tests
-    // deliberately do not construct the production App or run its startup.
+    // do not construct App. This provider also delegates native WinUI templates.
     private readonly OpenClawTray.OpenClaw_Tray_WinUI_XamlTypeInfo.XamlMetaDataProvider _metadata = new();
 
     public IXamlType GetXamlType(Type type) => _metadata.GetXamlType(type);

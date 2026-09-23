@@ -57,8 +57,13 @@ public sealed class Migration2LocalizationTests
             Assert.Contains(resources["Migration_StoreRetry"], consent);
             Assert.Contains(resources[key == "Migration2_Consent"
                 ? "Migration_StoreMigrate" : "Migration2_InnoAction"], consent);
-            Assert.DoesNotContain(resources["Migration_StoreYes"], consent);
-            Assert.DoesNotContain(resources["Migration_StoreNo"], consent);
+            foreach (var nativeChoice in new[] { resources["Migration_StoreYes"], resources["Migration_StoreNo"] })
+            {
+                Assert.DoesNotContain(nativeChoice + ":", consent);
+                Assert.DoesNotContain(nativeChoice + "\uFF1A", consent);
+            }
+            Assert.DoesNotContain("{0}", consent);
+            Assert.DoesNotContain("{1}", consent);
             Assert.DoesNotContain("\u2014", consent);
         }
 

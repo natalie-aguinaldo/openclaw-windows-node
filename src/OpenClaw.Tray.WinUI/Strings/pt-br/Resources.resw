@@ -7185,9 +7185,9 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
   <data name="Migration_StoreConsent" xml:space="preserve">
     <value>Uma instalação anterior compatível foi encontrada. Inicie a migração apenas quando estiver pronto.
 
-Escolher Migrar valida sua configuração e salva registros de migração protegidos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente. Você deverá então desinstalar o aplicativo anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e reabrir o aplicativo da Store para concluir a migração. Sua configuração e seu gateway serão preservados; nada será desinstalado automaticamente.
+Escolher {0} valida sua configuração e salva registros de migração protegidos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente. Você deverá então desinstalar o aplicativo anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e reabrir o aplicativo da Store para concluir a migração. Sua configuração e seu gateway serão preservados; nada será desinstalado automaticamente.
 
-Escolha Agora não para sair desta prévia sem iniciar a migração e continuar usando o aplicativo anterior.</value>
+Escolha {1} para sair desta prévia sem iniciar a migração e continuar usando o aplicativo anterior.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrar</value>
@@ -7196,7 +7196,7 @@ Escolha Agora não para sair desta prévia sem iniciar a migração e continuar 
     <value>Agora não</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Feche o aplicativo OpenClaw Companion anterior e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda. Desinstale somente depois que esta prévia informar que a conclusão da migração foi registrada.</value>
+    <value>Feche o aplicativo OpenClaw Companion anterior e escolha {0} para tentar novamente. Escolha {1} para sair desta prévia. Não force o encerramento do aplicativo anterior nem o desinstale ainda. Desinstale somente depois que esta prévia informar que a conclusão da migração foi registrada.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Tentar novamente</value>
@@ -7217,10 +7217,10 @@ Escolha Agora não para sair desta prévia sem iniciar a migração e continuar 
     <value>O OpenClaw registrou a conclusão da migração e preservou sua configuração. Feche esta prévia, desinstale o aplicativo OpenClaw Companion anterior nas Configurações do Windows e abra a versão da Store. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration_StoreYes" xml:space="preserve">
-    <value>Sim:</value>
+    <value>Sim</value>
   </data>
   <data name="Migration_StoreNo" xml:space="preserve">
-    <value>Não:</value>
+    <value>Não</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>O aplicativo anterior é mais antigo que a versão de origem exigida por esta prévia. A migração e a inicialização normal da versão da Store estão bloqueadas. Use uma versão Inno verificada com suporte à migração antes de testá-la. Sua configuração não foi alterada.</value>
@@ -7318,4 +7318,18 @@ Selecione Agora não ou feche esta caixa de diálogo para cancelar sem iniciar a
   <data name="Migration2_Busy" xml:space="preserve">
     <value>Aguarde a conclusão desta etapa.</value>
   </data>
+  <data name="Chat_Code_Copy" xml:space="preserve"><value>Copiar código</value></data>
+  <data name="Chat_Code_Label" xml:space="preserve"><value>Bloco de código</value></data>
+  <data name="Chat_Model_Current" xml:space="preserve"><value>Modelo atual</value></data>
+  <data name="Chat_Model_Other" xml:space="preserve"><value>Outros modelos</value></data>
+  <data name="Chat_Model_NoMatches" xml:space="preserve"><value>Nenhum modelo correspondente</value></data>
+  <data name="Chat_Model_Search" xml:space="preserve"><value>Pesquisar modelos</value></data>
+  <data name="Chat_Attachment_Remove" xml:space="preserve"><value>Remover anexo</value></data>
+  <data name="Chat_Timeline_Loading" xml:space="preserve"><value>Carregando mensagens...</value></data>
+  <data name="Chat_Composer_QueuedCountSingle" xml:space="preserve"><value>1 mensagem na fila</value></data>
+  <data name="Chat_Copy_Copied" xml:space="preserve"><value>Copiado</value></data>
+  <data name="Chat_Copy_Failed" xml:space="preserve"><value>Falha ao copiar</value></data>
+  <data name="Chat_Composer_Effort_Title" xml:space="preserve"><value>Esforço</value></data>
+  <data name="Chat_Composer_Effort_Faster" xml:space="preserve"><value>Mais rápido</value></data>
+  <data name="Chat_Composer_Effort_Smarter" xml:space="preserve"><value>Mais detalhado</value></data>
 </root>

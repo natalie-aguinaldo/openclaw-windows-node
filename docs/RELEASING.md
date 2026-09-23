@@ -250,6 +250,8 @@ The preview:
   consent already exists. An inventory intent never replaces consent.
   Keyboard focus defaults to Not now. Not now closes the Store window without
   starting services or changing source state.
+  Unlike PR 1's native Yes/No preview, this window labels its buttons directly;
+  it does not append a separate action legend or reinterpret Yes/No as Migrate.
   Before acceptance, every locale discloses protected migration records, the
   normal Inno startup block after successful validation, and the required manual
   uninstall followed by Store finalization. It explains preservation, no automatic

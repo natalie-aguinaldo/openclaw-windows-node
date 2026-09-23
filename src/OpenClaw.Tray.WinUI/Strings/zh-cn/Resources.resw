@@ -7131,9 +7131,9 @@
   <data name="Migration_StoreConsent" xml:space="preserve">
     <value>已找到受支持的旧版安装。请仅在准备好时开始迁移。
 
-选择“迁移”将验证您的配置并保存受保护的迁移记录。如果验证成功，旧版应用将无法正常启动。您必须随后通过 Windows 设置 &gt; 应用 &gt; 已安装的应用卸载旧版应用，然后重新打开 Store 应用以完成迁移。您的配置和网关将被保留；不会自动卸载任何内容。
+选择“{0}”将验证您的配置并保存受保护的迁移记录。如果验证成功，旧版应用将无法正常启动。您必须随后通过 Windows 设置 &gt; 应用 &gt; 已安装的应用卸载旧版应用，然后重新打开 Store 应用以完成迁移。您的配置和网关将被保留；不会自动卸载任何内容。
 
-选择“暂不”可退出此预览而不开始迁移，并继续使用旧版应用。</value>
+选择“{1}”可退出此预览而不开始迁移，并继续使用旧版应用。</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>迁移</value>
@@ -7142,7 +7142,7 @@
     <value>暂不</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>关闭旧版 OpenClaw Companion 应用，然后选择“重试”。请勿强制关闭，也请暂时不要卸载。只有在此预览提示已记录迁移完成后，才可卸载旧版应用。</value>
+    <value>关闭旧版 OpenClaw Companion 应用，然后选择“{0}”以重试。选择“{1}”可退出此预览。请勿强制关闭旧版应用，也请暂时不要卸载。只有在此预览提示已记录迁移完成后，才可卸载旧版应用。</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>重试</value>
@@ -7163,10 +7163,10 @@
     <value>OpenClaw 已记录迁移完成并保留了您的配置。请关闭此预览，通过 Windows 设置卸载旧版 OpenClaw Companion 应用，然后打开 Store 版本。请勿删除迁移数据或运行网关清理。</value>
   </data>
   <data name="Migration_StoreYes" xml:space="preserve">
-    <value>是：</value>
+    <value>是</value>
   </data>
   <data name="Migration_StoreNo" xml:space="preserve">
-    <value>否：</value>
+    <value>否</value>
   </data>
   <data name="Migration_StoreUpdateRequired" xml:space="preserve">
     <value>旧版应用低于此预览要求的源版本。迁移和 Store 版本的正常启动已被阻止。请先使用经过验证且支持迁移的 Inno 版本，再测试迁移。您的配置未被更改。</value>
@@ -7264,4 +7264,18 @@
   <data name="Migration2_Busy" xml:space="preserve">
     <value>请等待此步骤完成。</value>
   </data>
+  <data name="Chat_Code_Copy" xml:space="preserve"><value>复制代码</value></data>
+  <data name="Chat_Code_Label" xml:space="preserve"><value>代码块</value></data>
+  <data name="Chat_Model_Current" xml:space="preserve"><value>当前模型</value></data>
+  <data name="Chat_Model_Other" xml:space="preserve"><value>其他模型</value></data>
+  <data name="Chat_Model_NoMatches" xml:space="preserve"><value>没有匹配的模型</value></data>
+  <data name="Chat_Model_Search" xml:space="preserve"><value>搜索模型</value></data>
+  <data name="Chat_Attachment_Remove" xml:space="preserve"><value>移除附件</value></data>
+  <data name="Chat_Timeline_Loading" xml:space="preserve"><value>正在加载消息...</value></data>
+  <data name="Chat_Composer_QueuedCountSingle" xml:space="preserve"><value>1 条排队消息</value></data>
+  <data name="Chat_Copy_Copied" xml:space="preserve"><value>已复制</value></data>
+  <data name="Chat_Copy_Failed" xml:space="preserve"><value>复制失败</value></data>
+  <data name="Chat_Composer_Effort_Title" xml:space="preserve"><value>推理强度</value></data>
+  <data name="Chat_Composer_Effort_Faster" xml:space="preserve"><value>更快</value></data>
+  <data name="Chat_Composer_Effort_Smarter" xml:space="preserve"><value>更深入</value></data>
 </root>
