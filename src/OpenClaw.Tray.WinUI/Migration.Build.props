@@ -4,8 +4,10 @@
     <!-- Selected first coordinated Inno/Store release. Verify its artifacts before
          enabling migration; never derive this floor from the current Version. -->
     <MigrationMinimumSourceVersion Condition="'$(MigrationMinimumSourceVersion)' == ''">2026.9.5.0</MigrationMinimumSourceVersion>
-    <!-- Actual release artifacts and package/gateway acceptance remain unverified. -->
-    <MigrationProductionEnabled Condition="'$(MigrationProductionEnabled)' == ''">false</MigrationProductionEnabled>
+    <!-- Enabled for the coordinated 2026.9.5 Inno/Store release. Release non-Dev builds
+         ship both migration surfaces; Debug, Dev, and preview builds stay excluded below.
+         Set this to false to build a release without migration. -->
+    <MigrationProductionEnabled Condition="'$(MigrationProductionEnabled)' == ''">true</MigrationProductionEnabled>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MigrationProductionEnabled)' == 'true' and '$(Configuration)' == 'Release' and '$(DevBuild)' != 'true'">

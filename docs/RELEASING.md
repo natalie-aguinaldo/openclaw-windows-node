@@ -139,7 +139,7 @@ including CI's installer and Store package payloads:
 |---|---|---|
 | `MigrationStoreProductId` | `9NFPR3BGDRR5` | Verify the listing and installed production package identity. |
 | `MigrationMinimumSourceVersion` | `2026.9.5.0` | Verify that the selected first stable Inno release contains all preservation, lifetime-lock, and startup safeguards. |
-| `MigrationProductionEnabled` | `false` | Set to `true` only with the pinned floor and completed release acceptance. |
+| `MigrationProductionEnabled` | `true` | Enabled for the coordinated `2026.9.5` release. Set to `false` to ship a release without migration. |
 
 Production builds emit `PRODUCTION_MIGRATION` and protected-flow configuration
 metadata only for non-Dev **Release** builds targeting `win-x64` or `win-arm64`.
@@ -158,7 +158,7 @@ app version, GitVersion output, or reserved MSIX package version. Do not raise i
 on each subsequent release. If the first release changes before shipping, update
 the single pinned value and repeat acceptance with those exact artifacts.
 
-Before enabling the checked-in switch or claiming issue #1374 complete:
+Before tagging the coordinated release or claiming issue #1374 complete:
 
 - Verify the selected `v2026.9.5` release contains both PRs and make that supported
   Inno update available to existing users, with update-first guidance for older
@@ -177,17 +177,49 @@ Before enabling the checked-in switch or claiming issue #1374 complete:
   fixture screenshots, and locally test-signed packages do not replace missing
   signed-package, ARM64, accessibility, or gateway continuity proof.
 
-Until these requirements are met, keep the shipping PR draft and list each
-unverified dependency explicitly. A synthetic source floor supplied for disposable
-package testing is not approval of a production release version.
+These are tag-time gates, not merge-time gates. The switch is checked in as `true`
+so the coordinated release and its CI artifacts carry migration, but a tag must not
+be published until each item above is satisfied against that tag's real artifacts.
+If acceptance fails, set `MigrationProductionEnabled` to `false` and retag rather
+than shipping an unverified launch gate. A synthetic source floor supplied for
+disposable package testing is not approval of a production release version.
+
+Because every unhappy Store-side path stops launch rather than degrading, confirm
+before the tag that the released Inno installer registers `DisplayVersion`
+`2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`. A prerelease
+suffix or a mismatched name is rejected as an unsupported installation, which
+blocks startup for that user.
+
+### Developer migration test package
+
+Neither standard MSIX artifact can exercise migration. The unsigned Store package
+is a submission asset and cannot be installed, and the Dev package is refused by
+the Store migration guard because its identity is not the production one.
+
+CI therefore also publishes `openclaw-msix-dev-migration-test-<arch>` from
+`scripts\Export-MigrationTestMsix.ps1`: the production-identity Store package,
+test-signed with a disposable certificate whose subject matches the production
+publisher. "Dev" in the artifact name means *for developers*; the package identity
+is production.
+
+That identity is what makes it useful and what makes it dangerous:
+
+- It shares a package family name with the Store release, so it is **not**
+  side-by-side. Uninstall the Store build before installing it.
+- Migration runs against real data directories. The Store guard rejects data path
+  redirection, so it cannot be aimed at a scratch profile.
+- With an Inno installation present, it will adopt and then uninstall it.
+
+Use a disposable machine or VM. The exporter refuses to sign an already-signed
+package and refuses any package built without migration enabled, so the artifact
+cannot silently ship disabled. It stays workflow-only and must never be published.
 
 ### Migration experience and Debug previews
 
 The Store-side preview hosts a dedicated WinUI migration window before normal
-services start. **Default builds remain unchanged while release activation is
-pending.** Configured production builds use the same workflow. Do not enable
-migration by choosing the current app version as a placeholder for a verified
-safeguard-containing Inno release.
+services start. Release non-Dev builds now ship this experience by default;
+Debug and Dev builds do not. Do not enable migration by choosing the current app
+version as a placeholder for a verified safeguard-containing Inno release.
 
 An explicit test build may set `StoreMigrationPreview=true` and
 `StoreMigrationPreviewMinimumSourceVersion` to a three- or four-part numeric

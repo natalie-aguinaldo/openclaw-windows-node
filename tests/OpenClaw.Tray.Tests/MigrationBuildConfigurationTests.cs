@@ -28,14 +28,16 @@ public sealed class MigrationBuildConfigurationTests
     }
 
     [Fact]
-    public async Task PinnedRelease_DefaultsRemainDisabledUntilAcceptance()
+    public async Task PinnedRelease_DefaultsEnableTheShippingPolicy()
     {
         var result = await EvaluateAsync(("Version", "2027.1.1"));
 
         Assert.Equal(0, result.ExitCode);
-        Assert.DoesNotContain("PRODUCTION_MIGRATION", result.Output);
-        Assert.DoesNotContain("MigrationMinimumSourceVersion=", result.Output);
-        Assert.DoesNotContain("MigrationStoreProductId=", result.Output);
+        Assert.Contains("PRODUCTION_MIGRATION", result.Output);
+        Assert.Contains("MigrationStoreProductId=9NFPR3BGDRR5", result.Output);
+        Assert.Contains("MigrationMinimumSourceVersion=2026.9.5.0", result.Output);
+        Assert.DoesNotContain("MigrationMinimumSourceVersion=2027", result.Output);
+        Assert.DoesNotContain("MIGRATION_PREVIEW", result.Output);
     }
 
     [Theory]
@@ -122,7 +124,7 @@ public sealed class MigrationBuildConfigurationTests
         Assert.Equal("2026.9.5.0", minimum);
         Assert.DoesNotContain("$(Version)", minimum);
         Assert.DoesNotContain("GitVersion", minimum);
-        Assert.Equal("false", policy.Descendants("MigrationProductionEnabled").Single().Value);
+        Assert.Equal("true", policy.Descendants("MigrationProductionEnabled").Single().Value);
         Assert.Equal("CoreCompile", policy.Descendants("Target")
             .Single(element => (string?)element.Attribute("Name") == "ValidateMigrationBuild")
             .Attribute("BeforeTargets")!.Value);

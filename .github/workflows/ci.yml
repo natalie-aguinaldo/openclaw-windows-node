@@ -114,6 +114,10 @@ jobs:
       shell: pwsh
       run: ./scripts/test-msix-ci-artifacts.ps1
 
+    - name: Validate developer migration test package
+      shell: pwsh
+      run: ./scripts/test-migration-test-msix.ps1
+
     - name: Validate Store MSIX bundle construction
       shell: pwsh
       run: ./scripts/test-msix-bundle.ps1
@@ -932,6 +936,25 @@ jobs:
         path: |
           artifacts/msix/${{ matrix.architecture }}/OpenClaw-${{ matrix.architecture }}.msix
           artifacts/msix/${{ matrix.architecture }}/msix-metadata.json
+        if-no-files-found: error
+
+    - name: Stage developer migration test package
+      shell: pwsh
+      run: >
+        .\scripts\Export-MigrationTestMsix.ps1 -Architecture ${{ matrix.architecture }}
+        -PackageDirectory "artifacts\msix\${{ matrix.architecture }}"
+        -OutputDirectory "artifacts\msix-migration-test\${{ matrix.architecture }}"
+        -VersionInfoPath "$env:RUNNER_TEMP\openclaw-msix-version.json"
+
+    - name: Upload developer migration test artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: openclaw-msix-dev-migration-test-${{ matrix.architecture }}
+        path: |
+          artifacts/msix-migration-test/${{ matrix.architecture }}/OpenClaw-MigrationTest-${{ matrix.architecture }}.msix
+          artifacts/msix-migration-test/${{ matrix.architecture }}/OpenClaw-MigrationTest.cer
+          artifacts/msix-migration-test/${{ matrix.architecture }}/msix-metadata.json
+          artifacts/msix-migration-test/${{ matrix.architecture }}/INSTALL.txt
         if-no-files-found: error
 
     - name: Provision disposable Dev MSIX certificate
