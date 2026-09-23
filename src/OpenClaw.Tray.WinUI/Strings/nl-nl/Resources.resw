@@ -7188,13 +7188,34 @@ Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige 
     <value>Overstappen naar de Store-versie</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Wilt u uw bestaande OpenClaw-configuratie migreren naar de Store-versie?
-
-Als u Migreren kiest, wordt de vorige app gevraagd veilig af te sluiten, worden uw instellingen en gatewayreferenties gevalideerd en worden beveiligde migratiegegevens opgeslagen. Als de validatie slaagt, kan de vorige app niet meer normaal starten.
-
-Pas nadat de voltooiing van de migratie is vastgelegd, verwijdert u de vorige OpenClaw Companion-app handmatig via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps. Kies daarna Opnieuw proberen in dit venster. De Store-versie kan pas worden gebruikt nadat de verwijdering van de vorige app is geverifieerd. Uw bestaande configuratie, gateway, bestanden en modellen blijven op hun plaats; er wordt niets automatisch verwijderd.
-
-Kies Nu niet of sluit dit venster om te annuleren zonder de migratie te starten.</value>
+    <value>Behoud uw instellingen, gateway, bestanden en modellen op hun huidige plek.</value>
+  </data>
+  <data name="Migration2_PrepareStepTitle" xml:space="preserve">
+    <value>We bereiden uw configuratie voor</value>
+  </data>
+  <data name="Migration2_PrepareStepBody" xml:space="preserve">
+    <value>We sluiten de vorige app veilig af, valideren uw instellingen en gatewayreferenties en slaan beveiligde migratiegegevens op.</value>
+  </data>
+  <data name="Migration2_RemoveStepTitle" xml:space="preserve">
+    <value>U verwijdert de vorige app</value>
+  </data>
+  <data name="Migration2_RemoveStepBody" xml:space="preserve">
+    <value>Verwijder de app handmatig wanneer daarom wordt gevraagd. Er wordt niets automatisch verwijderd.</value>
+  </data>
+  <data name="Migration2_FinishStepTitle" xml:space="preserve">
+    <value>Gebruik daarna de Store-versie</value>
+  </data>
+  <data name="Migration2_FinishStepBody" xml:space="preserve">
+    <value>We verifiëren de verwijdering voordat we de Store-versie starten.</value>
+  </data>
+  <data name="Migration2_ConsentHint" xml:space="preserve">
+    <value>Kies Nu niet om af te sluiten zonder de migratie te starten.</value>
+  </data>
+  <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
+    <value>Voordat u doorgaat</value>
+  </data>
+  <data name="Migration2_ConsentWarning" xml:space="preserve">
+    <value>Als de validatie slaagt, kan de vorige app niet meer normaal starten.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>De vorige app wordt gevraagd veilig af te sluiten...</value>
@@ -7209,10 +7230,34 @@ Kies Nu niet of sluit dit venster om te annuleren zonder de migratie te starten.
     <value>De verwijdering wordt gecontroleerd en de migratie wordt afgerond...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Sluit de vorige OpenClaw Companion-app via het menu in het systeemvak en kies daarna Opnieuw proberen. Forceer het afsluiten niet en verwijder de app nog niet. Verwijder de app pas nadat dit venster bevestigt dat de voltooiing van de migratie is vastgelegd. Kies na het verwijderen van de vorige app Opnieuw proberen om de verwijdering te verifiëren en de migratie af te ronden.</value>
+    <value>Sluit OpenClaw Companion via het menu in het systeemvak en kies daarna Opnieuw proberen.</value>
+  </data>
+  <data name="Migration2_CloseInnoTitle" xml:space="preserve">
+    <value>Sluit de vorige app</value>
+  </data>
+  <data name="Migration2_CloseInnoWarningTitle" xml:space="preserve">
+    <value>Verwijder de app nog niet</value>
+  </data>
+  <data name="Migration2_CloseInnoWarning" xml:space="preserve">
+    <value>Forceer het afsluiten niet en verwijder de app nog niet. We laten u weten wanneer u de app veilig kunt verwijderen.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>De voltooiing van de migratie is vastgelegd. Verwijder alleen de vorige OpenClaw Companion-app handmatig via Geïnstalleerde apps in Windows en kies daarna Opnieuw proberen om de verwijdering te verifiëren en de migratie af te ronden. Laat de Store-versie geïnstalleerd. De Store-versie kan pas worden gebruikt nadat de verwijdering van de vorige app is geverifieerd. Uw bestaande configuratie, gateway, bestanden en modellen blijven op hun plaats; er wordt niets automatisch verwijderd. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+    <value>Uw configuratie is gevalideerd en de voltooiing van de migratie is vastgelegd.
+
+1. Open Geïnstalleerde apps en verwijder alleen de vorige OpenClaw Companion-app. Behoud de Store-versie.
+
+2. Keer hier terug en kies Opnieuw proberen om de verwijdering te verifiëren en af te ronden.
+
+Uw instellingen, gateway, bestanden en modellen blijven op hun plaats.</value>
+  </data>
+  <data name="Migration2_RemovalTitle" xml:space="preserve">
+    <value>Verwijder de vorige app</value>
+  </data>
+  <data name="Migration2_RemovalWarningTitle" xml:space="preserve">
+    <value>Behoud uw configuratie</value>
+  </data>
+  <data name="Migration2_RemovalWarning" xml:space="preserve">
+    <value>Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw kon de migratie niet veilig voltooien. Verwijder de vorige app niet en voer geen gatewayopruiming uit. Bekijk het applogboek, los het probleem op en probeer het opnieuw.</value>

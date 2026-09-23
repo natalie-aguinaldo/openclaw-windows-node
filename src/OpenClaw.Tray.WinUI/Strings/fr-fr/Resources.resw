@@ -7187,13 +7187,34 @@ Choisissez {1} pour quitter cet aperçu sans démarrer la migration et continuer
     <value>Passer à la version du Store</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Migrer votre configuration OpenClaw existante vers la version du Store ?
-
-Choisir Migrer demande à l'application précédente de se fermer en toute sécurité, valide vos paramètres et les informations d'identification de votre passerelle, puis enregistre des données de migration protégées. Si la validation réussit, l'application précédente ne pourra plus démarrer normalement.
-
-Uniquement après l'enregistrement de la fin de la migration, désinstallez manuellement l'application OpenClaw Companion précédente dans Paramètres Windows &gt; Applications &gt; Applications installées, puis choisissez Réessayer dans cette fenêtre. La version du Store ne pourra être utilisée qu'après vérification de la désinstallation de l'application précédente. Votre configuration existante, votre passerelle, vos fichiers et vos modèles resteront en place ; rien ne sera désinstallé automatiquement.
-
-Choisissez Pas maintenant ou fermez cette fenêtre pour annuler sans démarrer la migration.</value>
+    <value>Gardez vos paramètres, votre passerelle, vos fichiers et vos modèles en place.</value>
+  </data>
+  <data name="Migration2_PrepareStepTitle" xml:space="preserve">
+    <value>Nous préparerons votre configuration</value>
+  </data>
+  <data name="Migration2_PrepareStepBody" xml:space="preserve">
+    <value>Nous fermerons l'application précédente en toute sécurité, validerons vos paramètres et les informations d'identification de votre passerelle, puis enregistrerons des données de migration protégées.</value>
+  </data>
+  <data name="Migration2_RemoveStepTitle" xml:space="preserve">
+    <value>Vous désinstallerez l'application précédente</value>
+  </data>
+  <data name="Migration2_RemoveStepBody" xml:space="preserve">
+    <value>Lorsque vous y serez invité, désinstallez-la manuellement. Rien ne sera désinstallé automatiquement.</value>
+  </data>
+  <data name="Migration2_FinishStepTitle" xml:space="preserve">
+    <value>Utilisez ensuite la version du Store</value>
+  </data>
+  <data name="Migration2_FinishStepBody" xml:space="preserve">
+    <value>Nous vérifions la désinstallation avant de démarrer la version du Store.</value>
+  </data>
+  <data name="Migration2_ConsentHint" xml:space="preserve">
+    <value>Choisissez Pas maintenant pour quitter sans démarrer la migration.</value>
+  </data>
+  <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
+    <value>Avant de continuer</value>
+  </data>
+  <data name="Migration2_ConsentWarning" xml:space="preserve">
+    <value>Si la validation réussit, l'application précédente ne pourra plus démarrer normalement.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>Demande de fermeture sécurisée de l'application précédente...</value>
@@ -7208,10 +7229,34 @@ Choisissez Pas maintenant ou fermez cette fenêtre pour annuler sans démarrer l
     <value>Vérification de la désinstallation et finalisation de la migration...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Fermez l'application OpenClaw Companion précédente depuis son menu dans la zone de notification, puis choisissez Réessayer. Ne forcez pas sa fermeture et ne la désinstallez pas encore. Désinstallez-la uniquement après que cette fenêtre confirme l'enregistrement de la fin de la migration. Après avoir désinstallé l'application précédente, choisissez Réessayer pour vérifier sa désinstallation et terminer la migration.</value>
+    <value>Fermez OpenClaw Companion depuis son menu dans la zone de notification, puis choisissez Réessayer.</value>
+  </data>
+  <data name="Migration2_CloseInnoTitle" xml:space="preserve">
+    <value>Fermez l'application précédente</value>
+  </data>
+  <data name="Migration2_CloseInnoWarningTitle" xml:space="preserve">
+    <value>Ne désinstallez pas encore</value>
+  </data>
+  <data name="Migration2_CloseInnoWarning" xml:space="preserve">
+    <value>Ne forcez pas sa fermeture et ne la désinstallez pas encore. Nous vous indiquerons quand vous pourrez la désinstaller en toute sécurité.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>La fin de la migration a été enregistrée. Désinstallez manuellement uniquement l'application OpenClaw Companion précédente dans Applications installées de Windows, puis choisissez Réessayer pour vérifier sa désinstallation et terminer la migration. Gardez la version du Store installée. La version du Store ne pourra être utilisée qu'après vérification de la désinstallation de l'application précédente. Votre configuration existante, votre passerelle, vos fichiers et vos modèles resteront en place ; rien ne sera désinstallé automatiquement. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+    <value>Votre configuration a été validée et la fin de la migration enregistrée.
+
+1. Ouvrez Applications installées et désinstallez uniquement l'application OpenClaw Companion précédente. Gardez la version du Store.
+
+2. Revenez ici et choisissez Réessayer pour vérifier la désinstallation et terminer.
+
+Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place.</value>
+  </data>
+  <data name="Migration2_RemovalTitle" xml:space="preserve">
+    <value>Désinstallez l'application précédente</value>
+  </data>
+  <data name="Migration2_RemovalWarningTitle" xml:space="preserve">
+    <value>Conservez votre configuration</value>
+  </data>
+  <data name="Migration2_RemovalWarning" xml:space="preserve">
+    <value>Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu terminer la migration en toute sécurité. Ne désinstallez pas l'application précédente et ne lancez pas le nettoyage de la passerelle. Consultez le journal de l'application, résolvez le problème et réessayez.</value>

@@ -24,6 +24,12 @@ The gated Inno-to-Store migration window reuses the wizard's visual design:
 Mica backdrop, mascot, centered heading, themed content card, and persistent
 footer actions. Its content scrolls independently so consent and recovery
 actions remain available in smaller windows or with enlarged text.
+Consent uses three short titled sections and a separate, non-dismissible warning.
+Manual close and removal use step-specific headings and short instructions;
+warnings stay in the same native InfoBar style as setup. Buttons retain the
+wizard's 100-DIP minimum width, neutral left-hand dismissal, accent right-hand
+primary action, and standard content/footer spacing. The title bar stays
+"Move to the Store version"; retry/recovery states do not use setup step dots.
 
 This is a separate pre-start workflow, not a page in the setup pipeline.
 `StoreMigrationStartupGuard` and `StoreMigrationWorkflow` retain migration

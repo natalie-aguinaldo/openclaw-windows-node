@@ -86,7 +86,15 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 var viewport = Control<ScrollViewer>(window, "MigrationContent");
                 Assert.InRange(viewport.ActualWidth, 1, 560);
                 Assert.Equal(ScrollBarVisibility.Disabled, viewport.HorizontalScrollBarVisibility);
+                var layout = Assert.IsType<Grid>(viewport.Parent);
+                Assert.Equal(new Thickness(48, 28, 48, 24), layout.Padding);
+                Assert.Equal(16, layout.RowSpacing);
                 var actions = Control<Grid>(window, "Actions");
+                Assert.True(actions.ColumnDefinitions[1].Width.IsAuto);
+                Assert.Equal(HorizontalAlignment.Left, Control<Button>(window, "Dismiss").HorizontalAlignment);
+                Assert.Equal(HorizontalAlignment.Right, Control<Button>(window, "Primary").HorizontalAlignment);
+                Assert.Null(Control<Button>(window, "Dismiss").Style);
+                Assert.NotNull(Control<Button>(window, "Primary").Style);
                 var viewportBottom = viewport.TransformToVisual(Root(window))
                     .TransformPoint(new Windows.Foundation.Point(0, viewport.ActualHeight)).Y;
                 var actionsTop = actions.TransformToVisual(Root(window))
@@ -97,8 +105,25 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 Assert.Equal(new[] { "inspect", "consent?" }, operations.Calls);
                 if (largeText)
                     Assert.True(viewport.ScrollableHeight > 0, "Large text must scroll, not push actions offscreen.");
+                else
+                    AssertSafetyWithinViewport(window);
             });
             await CaptureAsync(window, $"Wizard-{theme}-{width}x{height}-LargeText{largeText}");
+            if (largeText)
+            {
+                await ui.RunOnUIAsync(() =>
+                {
+                    var viewport = Control<ScrollViewer>(window, "MigrationContent");
+                    viewport.ChangeView(null, viewport.ScrollableHeight, null, disableAnimation: true);
+                });
+                await WaitUntilAsync(() =>
+                {
+                    var viewport = Control<ScrollViewer>(window, "MigrationContent");
+                    return Math.Abs(viewport.VerticalOffset - viewport.ScrollableHeight) < 1;
+                }, "consent warning to scroll into view");
+                await ui.RunOnUIAsync(() => AssertSafetyWithinViewport(window));
+                await CaptureAsync(window, "Consent-520x520-WarningScrolled");
+            }
             await InvokeAsync(window, "Dismiss");
             Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
@@ -384,6 +409,45 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         Assert.True(statusText.IsTextSelectionEnabled);
         Assert.Equal("MigrationStatus", AutomationProperties.GetAutomationId(statusText));
         Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(statusText));
+        Assert.Equal(Localized("Migration2_Title"), window.Title);
+        Assert.Equal(Localized("Migration2_Title"), Control<TextBlock>(window, "TitleBarText").Text);
+        Assert.Equal(Localized(status switch
+        {
+            "CloseInno" => "Migration2_CloseInnoTitle",
+            "AwaitingRemoval" => "Migration2_RemovalTitle",
+            _ => "Migration2_Title"
+        }), Control<TextBlock>(window, "Heading").Text);
+        Assert.Equal(consent ? Visibility.Visible : Visibility.Collapsed,
+            Control<StackPanel>(window, "ConsentSteps").Visibility);
+        Assert.Equal(consent ? Visibility.Visible : Visibility.Collapsed,
+            Control<TextBlock>(window, "ConsentHint").Visibility);
+        if (consent)
+        {
+            foreach (var step in new[] { "Prepare", "Remove", "Finish" })
+            {
+                var title = Control<TextBlock>(window, step + "StepTitle");
+                Assert.Equal(Localized($"Migration2_{step}StepTitle"), title.Text);
+                Assert.Equal(AutomationHeadingLevel.Level2, AutomationProperties.GetHeadingLevel(title));
+                Assert.Equal(Localized($"Migration2_{step}StepBody"), Control<TextBlock>(window, step + "StepBody").Text);
+            }
+            Assert.Equal(Localized("Migration2_ConsentHint"), Control<TextBlock>(window, "ConsentHint").Text);
+        }
+        var warningKey = status switch
+        {
+            "Consent" => "Consent",
+            "CloseInno" => "CloseInno",
+            "AwaitingRemoval" => "Removal",
+            _ => null
+        };
+        var safety = Control<InfoBar>(window, "Safety");
+        Assert.Equal(warningKey is not null, safety.IsOpen);
+        Assert.Equal(warningKey is null ? Visibility.Collapsed : Visibility.Visible, safety.Visibility);
+        Assert.False(safety.IsClosable);
+        Assert.Equal(InfoBarSeverity.Warning, safety.Severity);
+        Assert.Equal("MigrationSafety", AutomationProperties.GetAutomationId(safety));
+        Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(safety));
+        Assert.Equal(warningKey is null ? string.Empty : Localized($"Migration2_{warningKey}WarningTitle"), safety.Title);
+        Assert.Equal(warningKey is null ? string.Empty : Localized($"Migration2_{warningKey}Warning"), safety.Message);
         AssertButton(window, "Primary", "MigrationPrimary",
             consent ? "Migration_StoreMigrate" : "Migration_StoreRetry", enabled: !busy, visible: retry);
         AssertButton(window, "Dismiss", "MigrationDismiss",
@@ -394,7 +458,17 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         Assert.Equal(busy, progress.IsActive);
         Assert.Equal(busy ? Visibility.Visible : Visibility.Collapsed, progress.Visibility);
         Assert.Equal(Localized("Migration2_Busy"), AutomationProperties.GetName(progress));
-        Assert.False(Assert.Single(TestSupport.FindLogical<InfoBar>(root)).IsOpen);
+        Assert.False(Assert.Single(TestSupport.FindLogical<InfoBar>(root), bar => bar != safety).IsOpen);
+    }
+
+    private static void AssertSafetyWithinViewport(StoreMigrationWindow window)
+    {
+        var safety = Control<InfoBar>(window, "Safety");
+        var viewport = Control<ScrollViewer>(window, "MigrationContent");
+        var top = safety.TransformToVisual(viewport).TransformPoint(new Windows.Foundation.Point()).Y;
+        Assert.True(safety.ActualHeight > 0);
+        Assert.InRange(top, -1, viewport.ActualHeight);
+        Assert.InRange(top + safety.ActualHeight, 1, viewport.ActualHeight + 1);
     }
 
     private static void AssertButton(
@@ -405,6 +479,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         Assert.Equal(automationId, AutomationProperties.GetAutomationId(button));
         Assert.Equal(Localized(resourceKey), new ButtonAutomationPeer(button).GetName());
         Assert.Equal(enabled, button.IsEnabled);
+        Assert.Equal(100, button.MinWidth);
         Assert.Equal(visible ? Visibility.Visible : Visibility.Collapsed, button.Visibility);
         if (visible)
         {

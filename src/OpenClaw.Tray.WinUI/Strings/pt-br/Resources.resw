@@ -7241,13 +7241,34 @@ Escolha {1} para sair desta prévia sem iniciar a migração e continuar usando 
     <value>Mudar para a versão da Store</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Migrar sua configuração existente do OpenClaw para a versão da Store?
-
-Ao selecionar Migrar, será solicitado que o aplicativo anterior seja encerrado com segurança, suas configurações e credenciais do gateway serão validadas e registros protegidos de migração serão salvos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente.
-
-Somente após o registro da conclusão da migração, desinstale manualmente o aplicativo OpenClaw Companion anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e selecione Tentar novamente nesta janela. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente.
-
-Selecione Agora não ou feche esta janela para cancelar sem iniciar a migração.</value>
+    <value>Mantenha suas configurações, gateway, arquivos e modelos onde estão.</value>
+  </data>
+  <data name="Migration2_PrepareStepTitle" xml:space="preserve">
+    <value>Vamos preparar sua configuração</value>
+  </data>
+  <data name="Migration2_PrepareStepBody" xml:space="preserve">
+    <value>Vamos fechar o aplicativo anterior com segurança, validar suas configurações e credenciais do gateway e salvar registros protegidos de migração.</value>
+  </data>
+  <data name="Migration2_RemoveStepTitle" xml:space="preserve">
+    <value>Você removerá o aplicativo anterior</value>
+  </data>
+  <data name="Migration2_RemoveStepBody" xml:space="preserve">
+    <value>Quando solicitado, desinstale-o manualmente. Nada será desinstalado automaticamente.</value>
+  </data>
+  <data name="Migration2_FinishStepTitle" xml:space="preserve">
+    <value>Depois, use a versão da Store</value>
+  </data>
+  <data name="Migration2_FinishStepBody" xml:space="preserve">
+    <value>Verificamos a remoção antes de iniciar a versão da Store.</value>
+  </data>
+  <data name="Migration2_ConsentHint" xml:space="preserve">
+    <value>Selecione Agora não para sair sem iniciar a migração.</value>
+  </data>
+  <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
+    <value>Antes de continuar</value>
+  </data>
+  <data name="Migration2_ConsentWarning" xml:space="preserve">
+    <value>Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>Solicitando o encerramento seguro do aplicativo anterior...</value>
@@ -7262,10 +7283,34 @@ Selecione Agora não ou feche esta janela para cancelar sem iniciar a migração
     <value>Verificando a desinstalação e finalizando a migração...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Feche o aplicativo OpenClaw Companion anterior pelo menu na bandeja do sistema e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda. Desinstale somente após esta janela confirmar que a conclusão da migração foi registrada. Após desinstalar o aplicativo anterior, selecione Tentar novamente para verificar a remoção e finalizar a migração.</value>
+    <value>Feche o OpenClaw Companion pelo menu na bandeja do sistema e selecione Tentar novamente.</value>
+  </data>
+  <data name="Migration2_CloseInnoTitle" xml:space="preserve">
+    <value>Feche o aplicativo anterior</value>
+  </data>
+  <data name="Migration2_CloseInnoWarningTitle" xml:space="preserve">
+    <value>Não desinstale ainda</value>
+  </data>
+  <data name="Migration2_CloseInnoWarning" xml:space="preserve">
+    <value>Não force o encerramento nem desinstale o aplicativo ainda. Avisaremos quando for seguro desinstalar.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>A conclusão da migração foi registrada. Desinstale manualmente apenas o aplicativo OpenClaw Companion anterior em Aplicativos instalados do Windows e selecione Tentar novamente para verificar a remoção e finalizar a migração. Mantenha a versão da Store instalada. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+    <value>Sua configuração foi validada e a conclusão da migração foi registrada.
+
+1. Abra Aplicativos instalados e desinstale apenas o aplicativo OpenClaw Companion anterior. Mantenha a versão da Store.
+
+2. Volte aqui e selecione Tentar novamente para verificar a remoção e finalizar.
+
+Suas configurações, gateway, arquivos e modelos permanecem no mesmo local.</value>
+  </data>
+  <data name="Migration2_RemovalTitle" xml:space="preserve">
+    <value>Remova o aplicativo anterior</value>
+  </data>
+  <data name="Migration2_RemovalWarningTitle" xml:space="preserve">
+    <value>Mantenha sua configuração</value>
+  </data>
+  <data name="Migration2_RemovalWarning" xml:space="preserve">
+    <value>Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>O OpenClaw não conseguiu concluir a migração com segurança. Não desinstale o aplicativo anterior nem execute a limpeza do gateway. Consulte o log do aplicativo, resolva o problema e tente novamente.</value>

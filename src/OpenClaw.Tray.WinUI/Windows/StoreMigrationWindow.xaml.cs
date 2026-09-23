@@ -24,6 +24,13 @@ public sealed partial class StoreMigrationWindow : Window
         _workflow = workflow;
         Title = Heading.Text = TitleBarText.Text = LocalizationHelper.GetString("Migration2_Title");
         InstalledApps.Content = LocalizationHelper.GetString("Migration2_InstalledApps");
+        PrepareStepTitle.Text = LocalizationHelper.GetString("Migration2_PrepareStepTitle");
+        PrepareStepBody.Text = LocalizationHelper.GetString("Migration2_PrepareStepBody");
+        RemoveStepTitle.Text = LocalizationHelper.GetString("Migration2_RemoveStepTitle");
+        RemoveStepBody.Text = LocalizationHelper.GetString("Migration2_RemoveStepBody");
+        FinishStepTitle.Text = LocalizationHelper.GetString("Migration2_FinishStepTitle");
+        FinishStepBody.Text = LocalizationHelper.GetString("Migration2_FinishStepBody");
+        ConsentHint.Text = LocalizationHelper.GetString("Migration2_ConsentHint");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarDrag);
         SystemBackdrop = new MicaBackdrop();
@@ -64,24 +71,7 @@ public sealed partial class StoreMigrationWindow : Window
             return;
         }
 
-        Status.Text = LocalizationHelper.GetString("Migration2_" + (_workflow.Stage switch
-        {
-            StoreMigrationStage.Consent => "Consent",
-            StoreMigrationStage.ClosingSource => "Closing",
-            StoreMigrationStage.Preparing => "Preparing",
-            StoreMigrationStage.Completing => "Completing",
-            StoreMigrationStage.Finalizing => "Finalizing",
-            StoreMigrationStage.CloseSource => "CloseInno",
-            StoreMigrationStage.AwaitingRemoval => "AwaitingRemoval",
-            StoreMigrationStage.ValidationFailed => "ValidationFailed",
-            StoreMigrationStage.CredentialUnavailable => "CredentialUnavailable",
-            StoreMigrationStage.UpdateRequired => "UpdateRequired",
-            StoreMigrationStage.Unsupported => "Unsupported",
-            StoreMigrationStage.Recovery => "Recovery",
-            StoreMigrationStage.FinalizationFailed => "FinalizationFailed",
-            StoreMigrationStage.InspectionFailed => "InspectionFailed",
-            _ => "Preparing"
-        }));
+        RenderGuidance();
         Progress.IsActive = _workflow.IsBusy;
         Progress.Visibility = _workflow.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         Primary.IsEnabled = Dismiss.IsEnabled = !_workflow.IsBusy;
@@ -106,6 +96,48 @@ public sealed partial class StoreMigrationWindow : Window
             (_workflow.Stage is StoreMigrationStage.Consent or StoreMigrationStage.Recovery ? Dismiss : Primary)
                 .Focus(FocusState.Programmatic);
         }
+    }
+
+    private void RenderGuidance()
+    {
+        Heading.Text = LocalizationHelper.GetString("Migration2_" + (_workflow.Stage switch
+        {
+            StoreMigrationStage.CloseSource => "CloseInnoTitle",
+            StoreMigrationStage.AwaitingRemoval => "RemovalTitle",
+            _ => "Title"
+        }));
+        var consentVisibility = _workflow.Stage == StoreMigrationStage.Consent
+            ? Visibility.Visible : Visibility.Collapsed;
+        ConsentSteps.Visibility = ConsentHint.Visibility = consentVisibility;
+        Status.Text = LocalizationHelper.GetString("Migration2_" + (_workflow.Stage switch
+        {
+            StoreMigrationStage.Consent => "Consent",
+            StoreMigrationStage.ClosingSource => "Closing",
+            StoreMigrationStage.Preparing => "Preparing",
+            StoreMigrationStage.Completing => "Completing",
+            StoreMigrationStage.Finalizing => "Finalizing",
+            StoreMigrationStage.CloseSource => "CloseInno",
+            StoreMigrationStage.AwaitingRemoval => "AwaitingRemoval",
+            StoreMigrationStage.ValidationFailed => "ValidationFailed",
+            StoreMigrationStage.CredentialUnavailable => "CredentialUnavailable",
+            StoreMigrationStage.UpdateRequired => "UpdateRequired",
+            StoreMigrationStage.Unsupported => "Unsupported",
+            StoreMigrationStage.Recovery => "Recovery",
+            StoreMigrationStage.FinalizationFailed => "FinalizationFailed",
+            StoreMigrationStage.InspectionFailed => "InspectionFailed",
+            _ => "Preparing"
+        }));
+        var warningKey = _workflow.Stage switch
+        {
+            StoreMigrationStage.Consent => "Consent",
+            StoreMigrationStage.CloseSource => "CloseInno",
+            StoreMigrationStage.AwaitingRemoval => "Removal",
+            _ => null
+        };
+        Safety.Title = warningKey is null ? string.Empty : LocalizationHelper.GetString($"Migration2_{warningKey}WarningTitle");
+        Safety.Message = warningKey is null ? string.Empty : LocalizationHelper.GetString($"Migration2_{warningKey}Warning");
+        Safety.IsOpen = warningKey is not null;
+        Safety.Visibility = Safety.IsOpen ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnInstalledApps(object sender, RoutedEventArgs args) =>

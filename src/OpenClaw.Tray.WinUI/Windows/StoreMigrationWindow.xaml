@@ -28,7 +28,7 @@
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           VerticalContentAlignment="Center" IsTabStop="False"
                           VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Spacing="24">
+                <StackPanel Spacing="16">
                     <StackPanel Spacing="12" HorizontalAlignment="Stretch">
                         <Image x:Name="MascotHero"
                                Source="ms-appx:///OpenClaw.SetupEngine.UI/Assets/Setup/OpenClawMascot.png"
@@ -41,7 +41,7 @@
                     <Border Padding="24" CornerRadius="4" BorderThickness="1"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
-                        <StackPanel Spacing="16">
+                        <StackPanel Spacing="12">
                             <ProgressRing x:Name="Progress" Width="32" Height="32"
                                           HorizontalAlignment="Center"/>
                             <TextBlock x:Name="Status" Style="{StaticResource BodyTextBlockStyle}"
@@ -49,9 +49,38 @@
                                        TextWrapping="Wrap" IsTextSelectionEnabled="True"
                                        AutomationProperties.AutomationId="MigrationStatus"
                                        AutomationProperties.LiveSetting="Polite"/>
+                            <StackPanel x:Name="ConsentSteps" Spacing="12" Visibility="Collapsed">
+                                <StackPanel Spacing="4">
+                                    <TextBlock x:Name="PrepareStepTitle" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                               TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level2"/>
+                                    <TextBlock x:Name="PrepareStepBody" Style="{StaticResource BodyTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock x:Name="RemoveStepTitle" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                               TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level2"/>
+                                    <TextBlock x:Name="RemoveStepBody" Style="{StaticResource BodyTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock x:Name="FinishStepTitle" Style="{StaticResource BodyStrongTextBlockStyle}"
+                                               TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level2"/>
+                                    <TextBlock x:Name="FinishStepBody" Style="{StaticResource BodyTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock x:Name="ConsentHint" Style="{StaticResource BodyTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap" Visibility="Collapsed"/>
                             <InfoBar x:Name="Error" IsOpen="False" Severity="Error" IsClosable="True"/>
                         </StackPanel>
                     </Border>
+                    <InfoBar x:Name="Safety" IsOpen="False" IsClosable="False" Severity="Warning"
+                             Visibility="Collapsed" AutomationProperties.AutomationId="MigrationSafety"
+                             AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>
             </ScrollViewer>
             <Grid x:Name="Actions" Grid.Row="1" ColumnSpacing="16" RowSpacing="12">
@@ -61,10 +90,10 @@
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Button x:Name="InstalledApps" Grid.ColumnSpan="2" Click="OnInstalledApps"
-                        HorizontalAlignment="Stretch"
+                        HorizontalAlignment="Stretch" MinWidth="100"
                         AutomationProperties.AutomationId="MigrationInstalledApps">
                     <Button.ContentTemplate>
                         <DataTemplate>
