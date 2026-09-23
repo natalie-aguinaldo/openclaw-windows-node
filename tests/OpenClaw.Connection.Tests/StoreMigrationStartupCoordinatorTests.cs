@@ -167,6 +167,67 @@ public sealed class StoreMigrationStartupCoordinatorTests
         Assert.Equal(blocks, new StoreMigrationStartupDecision(state).BlocksStartup);
     }
 
+    [Theory]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired)]
+    [InlineData(StoreMigrationStartupState.InspectionFailed)]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(StoreMigrationStartupState.UpdateInno)]
+    public void AReceiptBlocksStartupEvenUnderAnInformationalState(StoreMigrationStartupState state)
+    {
+        Assert.True(new StoreMigrationStartupDecision(state, null, true).BlocksStartup);
+    }
+
+    [Fact]
+    public void CompletionForDifferentSourceVersion_StillProtectsTheHandoff()
+    {
+        // The source can change under a finished handoff when the Inno app updates itself
+        // before the user removes it. The receipt still means data moved.
+        var result = Evaluate(Detected(), new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.8.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.RecoveryRequired, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Fact]
+    public void UnsupportedSourceWithAReceipt_DoesNotDowngradeToInformational()
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported, Reason: "payload missing",
+            RegisteredVersion: Version.Parse("2026.9.0.0"));
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.9.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.UpdateInno, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Theory]
+    [InlineData(MigrationStartupRecordStatus.Invalid, true, true)]
+    [InlineData(MigrationStartupRecordStatus.Invalid, false, false)]
+    [InlineData(MigrationStartupRecordStatus.Unavailable, true, true)]
+    [InlineData(MigrationStartupRecordStatus.Unavailable, false, false)]
+    public void AnUndecodableReceiptStillBlocks(
+        MigrationStartupRecordStatus status, bool completionPresent, bool blocks)
+    {
+        var coordinator = new StoreMigrationStartupCoordinator(
+            new Detector(() => throw new InvalidOperationException("Must not inspect installation.")),
+            new Records(() => new(status, null, completionPresent)), NullLogger.Instance);
+
+        Assert.Equal(blocks, coordinator.Evaluate(true, "2026.9.1", "x64").BlocksStartup);
+    }
+
+    [Fact]
+    public void ArchitectureMismatchWithAReceipt_StillProtectsTheHandoff()
+    {
+        var result = Evaluate(Detected(architecture: "arm64"), new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.9.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.UnsupportedInstallation, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
     private static InnoInstallationDetection Detected(string version = "2026.9.1.0", string architecture = "x64") =>
         new(InnoInstallationStatus.Detected, new InnoInstallation(
             @"C:\fixture\OpenClawTray", @"C:\fixture\OpenClawTray\OpenClaw.Tray.WinUI.exe",

@@ -163,6 +163,50 @@ public sealed class StoreMigrationWorkflowTests
     }
 
     [Fact]
+    public void BeforeAdmissionResolves_ClosingIsTreatedAsBlocking()
+    {
+        // Dismiss is reachable while the first inspection is still in flight. Nothing is known
+        // yet, so closing must not wave the user past a handoff that already moved data.
+        var workflow = Create(new Operations());
+
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task ARetryThatNoLongerSeesTheReceipt_DoesNotReleaseTheBlock()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.InspectionFailed
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
+
+        // Retry re-inspects. A transient failure there must not drop what we already know.
+        operations.Admission = new(StoreMigrationStartupState.InspectionFailed);
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task AdmissionCarryingAReceiptUnderAnInformationalState_Blocks()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.UnsupportedInstallation, null, true)
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Unsupported, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
     public async Task SuccessfulFinalization_ReleasesTheStartupBlock()
     {
         var operations = new Operations

@@ -33,11 +33,18 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
     /// <see cref="StoreMigrationStartupDecision.BlocksStartup"/> rather than the visible stage,
     /// because a receipt can survive a stage that later reports an inspection failure. Every
     /// other state has nothing to protect, and refusing to launch would leave the user stuck.
+    /// <para>
+    /// Before the first admission resolves, nothing is known yet, so closing is treated as
+    /// blocking. Otherwise a close raced against startup inspection would wave the user through
+    /// a handoff that had already moved data.
+    /// </para>
     /// </summary>
-    public bool BlocksStartup => _holdsCompletedHandoff && Stage != StoreMigrationStage.Ready;
+    public bool BlocksStartup =>
+        (!_admissionResolved || _holdsCompletedHandoff) && Stage != StoreMigrationStage.Ready;
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
     private bool _holdsCompletedHandoff;
+    private bool _admissionResolved;
 
     public Task StartAsync(CancellationToken cancellationToken) => RunAsync(false, cancellationToken);
     public Task ContinueAsync(CancellationToken cancellationToken) =>
@@ -54,7 +61,9 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
             SetStage(StoreMigrationStage.Inspecting);
             cancellationToken.ThrowIfCancellationRequested();
             var admission = operations.Inspect();
-            _holdsCompletedHandoff = admission.BlocksStartup;
+            // Never cleared by a later pass: Retry re-inspects, and a transient failure there
+            // must not drop a receipt this session already observed or wrote.
+            _holdsCompletedHandoff |= admission.BlocksStartup;
             if (admission.AllowsNormalStartup)
             {
                 SetStage(StoreMigrationStage.Ready);
@@ -151,12 +160,15 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
         }
         catch (Exception exception)
         {
-            // This is the UI error boundary. No failure may fall through to normal startup.
+            // This is the UI error boundary. A failure here is reported as an inspection problem;
+            // whether it also blocks startup is decided by the receipt, not by the failure.
             logger.Error($"Migration workflow failed: {exception}");
             SetStage(StoreMigrationStage.InspectionFailed);
         }
         finally
         {
+            // The pass reached a definite stage, so closing may now be judged on the receipt.
+            _admissionResolved = true;
             IsBusy = false;
             Changed?.Invoke();
         }

@@ -15,9 +15,16 @@ public enum MigrationStartupRecordStatus
     Unavailable
 }
 
+/// <summary>
+/// <paramref name="CompletionPresent"/> reports that a completion receipt exists on disk even when
+/// it could not be decoded. Data has already moved in that case, so admission must still protect
+/// the handoff; <see cref="MigrationStartupRecordStatus.Invalid"/> alone cannot distinguish a
+/// corrupt receipt from a corrupt intent.
+/// </summary>
 public sealed record MigrationStartupRecord(
     MigrationStartupRecordStatus Status,
-    MigrationRecord? Record = null);
+    MigrationRecord? Record = null,
+    bool CompletionPresent = false);
 
 public interface IMigrationStartupRecordReader
 {
@@ -40,7 +47,7 @@ public sealed class MigrationStartupRecordReader(
         {
             var completed = ReadFile(MigrationRecordCodec.CompletionFileName, "completed");
             if (completed is not null)
-                return new(MigrationStartupRecordStatus.Completed, completed);
+                return new(MigrationStartupRecordStatus.Completed, completed, true);
 
             var intent = ReadFile(MigrationRecordCodec.IntentFileName, "intent");
             return intent is null
@@ -59,18 +66,39 @@ public sealed class MigrationStartupRecordReader(
                                    DecoderFallbackException)
         {
             logger.Warn($"Store migration record requires recovery ({ex.GetType().Name}).");
-            return new(MigrationStartupRecordStatus.Invalid);
+            return new(MigrationStartupRecordStatus.Invalid, null, CompletionFileExists());
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
         {
             logger.Error($"Store migration record inspection failed ({ex.GetType().Name}).");
-            return new(MigrationStartupRecordStatus.Unavailable);
+            return new(MigrationStartupRecordStatus.Unavailable, null, CompletionFileExists());
         }
     }
 
+    /// <summary>
+    /// Existence only. A receipt that cannot be decoded still proves the handoff moved data, and
+    /// this must never throw from inside a catch filter's handler.
+    /// </summary>
+    private bool CompletionFileExists()
+    {
+        try
+        {
+            return File.Exists(RecordPath(MigrationRecordCodec.CompletionFileName));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or
+                                   ArgumentException)
+        {
+            logger.Warn($"Could not confirm the migration receipt ({ex.GetType().Name}); assuming it exists.");
+            return true;
+        }
+    }
+
+    private string RecordPath(string fileName) =>
+        Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName, fileName);
+
     private MigrationRecord? ReadFile(string fileName, string expectedKind)
     {
-        var path = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName, fileName);
+        var path = RecordPath(fileName);
         if (MigrationRecordCodec.HasReparsePointAncestor(path))
             throw new MigrationPathRejectedException("Migration paths must not contain reparse points.");
         FileStream stream;

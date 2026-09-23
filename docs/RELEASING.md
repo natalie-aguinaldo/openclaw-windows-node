@@ -194,11 +194,13 @@ builds. To stop migrations already reaching users, publish a corrected Store pac
 
 Unhappy Store-side paths inform the user and then continue to normal startup. Only a
 handoff holding a completion receipt keeps the app from starting, because only that
-state has data that must not be abandoned. Still confirm before the tag that the
-released Inno installer registers `DisplayVersion` `2026.9.5` and `DisplayName`
-`OpenClaw Companion version 2026.9.5`: a prerelease suffix or a mismatched name is
-rejected as an unsupported installation, so that user is told migration is unavailable
-instead of being offered it.
+state has data that must not be abandoned. The receipt decides this, not the state
+name: a receipt still protects the handoff when the source looks unsupported, when
+the recorded source version no longer matches, or when the record cannot be decoded.
+Still confirm before the tag that the released Inno installer registers
+`DisplayVersion` `2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`:
+a prerelease suffix or a mismatched name is rejected as an unsupported installation,
+so that user is told migration is unavailable instead of being offered it.
 
 ### Developer migration test package
 
@@ -283,10 +285,11 @@ The preview:
 - Requires coherent source version and executable architecture evidence.
   Prerelease/informational versions do not satisfy the stable version gate.
 - Reads existing intent/completion records through the shared DPAPI codec.
-  A completion receipt requires finalization before normal startup; an orphan or
-  unreadable record is reported and then gets out of the way, because refusing to
-  launch cannot repair it. An orphan intent requires recovery; completion without
-  Inno requires finalization, not fresh startup.
+  A completion receipt requires finalization before normal startup, and that holds
+  even when the receipt cannot be decoded or read: its presence on disk proves data
+  already moved. An orphan intent, or an unreadable record with no receipt beside it,
+  is reported and then gets out of the way, because refusing to launch cannot repair
+  it. Completion without Inno requires finalization, not fresh startup.
 - Stops before production instance forwarding, settings, gateway/node/MCP
   services, updates, or startup-task reconciliation when migration is needed.
   All normal launch, protocol, and startup-task activations use this gate.

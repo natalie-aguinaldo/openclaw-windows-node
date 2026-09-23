@@ -73,6 +73,33 @@ public sealed class MigrationStartupRecordReaderTests
         Assert.Equal(MigrationStartupRecordStatus.Invalid, fixture.Read().Status);
     }
 
+    [Fact]
+    public void CorruptCompletion_StillReportsTheReceiptAsPresent()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Directory);
+        File.WriteAllBytes(Path.Combine(fixture.Directory, MigrationRecordCodec.CompletionFileName), [1, 2, 3]);
+
+        var result = fixture.Read();
+
+        // Undecodable, but the file proves data already moved. Admission must still protect it.
+        Assert.Equal(MigrationStartupRecordStatus.Invalid, result.Status);
+        Assert.True(result.CompletionPresent);
+    }
+
+    [Fact]
+    public void CorruptIntentAlone_DoesNotClaimAReceipt()
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(fixture.Directory);
+        File.WriteAllBytes(Path.Combine(fixture.Directory, MigrationRecordCodec.IntentFileName), [1, 2, 3]);
+
+        var result = fixture.Read();
+
+        Assert.Equal(MigrationStartupRecordStatus.Invalid, result.Status);
+        Assert.False(result.CompletionPresent);
+    }
+
     [Theory]
     [InlineData("intent", "completed.dpapi")]
     [InlineData("completed", "intent.dpapi")]
@@ -110,7 +137,11 @@ public sealed class MigrationStartupRecordReaderTests
         var path = fixture.Write("completed");
         using var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-        Assert.Equal(MigrationStartupRecordStatus.Unavailable, fixture.Read().Status);
+        var result = fixture.Read();
+
+        Assert.Equal(MigrationStartupRecordStatus.Unavailable, result.Status);
+        // A lock hides the contents, not the fact that a receipt exists.
+        Assert.True(result.CompletionPresent);
     }
 
     [Theory]
