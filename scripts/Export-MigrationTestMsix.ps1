@@ -244,6 +244,13 @@ finally {
     } catch {
         Write-Warning "Could not remove the disposable signing key: $($_.Exception.Message)"
     }
+
+    # Also verified here, because a failure in the body terminates the script before the
+    # check below. That is exactly when a key is most likely to have been left behind.
+    if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$($certificate.Thumbprint)") {
+        Write-Warning ("The disposable signing key $($certificate.Thumbprint) is still in " +
+                       'Cert:\CurrentUser\My. Remove it before trusting this host again.')
+    }
 }
 
 if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$($certificate.Thumbprint)") {

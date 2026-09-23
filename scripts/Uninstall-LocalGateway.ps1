@@ -353,13 +353,24 @@ function Resolve-AppDataDir {
             $identityDir = Join-Path $gatewaysDir $id
             # This directory is deleted recursively, so the record id must stay a single
             # path segment. A traversal id would otherwise escape the gateways directory.
-            if ($id -notmatch '^[A-Za-z0-9._-]+$' -or $id -eq '.' -or $id -eq '..') {
+            # \A and \z rather than ^ and $: .NET lets $ match before a trailing newline.
+            if ($id -notmatch '\A[A-Za-z0-9._-]+\z' -or $id -eq '.' -or $id -eq '..') {
                 Add-CleanupWarning "Skipped identity cleanup for local gateway record with an unsafe id '$id'."
                 continue
             }
 
             try {
                 if (Test-Path -LiteralPath $identityDir -PathType Container) {
+                    # Remove-Item -Recurse follows junctions on Windows PowerShell 5.1, which is
+                    # what runs this during Inno uninstall. Deleting through a reparse point would
+                    # destroy whatever it targets, so refuse it the way the migration codec does.
+                    $identityItem = Get-Item -LiteralPath $identityDir -Force -ErrorAction Stop
+                    if ($identityItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                        Add-CleanupWarning ("Skipped identity cleanup for local gateway record '$id': " +
+                            "'$identityDir' is a reparse point.")
+                        continue
+                    }
+
                     Remove-Item -LiteralPath $identityDir -Recurse -Force -ErrorAction Stop
                     Write-GatewayLog "Deleted identity directory for local gateway record $id."
                 }

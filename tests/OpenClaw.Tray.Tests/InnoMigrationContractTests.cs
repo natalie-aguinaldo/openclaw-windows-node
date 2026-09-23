@@ -319,6 +319,21 @@ public sealed class InnoMigrationContractTests
     }
 
     [Fact]
+    public void CleanupScript_RefusesToDeleteThroughAReparsePoint()
+    {
+        var script = Read("scripts", "Uninstall-LocalGateway.ps1");
+        var cleanup = script[script.IndexOf("$identityDir = Join-Path $gatewaysDir $id", StringComparison.Ordinal)..];
+        var guard = cleanup.IndexOf("[System.IO.FileAttributes]::ReparsePoint", StringComparison.Ordinal);
+        var delete = cleanup.IndexOf("Remove-Item -LiteralPath $identityDir -Recurse", StringComparison.Ordinal);
+
+        // Remove-Item -Recurse follows junctions on Windows PowerShell 5.1, so the guard has
+        // to run first or the recursive delete destroys whatever the junction targets.
+        Assert.True(guard > 0, "Identity cleanup must reject reparse points.");
+        Assert.True(guard < delete, "The reparse-point guard must precede the recursive delete.");
+        Assert.Contains(@"\A[A-Za-z0-9._-]+\z", cleanup);
+    }
+
+    [Fact]
     public void Installer_HoldsMigrationLockThroughEntireUninstall()
     {
         var installer = Read("installer.iss");
