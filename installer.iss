@@ -146,6 +146,24 @@ function CloseMigrationOperationFile(Handle: THandle): Boolean;
 function MigrationPathAttributes(FileName: String): Integer;
   external 'GetFileAttributesW@kernel32.dll stdcall';
 
+function MigrationPathIsUncRoot(Path: String): Boolean;
+var
+  Rest: String;
+  Separator: Integer;
+begin
+  Result := False;
+  if Copy(Path, 1, 2) <> '\\' then
+    Exit;
+  Rest := Copy(Path, 3, Length(Path) - 2);
+  Separator := Pos('\', Rest);
+  if Separator = 0 then
+    // '\\server': no share component left to walk into.
+    Result := True
+  else
+    // '\\server\share': a share root, with nothing addressable above it.
+    Result := Pos('\', Copy(Rest, Separator + 1, Length(Rest) - Separator)) = 0;
+end;
+
 function MigrationPathIsOrdinary(Path: String): Boolean;
 var
   Attributes: Integer;
@@ -168,6 +186,13 @@ begin
     end
     else if (Attributes and $400) <> 0 then
       Exit;
+    // A local walk ends at 'C:\', where ExtractFileDir returns its own argument. A UNC
+    // walk has no such fixed point: ExtractFileDir('\\server\share') yields '\\server',
+    // which is not a filesystem object, so probing it fails with a code that is neither
+    // 2 nor 3 and would refuse the uninstall outright. Stop at the share root instead;
+    // every component below it has already been checked, exactly as on a local disk.
+    if MigrationPathIsUncRoot(Path) then
+      Break;
     Parent := ExtractFileDir(Path);
     if Parent = Path then
       Break;

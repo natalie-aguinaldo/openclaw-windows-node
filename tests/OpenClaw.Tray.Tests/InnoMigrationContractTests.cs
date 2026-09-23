@@ -334,6 +334,23 @@ public sealed class InnoMigrationContractTests
     }
 
     [Fact]
+    public void Installer_StopsTheReparseWalkAtAUncShareRoot()
+    {
+        var installer = Read("installer.iss");
+        var walk = installer[installer.IndexOf("function MigrationPathIsOrdinary", StringComparison.Ordinal)..
+            installer.IndexOf("function InitializeUninstall:", StringComparison.Ordinal)];
+
+        // ExtractFileDir has no fixed point on a UNC path: it yields '\\server', which is not
+        // a filesystem object. Probing it fails with a code that is neither 2 nor 3, so the
+        // guard would Exit False and refuse the uninstall on redirected AppData.
+        Assert.Contains("MigrationPathIsUncRoot", installer);
+        var stop = walk.IndexOf("if MigrationPathIsUncRoot(Path) then", StringComparison.Ordinal);
+        var ascend = walk.IndexOf("Parent := ExtractFileDir(Path);", StringComparison.Ordinal);
+        Assert.True(stop > 0, "The walk must recognise a UNC share root.");
+        Assert.True(stop < ascend, "The walk must stop at the share root before ascending past it.");
+    }
+
+    [Fact]
     public void Installer_HoldsMigrationLockThroughEntireUninstall()
     {
         var installer = Read("installer.iss");
