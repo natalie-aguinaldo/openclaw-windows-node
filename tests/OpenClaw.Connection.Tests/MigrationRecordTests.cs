@@ -199,7 +199,7 @@ public sealed class MigrationRecordTests
         };
         foreach (var argument in new[]
         {
-            "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+            "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             Path.Combine(root, "scripts", "Test-InnoMigration.ps1"),
             "-AppRoot", record.Binding.InstallDirectory,
             "-Architecture", kind == "wrong-path" ? "arm64" : "x64",
@@ -208,11 +208,7 @@ public sealed class MigrationRecordTests
         })
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await process.WaitForExitAsync(timeout.Token);
-        Assert.True(process.ExitCode == expectedExit, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
+        await AssertScriptExitAsync(process, expectedExit);
     }
 
     [Theory]
@@ -258,7 +254,7 @@ public sealed class MigrationRecordTests
         start.Environment.Remove("OPENCLAW_TRAY_LOCALAPPDATA_DIR");
         foreach (var argument in new[]
         {
-            "-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+            "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
             Path.Combine(root, "scripts", "Uninstall-LocalGateway.ps1"),
             "-AppRoot", record.Binding.InstallDirectory, "-Architecture", "x64",
             "-AutoStartName", "OpenClawMigrationTest-" + Guid.NewGuid().ToString("N"),
@@ -268,17 +264,146 @@ public sealed class MigrationRecordTests
         })
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        await process.WaitForExitAsync(timeout.Token);
-        Assert.True(process.ExitCode == expectedExit, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
+        await AssertScriptExitAsync(process, expectedExit,
+            Path.Combine(record.Binding.InstallDirectory, "uninstall-gateway-wsl.log"));
         Assert.Equal("{\"testSentinel\":true}", File.ReadAllText(sentinel));
         Assert.DoesNotContain("Starting local gateway cleanup", File.ReadAllText(
             Path.Combine(record.Binding.InstallDirectory, "uninstall-gateway-wsl.log")));
         parentLock?.Dispose();
         using var releasedLock = new FileStream(Path.Combine(directory, "prepare.lock"),
             FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ScriptTimeout_TerminatesProcessTreeAndPreservesFailureDiagnostics(bool lockLog)
+    {
+        using var temp = new TempDirectory();
+        var logPath = temp.Combine("cleanup.log");
+        File.WriteAllText(logPath, "cleanup checkpoint");
+        using var logLock = lockLog ? File.Open(logPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
+        var readyPath = temp.Combine("ready");
+        var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            "System32", "WindowsPowerShell", "v1.0", "powershell.exe"))
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        start.Environment["OPENCLAW_TEST_READY"] = readyPath;
+        foreach (var argument in new[]
+        {
+            "-NoProfile", "-NonInteractive", "-Command",
+            """
+            $ErrorActionPreference = 'Stop'
+            $child = Start-Process -FilePath "$PSHOME\powershell.exe" -NoNewWindow -PassThru `
+                -ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds 60'
+            [Console]::Out.WriteLine('timeout stdout')
+            [Console]::Error.WriteLine('timeout stderr')
+            [IO.File]::WriteAllText($env:OPENCLAW_TEST_READY + '.tmp', [string]$child.Id)
+            [IO.File]::Move($env:OPENCLAW_TEST_READY + '.tmp', $env:OPENCLAW_TEST_READY)
+            Start-Sleep -Seconds 60
+            """
+        })
+            start.ArgumentList.Add(argument);
+        using var process = Process.Start(start)!;
+        Process? child = null;
+        try
+        {
+            var readiness = Stopwatch.StartNew();
+            while (!File.Exists(readyPath))
+            {
+                Assert.False(process.HasExited, "Timeout fixture exited before publishing readiness.");
+                Assert.True(readiness.Elapsed < TimeSpan.FromSeconds(30), "Timeout fixture did not become ready.");
+                await Task.Delay(25);
+            }
+            child = Process.GetProcessById(int.Parse(File.ReadAllText(readyPath)));
+            var error = await Assert.ThrowsAsync<TimeoutException>(() =>
+                AssertScriptExitAsync(process, 0, logPath, TimeSpan.FromMilliseconds(250)));
+
+            Assert.True(process.HasExited);
+            await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(child.HasExited);
+            Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException);
+            Assert.Contains("timeout stdout", error.Message);
+            Assert.Contains("timeout stderr", error.Message);
+            Assert.Contains(lockLog ? "Script log unavailable: IOException" : "cleanup checkpoint", error.Message);
+        }
+        finally
+        {
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+                if (child is { HasExited: false })
+                    child.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+                if (child is not null)
+                    await child.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            finally { child?.Dispose(); }
+        }
+    }
+
+    private static async Task AssertScriptExitAsync(Process process, int expectedExit,
+        string? diagnosticLog = null, TimeSpan? deadline = null)
+    {
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        var limit = deadline ?? TimeSpan.FromSeconds(30);
+        using var timeout = new CancellationTokenSource(limit);
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException exception) when (timeout.IsCancellationRequested)
+        {
+            // Stop cleanup before the caller releases its lock or deletes the fixture.
+            var cleanup = "Root process exit confirmed.";
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception error) when (error is System.ComponentModel.Win32Exception or
+                InvalidOperationException or TimeoutException)
+            {
+                cleanup = $"Process cleanup failed: {error.GetType().Name}: {error.Message}";
+            }
+            var output = await Task.WhenAll(
+                ReadTimeoutOutputAsync(stdout), ReadTimeoutOutputAsync(stderr));
+            var log = "(no script log was requested)";
+            if (diagnosticLog is not null)
+            {
+                try { log = File.ReadAllText(diagnosticLog); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+                {
+                    log = $"Script log unavailable: {error.GetType().Name}: {error.Message}";
+                }
+            }
+            throw new TimeoutException(
+                $"Migration script PID {process.Id} exceeded {limit.TotalSeconds:g} seconds.\n" +
+                $"{cleanup}\nStandard output:\n{output[0]}\nStandard error:\n{output[1]}\nScript log:\n{log}",
+                exception);
+        }
+        await Task.WhenAll(stdout, stderr).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(process.ExitCode == expectedExit, $"{await stdout}\n{await stderr}\nExit: {process.ExitCode}");
+    }
+
+    private static async Task<string> ReadTimeoutOutputAsync(Task<string> output)
+    {
+        try { return await output.WaitAsync(TimeSpan.FromSeconds(5)); }
+        catch (Exception error) when (error is TimeoutException or IOException or ObjectDisposedException)
+        {
+            // A pipe read can fault later when the caller disposes the timed-out process.
+            _ = output.ContinueWith(completed => { _ = completed.Exception; },
+                CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return $"Output unavailable: {error.GetType().Name}: {error.Message}";
+        }
     }
 
     internal static MigrationRecord CreateRecord(TempDirectory temp, string kind)
