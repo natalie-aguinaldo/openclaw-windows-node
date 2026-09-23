@@ -27,6 +27,24 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
             .Evaluate(true, MigrationEnvironment.MinimumSourceVersion, _binding.Architecture);
     }
 
+    /// <summary>
+    /// Deliberately independent of <see cref="Inspect"/>: it is called precisely when inspection
+    /// threw, so it must not depend on detection, policy, or package identity.
+    /// </summary>
+    public bool HoldsCompletionReceipt()
+    {
+        try
+        {
+            _binding ??= MigrationEnvironment.CreateBinding();
+            return new MigrationStartupRecordReader(_binding, _logger).Read().CompletionPresent;
+        }
+        catch (Exception exception)
+        {
+            Logger.Error($"Could not confirm the migration receipt: {exception}");
+            return true;
+        }
+    }
+
     public bool HasConsent(InnoInstallation installation) =>
         new InnoMigrationConsentStore(_binding!, _logger).HasValidConsent(installation.Version.ToString());
 

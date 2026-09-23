@@ -186,6 +186,32 @@ public sealed class MigrationStartupRecordReaderTests
         }
     }
 
+    [Fact]
+    public void CompletionDirectory_IsTreatedAsAReceipt()
+    {
+        using var fixture = new Fixture();
+        System.IO.Directory.CreateDirectory(
+            Path.Combine(fixture.Directory, MigrationRecordCodec.CompletionFileName));
+
+        var result = fixture.Read();
+
+        // File.Exists answers false for a directory, so an existence check would have failed
+        // open here and allowed normal startup. Only a definite not-found proves nothing moved.
+        Assert.Equal(MigrationStartupRecordStatus.Unavailable, result.Status);
+        Assert.True(result.CompletionPresent);
+    }
+
+    [Fact]
+    public void NoRecordsAtAll_DoesNotClaimAReceipt()
+    {
+        using var fixture = new Fixture();
+
+        var result = fixture.Read();
+
+        Assert.Equal(MigrationStartupRecordStatus.None, result.Status);
+        Assert.False(result.CompletionPresent);
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly TempDirectory _temp = new();

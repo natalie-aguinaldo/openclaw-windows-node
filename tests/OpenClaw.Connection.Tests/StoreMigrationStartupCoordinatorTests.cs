@@ -24,17 +24,36 @@ public sealed class StoreMigrationStartupCoordinatorTests
     [InlineData("", "x64")]
     [InlineData("2026.9.1-beta.1", "x64")]
     [InlineData("2026.9.1", "x86")]
-    public void InvalidPolicy_BlocksBeforeInspection(string? minimum, string architecture)
+    public void InvalidPolicy_StopsBeforeDetection(string? minimum, string architecture)
     {
         var coordinator = new StoreMigrationStartupCoordinator(
             new Detector(() => throw new InvalidOperationException("Must not read registry.")),
-            new Records(() => throw new InvalidOperationException("Must not read state.")),
+            new Records(() => new(MigrationStartupRecordStatus.None)),
             NullLogger.Instance);
 
         var result = coordinator.Evaluate(true, minimum, architecture);
 
         Assert.Equal(StoreMigrationStartupState.InspectionFailed, result.State);
         Assert.False(result.AllowsNormalStartup);
+        Assert.False(result.BlocksStartup);
+    }
+
+    [Theory]
+    [InlineData("", "x64")]
+    [InlineData("2026.9.1", "x86")]
+    public void InvalidPolicy_StillBlocksWhenAReceiptExists(string? minimum, string architecture)
+    {
+        // Records are read before the policy check precisely so a misconfigured build cannot
+        // wave through a launch that would run against data the handoff already moved.
+        var coordinator = new StoreMigrationStartupCoordinator(
+            new Detector(() => throw new InvalidOperationException("Must not read registry.")),
+            new Records(() => new(MigrationStartupRecordStatus.Unavailable, null, CompletionPresent: true)),
+            NullLogger.Instance);
+
+        var result = coordinator.Evaluate(true, minimum, architecture);
+
+        Assert.Equal(StoreMigrationStartupState.InspectionFailed, result.State);
+        Assert.True(result.BlocksStartup);
     }
 
     [Theory]
@@ -225,6 +244,17 @@ public sealed class StoreMigrationStartupCoordinatorTests
             new MigrationRecord { Kind = "completed", SourceVersion = "2026.9.1" }, true));
 
         Assert.Equal(StoreMigrationStartupState.UnsupportedInstallation, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Fact]
+    public void CompletedStatusWithoutADecodedRecord_RecoversInsteadOfThrowing()
+    {
+        // Throwing here would escape into the UI error boundary and be reported as a plain
+        // inspection failure, dropping the receipt this status proves exists.
+        var result = Evaluate(Detected(), new(MigrationStartupRecordStatus.Completed, null, true));
+
+        Assert.Equal(StoreMigrationStartupState.RecoveryRequired, result.State);
         Assert.True(result.BlocksStartup);
     }
 

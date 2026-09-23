@@ -16,9 +16,11 @@ internal static class StoreMigrationStartupGuard
             return false;
 
         var operations = new StoreMigrationOperations(pipeName);
+        StoreMigrationStartupDecision? admission = null;
         try
         {
-            if (operations.Inspect().AllowsNormalStartup)
+            admission = operations.Inspect();
+            if (admission.AllowsNormalStartup)
                 return false;
         }
         catch (Exception exception)
@@ -30,7 +32,9 @@ internal static class StoreMigrationStartupGuard
         // Bootstrap owns only migration UI. Closing it must not end the dispatcher
         // before a successful finalization resumes ordinary App composition.
         Application.Current.DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
-        var workflow = new StoreMigrationWorkflow(operations, new AppLogger());
+        // The admission is handed on rather than discarded: if it already observed a completion
+        // receipt, a later failing inspection inside the workflow must not lose that.
+        var workflow = new StoreMigrationWorkflow(operations, new AppLogger(), admission);
         var window = new StoreMigrationWindow(workflow);
         return !await window.ShowAsync();
 #endif

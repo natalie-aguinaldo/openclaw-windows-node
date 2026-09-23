@@ -331,6 +331,12 @@ public sealed class InnoMigrationContractTests
         Assert.True(guard > 0, "Identity cleanup must reject reparse points.");
         Assert.True(guard < delete, "The reparse-point guard must precede the recursive delete.");
         Assert.Contains(@"\A[A-Za-z0-9._-]+\z", cleanup);
+
+        // Checking only the leaf is not enough: a junction at 'gateways' redirects the whole
+        // subtree while the identity directory itself still looks ordinary.
+        var walk = cleanup.IndexOf("$probe = $identityDir", StringComparison.Ordinal);
+        Assert.True(walk > 0 && walk < delete, "The guard must walk ancestors, not just the leaf.");
+        Assert.Contains("Split-Path -Path $probe -Parent", cleanup);
     }
 
     [Fact]
@@ -393,6 +399,154 @@ public sealed class InnoMigrationContractTests
         var identity = manifest.Root!.Elements().Single(element => element.Name.LocalName == "Identity");
         Assert.Equal(OpenClaw.Connection.Migration.MigrationRecordCodec.PackageName, identity.Attribute("Name")!.Value);
         Assert.Equal(OpenClaw.Connection.Migration.MigrationRecordCodec.PackagePublisher, identity.Attribute("Publisher")!.Value);
+    }
+
+    [Theory]
+    [InlineData("gateways")]
+    [InlineData("identity")]
+    public void CleanupScript_DoesNotDeleteThroughAJunction(string junctionAt)
+    {
+        // The shipped guard text is executed against a real junction. The source-order assertions
+        // above passed while the guard still checked only the leaf, so they cannot stand alone.
+        var temp = Path.Combine(Path.GetTempPath(), "oc-junction-" + Guid.NewGuid().ToString("N"));
+        var sentinel = Path.Combine(temp, "valuable");
+        var dataDir = Path.Combine(temp, "data");
+        var gateways = Path.Combine(dataDir, "gateways");
+        var identity = Path.Combine(gateways, "victim");
+        try
+        {
+            Directory.CreateDirectory(dataDir);
+            if (junctionAt == "gateways")
+            {
+                Directory.CreateDirectory(Path.Combine(sentinel, "victim"));
+                File.WriteAllText(Path.Combine(sentinel, "victim", "keep.txt"), "keep");
+                Junction(gateways, sentinel);
+            }
+            else
+            {
+                Directory.CreateDirectory(sentinel);
+                File.WriteAllText(Path.Combine(sentinel, "keep.txt"), "keep");
+                Directory.CreateDirectory(gateways);
+                Junction(identity, sentinel);
+            }
+
+            var output = RunGuard(dataDir, identity);
+
+            Assert.StartsWith("WARNED", output);
+            Assert.True(File.Exists(Path.Combine(sentinel, junctionAt == "gateways" ? "victim" : "", "keep.txt")),
+                $"The junction target was deleted through '{junctionAt}'.");
+        }
+        finally
+        {
+            TryRemove(gateways);
+            TryRemove(identity);
+            TryRemove(temp);
+        }
+    }
+
+    [Fact]
+    public void CleanupScript_StillDeletesAnOrdinaryIdentityDirectory()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "oc-junction-" + Guid.NewGuid().ToString("N"));
+        var dataDir = Path.Combine(temp, "data");
+        var identity = Path.Combine(dataDir, "gateways", "victim");
+        try
+        {
+            Directory.CreateDirectory(identity);
+            File.WriteAllText(Path.Combine(identity, "device-key.json"), "{}");
+
+            var output = RunGuard(dataDir, identity);
+
+            // The guard must not become so strict that ordinary cleanup stops working.
+            Assert.StartsWith("NOWARN", output);
+            Assert.False(Directory.Exists(identity));
+        }
+        finally
+        {
+            TryRemove(temp);
+        }
+    }
+
+    /// <summary>
+    /// Runs the guard exactly as shipped, lifted out of the surrounding uninstall so the test does
+    /// not touch WSL, scheduled tasks, or the registry.
+    /// </summary>
+    private static string RunGuard(string dataDir, string identityDir)
+    {
+        var script = Read("scripts", "Uninstall-LocalGateway.ps1");
+        const string start = "if (Test-Path -LiteralPath $identityDir -PathType Container) {";
+        const string end = "Write-GatewayLog \"Deleted identity directory for local gateway record $id.\"";
+        var from = script.IndexOf(start, StringComparison.Ordinal);
+        var to = script.IndexOf(end, StringComparison.Ordinal);
+        Assert.True(from > 0 && to > from, "The identity cleanup guard could not be located.");
+        var guard = script[from..(to + end.Length)] + "\n}";
+
+        var harness = $$"""
+            $ErrorActionPreference = 'Stop'
+            $DataDir = '{{dataDir}}'
+            $identityDir = '{{identityDir}}'
+            $id = 'victim'
+            $script:warnings = @()
+            function Add-CleanupWarning { param($Message) $script:warnings += $Message }
+            function Write-GatewayLog { param($Message) }
+            foreach ($once in @(1)) {
+            {{guard}}
+            }
+            if ($script:warnings) { "WARNED: $($script:warnings -join '; ')" } else { 'NOWARN' }
+            """;
+
+        var file = Path.Combine(Path.GetTempPath(), "oc-guard-" + Guid.NewGuid().ToString("N") + ".ps1");
+        File.WriteAllText(file, harness);
+        try
+        {
+            // Windows PowerShell 5.1 specifically: that is what Inno runs during uninstall, and
+            // its Remove-Item is the one that follows junctions.
+            var info = new System.Diagnostics.ProcessStartInfo("powershell.exe")
+            {
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{file}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var process = System.Diagnostics.Process.Start(info)!;
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            var error = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+            Assert.True(process.ExitCode == 0, $"Guard harness failed: {error}");
+            return output;
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    private static void Junction(string link, string target)
+    {
+        var info = new System.Diagnostics.ProcessStartInfo("cmd.exe")
+        {
+            Arguments = $"/d /c mklink /J \"{link}\" \"{target}\"",
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using var process = System.Diagnostics.Process.Start(info)!;
+        var error = process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        Assert.True(process.ExitCode == 0, $"Could not create junction: {error}");
+    }
+
+    private static void TryRemove(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static string Read(params string[] segments) =>

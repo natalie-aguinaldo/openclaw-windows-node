@@ -247,9 +247,15 @@ finally {
 
     # Also verified here, because a failure in the body terminates the script before the
     # check below. That is exactly when a key is most likely to have been left behind.
-    if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$($certificate.Thumbprint)") {
-        Write-Warning ("The disposable signing key $($certificate.Thumbprint) is still in " +
-                       'Cert:\CurrentUser\My. Remove it before trusting this host again.')
+    # Both the probe and the report are guarded: under -ErrorActionPreference Stop, or a
+    # caller's WarningPreference of Stop, either could throw and replace an in-flight failure.
+    try {
+        if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$($certificate.Thumbprint)") {
+            Write-Warning ("The disposable signing key $($certificate.Thumbprint) is still in " +
+                           'Cert:\CurrentUser\My. Remove it before trusting this host again.')
+        }
+    } catch {
+        Write-Host "Could not verify disposable signing key removal: $($_.Exception.Message)"
     }
 }
 

@@ -271,6 +271,45 @@ public sealed class StoreMigrationWorkflowTests
         await workflow.StartAsync(CancellationToken.None);
         Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
         Assert.False(workflow.IsBusy);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task InspectionFailure_KeepsBlockingWhenAReceiptIsOnDisk()
+    {
+        // Inspection threw before producing a decision, so the receipt was never observed.
+        // Closing the window here would resume startup against data that already moved.
+        var operations = new Operations { InspectError = new IOException("locked"), Receipt = true };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
+        Assert.Contains("receipt?", operations.Calls);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task InspectionFailure_BlocksWhenTheReceiptCannotBeConfirmed()
+    {
+        var workflow = Create(new Operations
+        {
+            InspectError = new IOException("locked"),
+            ReceiptError = new UnauthorizedAccessException("denied")
+        });
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task InspectionFailure_CannotDropAReceiptTheCallerAlreadyObserved()
+    {
+        // The startup guard inspects first; a failing second pass inside the workflow must not
+        // discard what that first pass proved.
+        var seed = new StoreMigrationStartupDecision(
+            StoreMigrationStartupState.InspectionFailed, null, HoldsCompletionReceipt: true);
+        var workflow = new StoreMigrationWorkflow(
+            new Operations { InspectError = new IOException("locked") }, NullLogger.Instance, seed);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
     }
 
     [Fact]
@@ -343,6 +382,8 @@ public sealed class StoreMigrationWorkflowTests
         public bool Closed { get; set; } = true;
         public Task<bool>? CloseTask { get; set; }
         public Exception? InspectError { get; set; }
+        public bool Receipt { get; set; }
+        public Exception? ReceiptError { get; set; }
         public Exception? GrantError { get; set; }
         public StoreMigrationPreparationState Prepared { get; set; } = StoreMigrationPreparationState.Prepared;
         public StoreMigrationCompletionState Completed { get; set; } = StoreMigrationCompletionState.Completed;
@@ -354,6 +395,12 @@ public sealed class StoreMigrationWorkflowTests
             return Admission;
         }
         public bool HasConsent(InnoInstallation installation) { Calls.Add("consent?"); return Consent; }
+        public bool HoldsCompletionReceipt()
+        {
+            Calls.Add("receipt?");
+            if (ReceiptError is not null) throw ReceiptError;
+            return Receipt;
+        }
         public void GrantConsent(InnoInstallation installation)
         {
             Calls.Add("grant");

@@ -58,8 +58,11 @@ public sealed class MigrationStartupRecordReader(
         {
             // A reparse point above the record directory is an environment shape, not a corrupt
             // record. Recovery cannot repair it, so report it as an inspection problem instead.
+            // The receipt is still probed: refusing to open the path is about not reading or
+            // deleting through a redirection, and "the path is unsafe" is not evidence that
+            // data has not already moved.
             logger.Error($"Store migration record path is unusable ({ex.Message}).");
-            return new(MigrationStartupRecordStatus.Unavailable);
+            return new(MigrationStartupRecordStatus.Unavailable, null, CompletionFileExists());
         }
         catch (Exception ex) when (ex is InvalidDataException or CryptographicException or
                                    EndOfStreamException or ArgumentException or FormatException or
@@ -76,17 +79,29 @@ public sealed class MigrationStartupRecordReader(
     }
 
     /// <summary>
-    /// Existence only. A receipt that cannot be decoded still proves the handoff moved data, and
-    /// this must never throw from inside a catch filter's handler.
+    /// Existence only. A receipt that cannot be decoded still proves the handoff moved data, so
+    /// this answers "is the receipt definitely absent?" and treats every other outcome as
+    /// present. It runs from catch handlers and must never throw.
+    /// <para>
+    /// <see cref="File.Exists(string?)"/> is deliberately not used: it reports <c>false</c> for
+    /// an inaccessible path, an invalid path, and a directory of the same name, so it cannot
+    /// distinguish absence from failure and would fail open on exactly the paths that matter.
+    /// Only the not-found results prove nothing moved.
+    /// </para>
     /// </summary>
     private bool CompletionFileExists()
     {
         try
         {
-            return File.Exists(RecordPath(MigrationRecordCodec.CompletionFileName));
+            _ = File.GetAttributes(RecordPath(MigrationRecordCodec.CompletionFileName));
+            return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or
-                                   ArgumentException)
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            logger.Info($"No migration receipt is present ({ex.GetType().Name}).");
+            return false;
+        }
+        catch (Exception ex)
         {
             logger.Warn($"Could not confirm the migration receipt ({ex.GetType().Name}); assuming it exists.");
             return true;

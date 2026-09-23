@@ -55,18 +55,21 @@ public sealed class StoreMigrationStartupCoordinator(
         if (!enabled)
             return new(StoreMigrationStartupState.Disabled);
 
-        if (!MigrationVersionPolicy.TryParseReleaseVersion(minimumSourceVersion, out var minimum) ||
-            architecture is not ("x64" or "arm64"))
-        {
-            logger.Error("Store migration has no valid source-version or architecture policy.");
-            return new(StoreMigrationStartupState.InspectionFailed);
-        }
-
+        // Read before the policy check so a malformed version or architecture policy cannot
+        // return a non-blocking decision while a receipt sits on disk.
         var pending = records.Read();
         // Captured once so every downstream state carries it. A receipt outranks the state name.
         // Status is checked alongside the flag so a caller that reports Completed without it
         // still cannot produce a non-blocking decision.
         var receipt = pending.CompletionPresent || pending.Status == MigrationStartupRecordStatus.Completed;
+
+        if (!MigrationVersionPolicy.TryParseReleaseVersion(minimumSourceVersion, out var minimum) ||
+            architecture is not ("x64" or "arm64"))
+        {
+            logger.Error("Store migration has no valid source-version or architecture policy.");
+            return Decide(StoreMigrationStartupState.InspectionFailed, receipt);
+        }
+
         if (pending.Status == MigrationStartupRecordStatus.Unavailable)
             return Decide(StoreMigrationStartupState.InspectionFailed, receipt);
         if (pending.Status == MigrationStartupRecordStatus.Invalid)
@@ -101,8 +104,14 @@ public sealed class StoreMigrationStartupCoordinator(
 
         if (pending.Status == MigrationStartupRecordStatus.Completed)
         {
-            var completed = pending.Record
-                ?? throw new InvalidOperationException("Completed migration has no receipt.");
+            // Status without a decoded record should be unreachable, but throwing here would
+            // escape into the UI error boundary and be reported as a plain inspection failure,
+            // dropping the very receipt this branch proves exists. Recover instead.
+            if (pending.Record is not { } completed)
+            {
+                logger.Error("Completed migration has no decoded receipt; recovery is required.");
+                return Decide(StoreMigrationStartupState.RecoveryRequired, receipt, installation);
+            }
             if (!MigrationVersionPolicy.TryParseReleaseVersion(completed.SourceVersion, out var sourceVersion) ||
                 sourceVersion != installation.Version)
                 return Decide(StoreMigrationStartupState.RecoveryRequired, receipt, installation);

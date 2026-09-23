@@ -364,10 +364,25 @@ function Resolve-AppDataDir {
                     # Remove-Item -Recurse follows junctions on Windows PowerShell 5.1, which is
                     # what runs this during Inno uninstall. Deleting through a reparse point would
                     # destroy whatever it targets, so refuse it the way the migration codec does.
-                    $identityItem = Get-Item -LiteralPath $identityDir -Force -ErrorAction Stop
-                    if ($identityItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                    # Every ancestor up to $DataDir is checked, not just the leaf: a junction at
+                    # 'gateways' redirects the whole subtree while the leaf itself looks ordinary.
+                    $redirected = $null
+                    $probe = $identityDir
+                    $stopAt = $DataDir.TrimEnd('\', '/')
+                    while ($probe) {
+                        $probeItem = Get-Item -LiteralPath $probe -Force -ErrorAction Stop
+                        if ($probeItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                            $redirected = $probe
+                            break
+                        }
+                        if ($probe.TrimEnd('\', '/') -eq $stopAt) { break }
+                        $parent = Split-Path -Path $probe -Parent
+                        if (-not $parent -or $parent -eq $probe) { break }
+                        $probe = $parent
+                    }
+                    if ($redirected) {
                         Add-CleanupWarning ("Skipped identity cleanup for local gateway record '$id': " +
-                            "'$identityDir' is a reparse point.")
+                            "'$redirected' is a reparse point.")
                         continue
                     }
 

@@ -593,6 +593,12 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             return Consent;
         }
 
+        public bool HoldsCompletionReceipt()
+        {
+            Calls.Add("receipt?");
+            return false;
+        }
+
         public void GrantConsent(InnoInstallation installation)
         {
             Calls.Add("grant");

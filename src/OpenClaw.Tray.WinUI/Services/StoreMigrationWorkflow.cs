@@ -19,10 +19,19 @@ internal interface IStoreMigrationOperations
     Task<StoreMigrationPreparationState> PrepareAsync(InnoInstallation installation);
     Task<StoreMigrationCompletionState> CompleteAsync(InnoInstallation installation);
     Task<StoreMigrationFinalizationDecision> FinalizeAsync();
+
+    /// <summary>
+    /// Receipt presence only, for when <see cref="Inspect"/> itself fails and never produces a
+    /// decision. Must answer without requiring a successful inspection.
+    /// </summary>
+    bool HoldsCompletionReceipt();
 }
 
 /// <summary>Serializes UI actions without replacing the admission, adoption, or finalization owners.</summary>
-internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operations, IOpenClawLogger logger)
+internal sealed class StoreMigrationWorkflow(
+    IStoreMigrationOperations operations,
+    IOpenClawLogger logger,
+    StoreMigrationStartupDecision? initialAdmission = null)
 {
     public StoreMigrationStage Stage { get; private set; } = StoreMigrationStage.Inspecting;
     public bool IsBusy { get; private set; }
@@ -43,7 +52,9 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
         (!_admissionResolved || _holdsCompletedHandoff) && Stage != StoreMigrationStage.Ready;
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
-    private bool _holdsCompletedHandoff;
+    // Seeded from the caller's admission so a receipt observed before this workflow existed is
+    // not lost when a later inspection pass fails.
+    private bool _holdsCompletedHandoff = initialAdmission?.BlocksStartup ?? false;
     private bool _admissionResolved;
 
     public Task StartAsync(CancellationToken cancellationToken) => RunAsync(false, cancellationToken);
@@ -161,8 +172,11 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
         catch (Exception exception)
         {
             // This is the UI error boundary. A failure here is reported as an inspection problem;
-            // whether it also blocks startup is decided by the receipt, not by the failure.
+            // whether it also blocks startup is decided by the receipt, not by the failure. The
+            // receipt is probed directly because a throwing inspection never observed one, and
+            // leaving the flag clear would let a close resume startup against moved data.
             logger.Error($"Migration workflow failed: {exception}");
+            _holdsCompletedHandoff |= HoldsReceiptWithoutInspection();
             SetStage(StoreMigrationStage.InspectionFailed);
         }
         finally
@@ -171,6 +185,23 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
             _admissionResolved = true;
             IsBusy = false;
             Changed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Fails safe: if the receipt cannot be confirmed after the workflow already failed, nothing
+    /// is known about whether data moved, and the app must not resume normal startup.
+    /// </summary>
+    private bool HoldsReceiptWithoutInspection()
+    {
+        try
+        {
+            return operations.HoldsCompletionReceipt();
+        }
+        catch (Exception exception)
+        {
+            logger.Error($"Could not confirm the migration receipt after a workflow failure: {exception}");
+            return true;
         }
     }
 
