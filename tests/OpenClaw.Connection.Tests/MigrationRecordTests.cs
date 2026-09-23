@@ -283,7 +283,8 @@ public sealed class MigrationRecordTests
         var logPath = temp.Combine("cleanup.log");
         File.WriteAllText(logPath, "cleanup checkpoint");
         using var logLock = lockLog ? File.Open(logPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None) : null;
-        var readyPath = temp.Combine("ready");
+        var readyName = @"Local\OpenClawMigrationTest-" + Guid.NewGuid().ToString("N");
+        using var ready = new EventWaitHandle(false, EventResetMode.ManualReset, readyName);
         var start = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             "System32", "WindowsPowerShell", "v1.0", "powershell.exe"))
         {
@@ -292,7 +293,7 @@ public sealed class MigrationRecordTests
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        start.Environment["OPENCLAW_TEST_READY"] = readyPath;
+        start.Environment["OPENCLAW_TEST_READY"] = readyName;
         foreach (var argument in new[]
         {
             "-NoProfile", "-NonInteractive", "-Command",
@@ -300,10 +301,12 @@ public sealed class MigrationRecordTests
             $ErrorActionPreference = 'Stop'
             $child = Start-Process -FilePath "$PSHOME\powershell.exe" -NoNewWindow -PassThru `
                 -ArgumentList '-NoProfile -NonInteractive -Command Start-Sleep -Seconds 60'
+            [Console]::Out.WriteLine([string]$child.Id)
             [Console]::Out.WriteLine('timeout stdout')
             [Console]::Error.WriteLine('timeout stderr')
-            [IO.File]::WriteAllText($env:OPENCLAW_TEST_READY + '.tmp', [string]$child.Id)
-            [IO.File]::Move($env:OPENCLAW_TEST_READY + '.tmp', $env:OPENCLAW_TEST_READY)
+            $ready = [Threading.EventWaitHandle]::OpenExisting($env:OPENCLAW_TEST_READY)
+            $null = $ready.Set()
+            $ready.Dispose()
             Start-Sleep -Seconds 60
             """
         })
@@ -312,14 +315,11 @@ public sealed class MigrationRecordTests
         Process? child = null;
         try
         {
-            var readiness = Stopwatch.StartNew();
-            while (!File.Exists(readyPath))
-            {
-                Assert.False(process.HasExited, "Timeout fixture exited before publishing readiness.");
-                Assert.True(readiness.Elapsed < TimeSpan.FromSeconds(30), "Timeout fixture did not become ready.");
-                await Task.Delay(25);
-            }
-            child = Process.GetProcessById(int.Parse(File.ReadAllText(readyPath)));
+            Assert.True(await Task.Run(() => ready.WaitOne(TimeSpan.FromSeconds(30))),
+                "Timeout fixture did not signal readiness.");
+            var childId = await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.NotNull(childId);
+            child = Process.GetProcessById(int.Parse(childId));
             var error = await Assert.ThrowsAsync<TimeoutException>(() =>
                 AssertScriptExitAsync(process, 0, logPath, TimeSpan.FromMilliseconds(250)));
 
