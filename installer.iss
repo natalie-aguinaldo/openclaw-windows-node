@@ -102,9 +102,12 @@ Name: "startupicon"; Description: "Start {#MyAppName} when Windows starts"; Grou
 ; WinUI Tray app - include all files (WinUI needs DLLs, not single-file)
 Source: "{#publish}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; WSL gateway uninstall helper copied to {tmp} by [Code] during uninstall.
-Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
-Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
-Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion uninsneveruninstall
+; Uninstall reads these during usUninstall, which runs before Inno removes
+; files, so they must not carry uninsneveruninstall. Retaining them would
+; strand the helpers in {app} on every uninstall that keeps the local gateway.
+Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion
 #if vcRedist != ""
 Source: "{#vcRedist}"; DestDir: "{tmp}"; DestName: "vc_redist.exe"; Flags: deleteafterinstall; AfterInstall: InstallVCRuntime
 #endif

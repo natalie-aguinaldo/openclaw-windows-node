@@ -87,10 +87,12 @@ if (-not $NoWatchdog -and $TimeoutSeconds -gt 0) {
             -Arguments ($arguments -join ' ') `
             -TimeoutMilliseconds ($TimeoutSeconds * 1000)
     } catch {
-        # A watchdog we cannot start must not become a verdict. Fall through and
-        # run the check inline rather than reporting a state we did not observe.
-        Write-Verbose "Migration preservation watchdog unavailable: $($_.Exception.GetType().Name)."
-        $watchdogResult = $null
+        # Falling through to the inline check would reintroduce the unbounded
+        # Add-Type stall this watchdog exists to prevent, and the caller waits
+        # with ewWaitUntilTerminated. Report the uncertain verdict instead; it
+        # already fails closed and preserves the gateway.
+        Write-Warning "Migration preservation watchdog could not start: $($_.Exception.GetType().Name)."
+        exit 2
     }
 
     if ($null -ne $watchdogResult) {

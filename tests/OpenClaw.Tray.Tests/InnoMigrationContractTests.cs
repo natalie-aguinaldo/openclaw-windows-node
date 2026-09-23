@@ -280,6 +280,7 @@ public sealed class InnoMigrationContractTests
     public void Installer_ChecksCompletionBeforeChoiceAndNeverDeletesPreservedState()
     {
         var installer = Read("installer.iss");
+        Assert.Contains("Source: \"scripts\\Uninstall-LocalGateway.ps1\"", installer);
         Assert.Contains("Source: \"scripts\\Test-InnoMigration.ps1\"", installer);
         Assert.Contains("Source: \"src\\OpenClaw.Connection\\Migration\\MigrationRecordCodec.cs\"", installer);
         AssertPreservationGuards(installer);
@@ -430,14 +431,31 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotMatch(@"ResultCode := [0-9];", installer);
         // The preservation notice must not name files uninstall is about to delete.
         Assert.DoesNotContain("run Uninstall-LocalGateway.ps1 from", installer);
-        foreach (var retained in new[]
+        // These helpers run during usUninstall, before Inno removes files, so they
+        // need no retention flag. Retaining them stranded all three in {app} on
+        // every uninstall that kept the local gateway, including the ordinary
+        // non-migration "keep my gateway" choice.
+        foreach (var helper in new[]
         {
             "scripts\\Uninstall-LocalGateway.ps1", "scripts\\Test-InnoMigration.ps1",
             "src\\OpenClaw.Connection\\Migration\\MigrationRecordCodec.cs"
         })
-            Assert.Matches(
-                Regex.Escape($"Source: \"{retained}\"") + @"[^\n]*uninsneveruninstall",
+            Assert.DoesNotMatch(
+                Regex.Escape($"Source: \"{helper}\"") + @"[^\n]*uninsneveruninstall",
                 installer);
+    }
+
+    [Fact]
+    public void Checker_ReportsUncertaintyWhenItsWatchdogCannotStart()
+    {
+        var script = Read("scripts", "Test-InnoMigration.ps1");
+        var start = script.IndexOf("-TimeoutMilliseconds ($TimeoutSeconds * 1000)", StringComparison.Ordinal);
+        var handler = script[start..script.IndexOf("if ($null -ne $watchdogResult)", start, StringComparison.Ordinal)];
+        // Falling back to the inline Add-Type check would reintroduce the unbounded
+        // stall the watchdog exists to prevent, and installer.iss waits for this
+        // process with ewWaitUntilTerminated.
+        Assert.Contains("exit 2", handler);
+        Assert.DoesNotContain("$watchdogResult = $null", handler);
     }
 
     [Fact]
