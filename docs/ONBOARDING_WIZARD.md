@@ -30,6 +30,8 @@ warnings stay in the same native InfoBar style as setup. Buttons retain the
 wizard's 100-DIP minimum width, neutral left-hand dismissal, accent right-hand
 primary action, and standard content/footer spacing. The title bar stays
 "Move to the Store version"; retry/recovery states do not use setup step dots.
+The window also sets the native OpenClaw icon for taskbar previews and the
+window switcher; the custom title-bar image alone does not supply that icon.
 
 This is a separate pre-start workflow, not a page in the setup pipeline.
 `StoreMigrationStartupGuard` and `StoreMigrationWorkflow` retain migration

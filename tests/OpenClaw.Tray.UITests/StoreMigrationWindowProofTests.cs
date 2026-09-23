@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -25,6 +26,31 @@ namespace OpenClaw.Tray.UITests;
 [Collection(UICollection.Name)]
 public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutputHelper output)
 {
+    [Fact]
+    public Task Consent_AssignsNativeIconsForTaskbarAndWindowSwitcher()
+    {
+        return WithWindowAsync(new Operations(), async (window, workflow, completion) =>
+        {
+            await WaitForStageAsync(workflow, StoreMigrationStage.Consent);
+            await ui.RunOnUIAsync(() =>
+            {
+                var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+                const uint wmGetIcon = 0x007f;
+                foreach (var iconType in new nuint[] { 0, 1 })
+                {
+                    var icon = SendMessage(hwnd, wmGetIcon, iconType, 0);
+                    Assert.NotEqual(nint.Zero, icon);
+                    output.WriteLine($"Native window icon type {iconType}: nonzero handle.");
+                }
+            });
+            await InvokeAsync(window, "Dismiss");
+            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+        });
+    }
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageW", ExactSpelling = true)]
+    private static extern nint SendMessage(nint hwnd, uint message, nuint wParam, nint lParam);
+
     [Fact]
     public Task Consent_DefaultsToNotNow_AndDismissesWithoutMigration()
     {
