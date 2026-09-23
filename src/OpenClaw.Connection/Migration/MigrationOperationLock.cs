@@ -15,7 +15,7 @@ public static class MigrationOperationLock
 
     internal static FileStream AcquireExclusive(MigrationBinding binding) => Open(binding, FileAccess.ReadWrite, FileShare.None);
 
-    internal static bool IsBusy(IOException exception) => (exception.HResult & 0xffff) is 32 or 33;
+    public static bool IsBusy(IOException exception) => (exception.HResult & 0xffff) is 32 or 33;
 
     private static FileStream Open(MigrationBinding binding, FileAccess access, FileShare share)
     {
@@ -43,11 +43,32 @@ public static class MigrationOperationLock
         var info = new DirectoryInfo(directory);
         if (!info.Exists)
             info.Create(security);
-        else
+        else if (RequiresHardening(info, owner))
             info.SetAccessControl(security);
 
         var path = Path.Combine(directory, "prepare.lock");
         MigrationRecordCodec.RejectReparsePoints(path);
         return new FileStream(path, FileMode.OpenOrCreate, access, share);
+    }
+
+    /// <summary>
+    /// Rewriting the DACL on every acquisition needs WRITE_DAC and WRITE_OWNER, which an ordinary
+    /// launch can lack on a roaming or administratively hardened profile. Reading is cheap and
+    /// always permitted to the owner, so only correct a directory that actually drifted.
+    /// </summary>
+    private static bool RequiresHardening(DirectoryInfo info, SecurityIdentifier owner)
+    {
+        try
+        {
+            var current = info.GetAccessControl();
+            return !current.AreAccessRulesProtected
+                   || current.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier actual
+                   || actual != owner;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or PrivilegeNotHeldException
+                                      or IOException)
+        {
+            return true;
+        }
     }
 }

@@ -39,6 +39,65 @@ public sealed class MigrationOperationLockTests
     }
 
     [Fact]
+    public void ContendedAcquisition_IsDistinguishableFromAnInaccessibleLock()
+    {
+        using var temp = new TempDirectory();
+        var binding = MigrationRecordTests.CreateRecord(temp, "intent").Binding;
+        using var runtime = MigrationOperationLock.AcquireRuntime(binding);
+
+        // Inno startup and uninstall both key their fail-closed decision off this predicate:
+        // a contended lock proves a migration is live, while any other failure proves nothing.
+        var contended = Assert.Throws<IOException>(() => MigrationOperationLock.AcquireExclusive(binding));
+        Assert.True(MigrationOperationLock.IsBusy(contended));
+        Assert.False(MigrationOperationLock.IsBusy(new IOException("unreadable")));
+        Assert.False(MigrationOperationLock.IsBusy(new FileNotFoundException()));
+    }
+
+    [Fact]
+    public void RepeatAcquisition_LeavesAnAlreadyHardenedDirectoryUntouched()
+    {
+        using var temp = new TempDirectory();
+        var binding = MigrationRecordTests.CreateRecord(temp, "intent").Binding;
+        using (MigrationOperationLock.AcquireRuntime(binding)) { }
+        var directory = new DirectoryInfo(
+            Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName));
+
+        var marker = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
+        var security = directory.GetAccessControl();
+        security.AddAccessRule(new FileSystemAccessRule(marker, FileSystemRights.Read,
+            InheritanceFlags.None, PropagationFlags.None, AccessControlType.Allow));
+        directory.SetAccessControl(security);
+
+        using var reacquired = MigrationOperationLock.AcquireRuntime(binding);
+
+        // Surviving the marker proves no DACL rewrite happened. Rewriting on every launch
+        // needs WRITE_DAC and WRITE_OWNER for a privilege the acquisition does not require.
+        Assert.Contains(
+            directory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => rule.IdentityReference.Value == marker.Value);
+    }
+
+    [Fact]
+    public void DriftedDirectorySecurity_IsRehardenedOnNextAcquisition()
+    {
+        using var temp = new TempDirectory();
+        var binding = MigrationRecordTests.CreateRecord(temp, "intent").Binding;
+        using (MigrationOperationLock.AcquireRuntime(binding)) { }
+        var directory = new DirectoryInfo(
+            Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName));
+
+        var security = directory.GetAccessControl();
+        security.SetAccessRuleProtection(isProtected: false, preserveInheritance: true);
+        directory.SetAccessControl(security);
+        Assert.False(directory.GetAccessControl().AreAccessRulesProtected);
+
+        using var reacquired = MigrationOperationLock.AcquireRuntime(binding);
+
+        Assert.True(directory.GetAccessControl().AreAccessRulesProtected);
+    }
+
+    [Fact]
     public void WrongUserBinding_IsRejectedBeforeCreatingDirectory()
     {
         using var temp = new TempDirectory();

@@ -136,6 +136,7 @@ var
   LocalGatewayCleanupSucceeded: Boolean;
   MigrationOperationHandle: THandle;
   MigrationOperationLocked: Boolean;
+  MigrationOperationUnavailable: Boolean;
 
 function OpenMigrationOperationFile(
   FileName: String; DesiredAccess, ShareMode: LongWord; SecurityAttributes: Integer;
@@ -174,29 +175,46 @@ function InitializeUninstall: Boolean;
 var
   Directory: String;
   LockPath: String;
+  LastError: LongWord;
 begin
   Result := True;
 #ifndef DevBuild
+  MigrationOperationUnavailable := True;
   Directory := ExpandConstant('{userappdata}\{#MyInstallDir}\store-migration');
   LockPath := Directory + '\prepare.lock';
-  Result := MigrationPathIsOrdinary(LockPath);
-  if Result then
-    Result := ForceDirectories(Directory);
-  if Result then
+  // Kept as separate tests rather than one boolean expression: ForceDirectories must
+  // never run when the path check rejected a reparse point, and Pascal Script
+  // short-circuit behavior is not worth betting a redirected directory create on.
+  if not MigrationPathIsOrdinary(LockPath) then
+    Log('Migration state path is not an ordinary directory. Uninstall continues and preserves the local gateway.')
+  else if ForceDirectories(Directory) then
   begin
     // Shared read handles allow our cleanup child to join, but exclude Store's
     // FileShare.None writer. Keep this handle through registry/payload removal.
     MigrationOperationHandle := OpenMigrationOperationFile(
       LockPath, $80000000, 1, 0, 4, $80, 0);
-    Result := MigrationOperationHandle <> THandle(-1);
-    MigrationOperationLocked := Result;
+    if MigrationOperationHandle <> THandle(-1) then
+    begin
+      MigrationOperationLocked := True;
+      MigrationOperationUnavailable := False;
+    end
+    else
+    begin
+      LastError := DLLGetLastError;
+      // Only a migration actively holding the lock may stop an uninstall. Any other
+      // failure means migration state is merely unreadable, which must never trap the
+      // user in an app they cannot remove. Continue and suppress destructive cleanup.
+      if (LastError = 32) or (LastError = 33) then
+      begin
+        Result := False;
+        Log('Migration state is locked by an in-progress migration. Uninstall stopped before changing the installation.');
+        if not UninstallSilent() then
+          MsgBox('OpenClaw migration is currently running. Close the Store migration preview, then retry uninstall.', mbError, MB_OK);
+      end;
+    end;
   end;
-  if not Result then
-  begin
-    Log('Could not lock migration state. Uninstall stopped before changing the installation.');
-    if not UninstallSilent() then
-      MsgBox('OpenClaw migration is busy or its state cannot be accessed. Close the Store migration preview and retry uninstall.', mbError, MB_OK);
-  end;
+  if Result and MigrationOperationUnavailable then
+    Log('Migration state could not be locked. Uninstall continues and preserves the local gateway.');
 #endif
 end;
 
@@ -277,12 +295,17 @@ end;
 
 procedure WarnMigrationCheckUnavailable;
 begin
-  Log('Migration preservation check unavailable: skipping destructive gateway cleanup.');
+  Log('Migration preservation check unavailable: skipping destructive gateway cleanup. ' +
+      'The {#MyDistroName} WSL distro and ' +
+      ExpandConstant('{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}') +
+      ' were left in place.');
   if not UninstallSilent() then
     MsgBox(
       'Setup could not confirm whether your OpenClaw data was migrated to the Store app.' + #13#10#13#10 +
-      'The local WSL gateway and its generated state were left in place so nothing is lost. ' +
-      'Removing them manually is described in the OpenClaw uninstall documentation.',
+      'The local WSL gateway and its generated state were left in place so nothing is lost.' + #13#10#13#10 +
+      'If you want to remove them, open OpenClaw and choose Settings > Local Gateway > ' +
+      'Remove Local Gateway before uninstalling. If OpenClaw is already removed, run:' + #13#10#13#10 +
+      'wsl --unregister {#MyDistroName}',
       mbInformation, MB_OK);
 end;
 
@@ -294,6 +317,15 @@ begin
     Exit;
 
   LocalGatewayCleanupChoiceInitialized := True;
+
+  // Cleanup runs a child process that must join the migration lock. Without it the
+  // uninstall cannot prove the gateway is unowned, so preservation is the only safe answer.
+  if MigrationOperationUnavailable then
+  begin
+    LocalGatewayCleanupRequested := False;
+    WarnMigrationCheckUnavailable;
+    Exit;
+  end;
 
   MigrationResult := CheckCompletedStoreMigration;
   if MigrationResult <> 0 then

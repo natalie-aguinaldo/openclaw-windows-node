@@ -72,6 +72,67 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotContain("CliUninstall", finalizer);
     }
 
+    /// <summary>
+    /// The migration lock coordinates with a Store migration that most users will never run.
+    /// It must never become a reason an ordinary user cannot start or uninstall the app: only
+    /// a live contended lock may block, and an unreadable one must degrade instead.
+    /// </summary>
+    [Fact]
+    public void InaccessibleMigrationLock_BlocksNeitherStartupNorUninstall()
+    {
+        var guard = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationStartupGuard.cs");
+        var acquire = guard.IndexOf("MigrationOperationLock.AcquireRuntime(binding)", StringComparison.Ordinal);
+        var busy = guard.IndexOf("catch (IOException ex) when (MigrationOperationLock.IsBusy(ex))",
+            StringComparison.Ordinal);
+        Assert.True(busy > acquire, "Only a contended lock may block Inno startup.");
+        var receipt = guard.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal);
+        var degrade = guard.IndexOf("continuing without it", StringComparison.Ordinal);
+        Assert.InRange(degrade, busy, receipt);
+        // The degraded path must fall through to the receipt check rather than showing guidance,
+        // because ShowGuidance returns true and would stop the launch it is meant to preserve.
+        Assert.DoesNotContain("ShowGuidance", guard[degrade..receipt]);
+
+        var installer = Read("installer.iss");
+        var uninstall = installer[installer.IndexOf("function InitializeUninstall", StringComparison.Ordinal)..];
+        uninstall = uninstall[..uninstall.IndexOf("procedure DeinitializeUninstall", StringComparison.Ordinal)];
+        Assert.Matches(@"if \(LastError = 32\) or \(LastError = 33\) then\s+begin\s+Result := False;", uninstall);
+        Assert.Single(Regex.Matches(uninstall, @"Result := False;"));
+        Assert.Contains("MigrationOperationUnavailable := True;", uninstall);
+
+        // An unavailable lock must still suppress destructive cleanup, since the cleanup child
+        // cannot join a lock the uninstaller never obtained.
+        var choice = installer[installer.IndexOf("procedure EnsureLocalGatewayCleanupChoice", StringComparison.Ordinal)..];
+        var suppression = choice.IndexOf("if MigrationOperationUnavailable then", StringComparison.Ordinal);
+        Assert.InRange(suppression, 0, choice.IndexOf("MigrationResult := CheckCompletedStoreMigration",
+            StringComparison.Ordinal));
+        Assert.Contains("WarnMigrationCheckUnavailable;", choice[suppression..]);
+    }
+
+    /// <summary>
+    /// Preservation is a dead end unless the notice carries the removal path itself. No document
+    /// in this repository is linked from the uninstaller, and the user may have no app left.
+    /// </summary>
+    [Fact]
+    public void PreservationNotice_CarriesItsOwnRemovalInstructions()
+    {
+        var installer = Read("installer.iss");
+        var warn = installer[installer.IndexOf("procedure WarnMigrationCheckUnavailable", StringComparison.Ordinal)..];
+        warn = warn[..warn.IndexOf("procedure EnsureLocalGatewayCleanupChoice", StringComparison.Ordinal)];
+
+        Assert.Contains("wsl --unregister {#MyDistroName}", warn);
+        Assert.Contains("Settings > Local Gateway > ", warn);
+        Assert.DoesNotContain("uninstall documentation", warn);
+        // The silent path skips the dialog, so the log line is the only audit trail an
+        // enterprise administrator gets. It must name what was left behind.
+        var log = warn[..warn.IndexOf("if not UninstallSilent()", StringComparison.Ordinal)];
+        Assert.Contains("{#MyDistroName}", log);
+        Assert.Contains(@"{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}", log);
+
+        var doc = Read("docs", "uninstall-portable.md");
+        Assert.Contains("Installer Uninstall Preserved the Local Gateway", doc);
+        Assert.Contains("wsl --unregister OpenClawGateway", doc);
+    }
+
     [Fact]
     public void StorePreviewBuildGate_RequiresExplicitNonShippingConfiguration()
     {
@@ -257,7 +318,7 @@ public sealed class InnoMigrationContractTests
         // An unverifiable migration state must be reported, not silently swallowed.
         Assert.Matches(
             @"procedure WarnMigrationCheckUnavailable;\s+begin\s+" +
-            @"Log\('[^']*'\);\s+" +
+            @"Log\([\s\S]*?\);\s+" +
             @"if not UninstallSilent\(\) then\s+MsgBox\(",
             installer);
         Assert.Matches(
@@ -425,12 +486,16 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("#ifndef DevBuild", initialize);
         Assert.Contains(@"{userappdata}\{#MyInstallDir}\store-migration", initialize);
         Assert.Contains(@"'\prepare.lock'", initialize);
-        Assert.Contains("Result := MigrationPathIsOrdinary(LockPath);", initialize);
-        Assert.Contains("Result := ForceDirectories(Directory);", initialize);
+        Assert.Contains("if not MigrationPathIsOrdinary(LockPath) then", initialize);
+        Assert.Contains("else if ForceDirectories(Directory) then", initialize);
+        // A rejected reparse path must never reach ForceDirectories, so the two checks
+        // stay sequential rather than relying on Pascal Script short-circuit evaluation.
+        Assert.DoesNotContain("MigrationPathIsOrdinary(LockPath) and", initialize);
         Assert.Matches(@"OpenMigrationOperationFile\(\s*LockPath, \$80000000, 1, 0, 4, \$80, 0\)", initialize);
-        Assert.Contains("Result := MigrationOperationHandle <> THandle(-1);", initialize);
-        Assert.Contains("MigrationOperationLocked := Result;", initialize);
-        Assert.Contains("if not Result then", initialize);
+        Assert.Matches(
+            @"if MigrationOperationHandle <> THandle\(-1\) then\s+begin\s+" +
+            @"MigrationOperationLocked := True;\s+MigrationOperationUnavailable := False;",
+            initialize);
         Assert.Matches(@"procedure DeinitializeUninstall;\s*begin\s*if MigrationOperationLocked then\s*begin\s*" +
                        @"CloseMigrationOperationFile\(MigrationOperationHandle\);", installer);
         Assert.Single(Regex.Matches(installer, @"CloseMigrationOperationFile\(MigrationOperationHandle\)"));
