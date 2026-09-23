@@ -131,6 +131,27 @@ public sealed class InnoInstallationDetectorTests
     }
 
     [Fact]
+    public void MissingPayload_CarriesTheRegisteredVersionSoAdmissionCanAskForAnUpdate()
+    {
+        using var fixture = new Fixture();
+        File.Delete(fixture.Payload("MigrationRecordCodec.cs"));
+
+        var result = fixture.Detect();
+
+        Assert.Equal(InnoInstallationStatus.Unsupported, result.Status);
+        Assert.Equal(Version.Parse("2026.9.17.0"), result.RegisteredVersion);
+    }
+
+    [Fact]
+    public void UnsupportableShape_CarriesNoRegisteredVersion()
+    {
+        using var fixture = new Fixture();
+        File.WriteAllText(fixture.Payload("app-identity.txt"), "dev");
+
+        Assert.Null(fixture.Detect().RegisteredVersion);
+    }
+
+    [Fact]
     public void DirectoryInsteadOfPayload_IsUnsupported()
     {
         using var fixture = new Fixture();

@@ -129,7 +129,80 @@ public sealed class StoreMigrationWorkflowTests
     }
 
     [Theory]
-    [InlineData(StoreMigrationFinalizationState.Finalized, StoreMigrationStage.Ready)]
+    [InlineData(StoreMigrationStartupState.UpdateInno, false)]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation, false)]
+    [InlineData(StoreMigrationStartupState.InspectionFailed, false)]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired, false)]
+    [InlineData(StoreMigrationStartupState.AwaitingInnoRemoval, true)]
+    public async Task InformationalAdmission_DoesNotKeepTheAppFromStarting(
+        StoreMigrationStartupState admission, bool blocks)
+    {
+        var operations = new Operations { Admission = new(admission), Consent = true };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(blocks, workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task ReceiptWrittenThisSession_BlocksStartupEvenAfterAFailedStage()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.InspectionFailed
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        // The stage reports an inspection failure, but the completion receipt still exists.
+        Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task SuccessfulFinalization_ReleasesTheStartupBlock()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.Finalized
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Ready, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task CompletionWrittenDuringMigration_BlocksStartup()
+    {
+        var operations = new Operations { Consent = true };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.AwaitingRemoval, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task AbandonedConsent_LeavesStartupUnblocked()
+    {
+        var operations = new Operations();
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Consent, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    [Theory]
     [InlineData(StoreMigrationFinalizationState.AwaitingInnoRemoval, StoreMigrationStage.AwaitingRemoval)]
     [InlineData(StoreMigrationFinalizationState.StartupPreferenceFailed, StoreMigrationStage.FinalizationFailed)]
     [InlineData(StoreMigrationFinalizationState.RecordCleanupFailed, StoreMigrationStage.FinalizationFailed)]

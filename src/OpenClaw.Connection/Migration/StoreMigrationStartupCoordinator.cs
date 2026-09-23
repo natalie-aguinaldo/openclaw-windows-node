@@ -21,6 +21,16 @@ public sealed record StoreMigrationStartupDecision(
 {
     public bool AllowsNormalStartup =>
         State is StoreMigrationStartupState.Disabled or StoreMigrationStartupState.NotRequired;
+
+    /// <summary>
+    /// Only a handoff that has already moved data may refuse launch. Every other state informs
+    /// the user and then gets out of the way: refusing to start cannot repair an unsupported
+    /// installation, a failed inspection, or a corrupt record, and the records stay on disk
+    /// either way. Blocking there would only deny the user the app.
+    /// </summary>
+    public bool BlocksStartup =>
+        State is StoreMigrationStartupState.FinalizationRequired or
+                 StoreMigrationStartupState.AwaitingInnoRemoval;
 }
 
 /// <summary>
@@ -54,7 +64,13 @@ public sealed class StoreMigrationStartupCoordinator(
         if (detected.Status == InnoInstallationStatus.InspectionFailed)
             return Decide(StoreMigrationStartupState.InspectionFailed);
         if (detected.Status == InnoInstallationStatus.Unsupported)
-            return Decide(StoreMigrationStartupState.UnsupportedInstallation);
+        {
+            // An installation that predates the migration payload is not unsupportable; it just
+            // needs the update that ships migration. Asking for that is actionable guidance.
+            return Decide(detected.RegisteredVersion is { } registered && registered < minimum
+                ? StoreMigrationStartupState.UpdateInno
+                : StoreMigrationStartupState.UnsupportedInstallation);
+        }
 
         if (detected.Status == InnoInstallationStatus.NotInstalled)
         {

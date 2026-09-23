@@ -26,8 +26,18 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
 {
     public StoreMigrationStage Stage { get; private set; } = StoreMigrationStage.Inspecting;
     public bool IsBusy { get; private set; }
+
+    /// <summary>
+    /// Closing the window abandons migration, so only a handoff whose completion receipt already
+    /// exists may keep the app from starting. This tracks
+    /// <see cref="StoreMigrationStartupDecision.BlocksStartup"/> rather than the visible stage,
+    /// because a receipt can survive a stage that later reports an inspection failure. Every
+    /// other state has nothing to protect, and refusing to launch would leave the user stuck.
+    /// </summary>
+    public bool BlocksStartup => _holdsCompletedHandoff && Stage != StoreMigrationStage.Ready;
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
+    private bool _holdsCompletedHandoff;
 
     public Task StartAsync(CancellationToken cancellationToken) => RunAsync(false, cancellationToken);
     public Task ContinueAsync(CancellationToken cancellationToken) =>
@@ -44,6 +54,7 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
             SetStage(StoreMigrationStage.Inspecting);
             cancellationToken.ThrowIfCancellationRequested();
             var admission = operations.Inspect();
+            _holdsCompletedHandoff = admission.BlocksStartup;
             if (admission.AllowsNormalStartup)
             {
                 SetStage(StoreMigrationStage.Ready);
@@ -121,6 +132,9 @@ internal sealed class StoreMigrationWorkflow(IStoreMigrationOperations operation
             cancellationToken.ThrowIfCancellationRequested();
             SetStage(StoreMigrationStage.Completing);
             var completed = await operations.CompleteAsync(admission.Installation);
+            // A written receipt means data has moved; the window may no longer be dismissed
+            // into normal startup until finalization succeeds.
+            _holdsCompletedHandoff |= completed == StoreMigrationCompletionState.Completed;
             SetStage(completed switch
             {
                 StoreMigrationCompletionState.Completed => StoreMigrationStage.AwaitingRemoval,

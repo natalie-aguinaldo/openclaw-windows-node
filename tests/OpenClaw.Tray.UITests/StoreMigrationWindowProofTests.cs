@@ -44,7 +44,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 }
             });
             await InvokeAsync(window, "Dismiss");
-            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
     }
 
@@ -67,7 +67,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             });
             await CaptureAsync(window, "Consent");
             await InvokeAsync(window, "Dismiss");
-            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
             await ui.RunOnUIAsync(() =>
                 Assert.Equal(new[] { "inspect", "consent?" }, operations.Calls));
         });
@@ -151,7 +151,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 await CaptureAsync(window, "Consent-520x520-WarningScrolled");
             }
             await InvokeAsync(window, "Dismiss");
-            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
     }
 
@@ -180,6 +180,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             });
             await CaptureAsync(window, "AwaitingRemoval-520x520-LargeText");
             await InvokeAsync(window, "Dismiss");
+            // A completion receipt exists here, so dismissal must not resume normal startup.
             Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
     }
@@ -352,7 +353,8 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             });
             await CaptureAsync(window, "Recovery");
             await InvokeAsync(window, "Dismiss");
-            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            // Recovery holds no completion receipt, so dismissal returns the user to the app.
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
             await ui.RunOnUIAsync(() => Assert.Equal(new[] { "inspect" }, operations.Calls));
         });
     }

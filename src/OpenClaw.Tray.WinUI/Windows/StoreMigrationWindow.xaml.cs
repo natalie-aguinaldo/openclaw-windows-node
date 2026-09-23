@@ -173,7 +173,9 @@ public sealed partial class StoreMigrationWindow : Window
     {
         _lifetime.Cancel();
         _workflow.Changed -= Render;
-        _finished.TrySetResult(false);
+        // Dismissing an informational stage returns the user to the app. Only a stage holding
+        // a completion receipt keeps launch blocked.
+        _finished.TrySetResult(!_workflow.BlocksStartup);
         _lifetime.Dispose();
     }
 }

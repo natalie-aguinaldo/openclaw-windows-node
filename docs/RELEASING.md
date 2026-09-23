@@ -180,15 +180,25 @@ Before tagging the coordinated release or claiming issue #1374 complete:
 These are tag-time gates, not merge-time gates. The switch is checked in as `true`
 so the coordinated release and its CI artifacts carry migration, but a tag must not
 be published until each item above is satisfied against that tag's real artifacts.
-If acceptance fails, set `MigrationProductionEnabled` to `false` and retag rather
-than shipping an unverified launch gate. A synthetic source floor supplied for
-disposable package testing is not approval of a production release version.
+If acceptance fails before the Store package is published, set
+`MigrationProductionEnabled` to `false` and retag rather than shipping an unverified
+launch gate. A synthetic source floor supplied for disposable package testing is not
+approval of a production release version.
 
-Because every unhappy Store-side path stops launch rather than degrading, confirm
-before the tag that the released Inno installer registers `DisplayVersion`
-`2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`. A prerelease
-suffix or a mismatched name is rejected as an unsupported installation, which
-blocks startup for that user.
+The switch is a pre-publication gate, not a recall. Once a Store package carrying
+`PRODUCTION_MIGRATION` is published, the floor and the entire flow are compiled into
+that package: a later Inno release built with the switch off cannot disable migration
+for users who already have the Store build, and that Inno release still sits above the
+pinned floor. Turning the switch off only prevents *new* migration-capable Store
+builds. To stop migrations already reaching users, publish a corrected Store package.
+
+Unhappy Store-side paths inform the user and then continue to normal startup. Only a
+handoff holding a completion receipt keeps the app from starting, because only that
+state has data that must not be abandoned. Still confirm before the tag that the
+released Inno installer registers `DisplayVersion` `2026.9.5` and `DisplayName`
+`OpenClaw Companion version 2026.9.5`: a prerelease suffix or a mismatched name is
+rejected as an unsupported installation, so that user is told migration is unavailable
+instead of being offered it.
 
 ### Developer migration test package
 
@@ -273,15 +283,18 @@ The preview:
 - Requires coherent source version and executable architecture evidence.
   Prerelease/informational versions do not satisfy the stable version gate.
 - Reads existing intent/completion records through the shared DPAPI codec.
-  Invalid or inaccessible records block startup. An orphan intent requires
-  recovery; completion without Inno requires finalization, not fresh startup.
+  A completion receipt requires finalization before normal startup; an orphan or
+  unreadable record is reported and then gets out of the way, because refusing to
+  launch cannot repair it. An orphan intent requires recovery; completion without
+  Inno requires finalization, not fresh startup.
 - Stops before production instance forwarding, settings, gateway/node/MCP
   services, updates, or startup-task reconciliation when migration is needed.
   All normal launch, protocol, and startup-task activations use this gate.
 - Shows localized **Migrate / Not now** buttons unless valid explicit handoff
   consent already exists. An inventory intent never replaces consent.
   Keyboard focus defaults to Not now. Not now closes the Store window without
-  starting services or changing source state.
+  changing source state, and the Store app then starts normally; declining
+  migration is not a reason to withhold the app the user just launched.
   Unlike PR 1's native Yes/No preview, this window labels its buttons directly;
   it does not append a separate action legend or reinterpret Yes/No as Migrate.
   Before acceptance, every locale discloses protected migration records, the

@@ -136,6 +136,37 @@ public sealed class StoreMigrationStartupCoordinatorTests
         Assert.Equal(StoreMigrationStartupState.InspectionFailed, coordinator.Evaluate(true, "2026.9.1", "x64").State);
     }
 
+    [Theory]
+    [InlineData("2026.9.0.0", StoreMigrationStartupState.UpdateInno)]
+    [InlineData("2026.9.1.0", StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(null, StoreMigrationStartupState.UnsupportedInstallation)]
+    public void UnsupportedInstallationBelowMinimum_AsksForAnUpdateInstead(
+        string? registeredVersion, StoreMigrationStartupState expected)
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported, Reason: "payload missing",
+            RegisteredVersion: registeredVersion is null ? null : Version.Parse(registeredVersion));
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.None));
+
+        Assert.Equal(expected, result.State);
+    }
+
+    [Theory]
+    [InlineData(StoreMigrationStartupState.FinalizationRequired, true)]
+    [InlineData(StoreMigrationStartupState.AwaitingInnoRemoval, true)]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired, false)]
+    [InlineData(StoreMigrationStartupState.InspectionFailed, false)]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation, false)]
+    [InlineData(StoreMigrationStartupState.UpdateInno, false)]
+    [InlineData(StoreMigrationStartupState.ConsentRequired, false)]
+    [InlineData(StoreMigrationStartupState.Disabled, false)]
+    [InlineData(StoreMigrationStartupState.NotRequired, false)]
+    public void OnlyAHandoffHoldingDataBlocksStartup(StoreMigrationStartupState state, bool blocks)
+    {
+        Assert.Equal(blocks, new StoreMigrationStartupDecision(state).BlocksStartup);
+    }
+
     private static InnoInstallationDetection Detected(string version = "2026.9.1.0", string architecture = "x64") =>
         new(InnoInstallationStatus.Detected, new InnoInstallation(
             @"C:\fixture\OpenClawTray", @"C:\fixture\OpenClawTray\OpenClaw.Tray.WinUI.exe",
