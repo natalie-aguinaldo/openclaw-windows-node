@@ -36,7 +36,7 @@ The migration-capable Inno Settings page promotes this handoff with a
 theme-aware recommended card that reuses the same card padding, typography,
 accent badge, and primary-button styling as the rest of the app. The card
 carries no decorative icon, so its text aligns with every other settings row,
-and its action shares the row only on wide windows. Its confirmation dialog
+and its action shares that single row. Its confirmation dialog
 asks a question rather than repeating the button label, and states the handoff
 grant and preserved data; detailed removal and finalization guidance stays in
 the Store wizard, where the user can act on it.

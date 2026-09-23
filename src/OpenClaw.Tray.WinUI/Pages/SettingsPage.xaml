@@ -39,36 +39,16 @@
                         AutomationProperties.AutomationId="SettingsStoreMigrationCard">
                     <Grid ColumnSpacing="16">
                         <!--
-                            The action keeps its own row by default so a long
-                            localized label never starves the wrapping text
-                            column. Wide windows restore the single-row shape
-                            shared with every other settings row.
+                            Single row, matching every other settings row: wrapping
+                            text on the left, action on the right. The action cannot
+                            starve the text column because it is capped at MaxWidth
+                            and wraps its own label.
                         -->
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup>
-                                <VisualState x:Name="StoreMigrationStackedState"/>
-                                <VisualState x:Name="StoreMigrationInlineState">
-                                    <VisualState.StateTriggers>
-                                        <AdaptiveTrigger MinWindowWidth="720"/>
-                                    </VisualState.StateTriggers>
-                                    <VisualState.Setters>
-                                        <Setter Target="StoreMigrationAction.(Grid.Row)" Value="0"/>
-                                        <Setter Target="StoreMigrationAction.(Grid.Column)" Value="1"/>
-                                        <Setter Target="StoreMigrationAction.HorizontalAlignment" Value="Right"/>
-                                        <Setter Target="StoreMigrationAction.Margin" Value="0"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
                                     <!-- Badge leads so it stays beside the title and is never
@@ -96,9 +76,9 @@
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"/>
                         </StackPanel>
-                        <Button x:Name="StoreMigrationAction" Grid.Row="1" Grid.Column="0"
-                                Click="OnStoreMigration" HorizontalAlignment="Left"
-                                VerticalAlignment="Center" Margin="0,10,0,0"
+                        <Button x:Name="StoreMigrationAction" Grid.Column="1"
+                                Click="OnStoreMigration" HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
                                 MinWidth="100" MaxWidth="320"
                                 Style="{StaticResource AccentButtonStyle}"
                                 AutomationProperties.AutomationId="SettingsStoreMigration">

@@ -87,9 +87,14 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("Style=\"{StaticResource AccentButtonStyle}\"", card);
         Assert.Contains("<Button.ContentTemplate>", card);
         // The card carries no decorative icon tile so its text column aligns with
-        // every other settings row, and the action only shares a row on wide windows.
+        // every other settings row, and the action shares that single row.
         Assert.DoesNotContain("<FontIcon", card);
-        Assert.Contains("<AdaptiveTrigger MinWindowWidth=\"720\"/>", card);
+        // HubWindow enforces MinWidth=1000, so any AdaptiveTrigger below that is
+        // permanently satisfied and its fallback state can never render. Keeping
+        // one here would assert behavior no proof run can ever observe.
+        Assert.DoesNotContain("<AdaptiveTrigger", settingsXaml);
+        Assert.DoesNotContain("<VisualStateManager.VisualStateGroups>", settingsXaml);
+        Assert.Contains("HorizontalAlignment=\"Right\"", card);
         Assert.True(card.IndexOf("Migration2_InnoRecommendation", StringComparison.Ordinal) <
             card.IndexOf("Migration2_InnoCardTitle", StringComparison.Ordinal));
         Assert.Contains("StoreMigrationCard.Visibility = InnoMigrationHandoff.IsAvailable", settings);
