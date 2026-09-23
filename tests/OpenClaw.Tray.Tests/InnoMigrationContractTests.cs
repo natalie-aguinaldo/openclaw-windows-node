@@ -224,6 +224,7 @@ public sealed class InnoMigrationContractTests
         Assert.True(guard < launch.IndexOf("new SettingsManager()", StringComparison.Ordinal));
         Assert.DoesNotContain("MigrationRecordCodec", app);
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationStartupGuard.cs");
+        Assert.Contains("#if !INNO_MIGRATION_PREVIEW && !PRODUCTION_MIGRATION", helper);
         Assert.Contains("AppIdentity.IsDev || PackageHelper.IsPackaged", helper);
         Assert.Contains("MigrationRecordCodec.ReadCompletion", helper);
         Assert.Contains("Migration_InnoCompleted", helper);
@@ -232,7 +233,10 @@ public sealed class InnoMigrationContractTests
         Assert.True(acquire > 0 && acquire < helper.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal));
         var lockFailure = helper[acquire..helper.IndexOf("var path =", StringComparison.Ordinal)];
         Assert.Contains("InvalidDataException", lockFailure);
-        Assert.Contains("return ShowGuidance(\"Migration_InnoCheckFailed\")", lockFailure);
+        // Only a readable receipt may block startup; an unavailable lease must not.
+        Assert.DoesNotContain("ShowGuidance", lockFailure);
+        var receiptRejected = helper[helper.IndexOf("Migration completion receipt rejected", StringComparison.Ordinal)..];
+        Assert.Contains("return false;", receiptRejected);
         Assert.DoesNotContain("_innoMigrationLease", Read("src", "OpenClaw.Tray.WinUI", "App.AppShutdownCoordinator.cs"));
         Assert.DoesNotContain("_innoMigrationLease?.Dispose", app);
     }
