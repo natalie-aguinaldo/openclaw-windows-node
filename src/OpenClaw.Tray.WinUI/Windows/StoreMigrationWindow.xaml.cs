@@ -89,6 +89,8 @@ public sealed partial class StoreMigrationWindow : Window
         if (_renderedStage != _workflow.Stage)
         {
             _renderedStage = _workflow.Stage;
+            // An error raised in a previous stage no longer describes what the user sees.
+            Error.IsOpen = false;
             FrameworkElementAutomationPeer.FromElement(Status)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
         }
         if (!_workflow.IsBusy)

@@ -41,6 +41,16 @@ namespace OpenClaw.Connection.Migration
         }
     }
 
+    /// <summary>
+    /// A migration path is unusable because of its shape, not because a record is corrupt.
+    /// Startup admission reports this as an inspection problem: recovery cannot repair a
+    /// reparse point, so offering recovery would be dead-end guidance.
+    /// </summary>
+    public sealed class MigrationPathRejectedException : IOException
+    {
+        public MigrationPathRejectedException(string message) : base(message) { }
+    }
+
     public static class MigrationRecordCodec
     {
         public const string DirectoryName = "store-migration";
@@ -178,18 +188,30 @@ namespace OpenClaw.Connection.Migration
 
         public static void RejectReparsePoints(string path)
         {
+            if (HasReparsePointAncestor(path))
+                throw new InvalidDataException("Migration paths must not contain reparse points.");
+        }
+
+        /// <summary>
+        /// Probes the same condition as <see cref="RejectReparsePoints"/> without throwing, for
+        /// callers that must report a path shape separately from a corrupt record.
+        /// </summary>
+        public static bool HasReparsePointAncestor(string path)
+        {
             var current = Path.GetFullPath(path);
             while (!string.IsNullOrEmpty(current))
             {
                 try
                 {
                     if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                        throw new InvalidDataException("Migration paths must not contain reparse points.");
+                        return true;
                 }
                 catch (FileNotFoundException) { }
                 catch (DirectoryNotFoundException) { }
                 current = Path.GetDirectoryName(current);
             }
+
+            return false;
         }
 
         private static void Validate(MigrationRecord record, MigrationBinding expected, DateTime utcNow, bool renewConsent = false)

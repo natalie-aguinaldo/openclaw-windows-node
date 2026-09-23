@@ -126,6 +126,35 @@ public sealed class MigrationStartupRecordReaderTests
         Assert.Equal(MigrationStartupRecordStatus.Invalid, fixture.Read().Status);
     }
 
+    [Fact]
+    public void ReparsePointAncestor_IsUnavailableNotRecovery()
+    {
+        using var fixture = new Fixture();
+        using var target = new TempDirectory();
+        var targetPath = target.Combine("roaming");
+        System.IO.Directory.CreateDirectory(targetPath);
+        System.IO.Directory.CreateDirectory(Path.GetDirectoryName(fixture.Binding.RoamingDirectory)!);
+        var start = new System.Diagnostics.ProcessStartInfo("cmd.exe")
+        {
+            Arguments = $"/d /c mklink /J \"{fixture.Binding.RoamingDirectory}\" \"{targetPath}\"",
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        using var process = System.Diagnostics.Process.Start(start)!;
+        process.WaitForExit();
+        Assert.True(process.ExitCode == 0, process.StandardError.ReadToEnd());
+        try
+        {
+            // Recovery cannot repair a junction, so this must not be reported as a corrupt record.
+            Assert.Equal(MigrationStartupRecordStatus.Unavailable, fixture.Read().Status);
+        }
+        finally
+        {
+            System.IO.Directory.Delete(fixture.Binding.RoamingDirectory);
+        }
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly TempDirectory _temp = new();

@@ -22,12 +22,19 @@ $productionIdentity = [string]$sourceManifest.Package.Identity.Name
 $productionPublisher = [string]$sourceManifest.Package.Identity.Publisher
 
 $fakeSignTool = Join-Path $temporaryRoot 'SignTool.ps1'
-@'
-param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-if ($Arguments[0] -ne 'sign') { exit 2 }
-if (-not (Test-Path -LiteralPath $Arguments[-1])) { exit 3 }
+$signToolLog = Join-Path $temporaryRoot 'signtool-args.txt'
+@"
+param([Parameter(ValueFromRemainingArguments = `$true)][string[]]`$Arguments)
+`$Arguments -join ' ' | Set-Content -LiteralPath '$signToolLog'
+if (`$Arguments[0] -ne 'sign') { exit 2 }
+if (`$Arguments -notcontains '/fd') { exit 4 }
+if (`$Arguments[[array]::IndexOf(`$Arguments, '/fd') + 1] -ne 'SHA256') { exit 5 }
+if (`$Arguments -notcontains '/sha1') { exit 6 }
+`$thumbprint = `$Arguments[[array]::IndexOf(`$Arguments, '/sha1') + 1]
+if (`$thumbprint -notmatch '^[0-9A-Fa-f]{40}`$') { exit 7 }
+if (-not (Test-Path -LiteralPath `$Arguments[-1])) { exit 3 }
 exit 0
-'@ | Set-Content -LiteralPath $fakeSignTool
+"@ | Set-Content -LiteralPath $fakeSignTool
 
 function Get-AuthenticodeSignature {
     param([string]$LiteralPath)
@@ -160,6 +167,13 @@ try {
     $publicCertificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
         (Join-Path $arguments.OutputDirectory 'OpenClaw-MigrationTest.cer'))
     try {
+        $signToolArguments = Get-Content -LiteralPath $signToolLog -Raw
+        $expectedSignToolArguments =
+            "sign /fd SHA256 /sha1 $($publicCertificate.Thumbprint) " +
+            (Join-Path $arguments.OutputDirectory $packageName)
+        if ($signToolArguments.Trim() -ne $expectedSignToolArguments) {
+            throw "SignTool received unexpected arguments: $signToolArguments"
+        }
         if ($publicCertificate.HasPrivateKey -or
             $publicCertificate.Thumbprint -ne $metadata.certificateThumbprint) {
             throw 'The exported certificate is not the expected public-only signer.'

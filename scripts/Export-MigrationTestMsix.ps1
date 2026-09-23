@@ -43,10 +43,22 @@ function Resolve-SignTool {
     }
 
     $windowsKits = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\bin'
+    # Prefer the host architecture so an ARM64 runner does not sign through emulation,
+    # and order by SDK version rather than lexicographically so 10.0.26100 beats 10.0.9xxxx.
+    $preferred = switch ($env:PROCESSOR_ARCHITECTURE) {
+        'ARM64' { @('arm64', 'x64') }
+        default { @('x64') }
+    }
     $candidate = Get-ChildItem -LiteralPath $windowsKits -Filter SignTool.exe -File -Recurse `
         -ErrorAction SilentlyContinue |
-        Where-Object { $_.Directory.Name -eq 'x64' } |
-        Sort-Object FullName -Descending |
+        Where-Object { $preferred -contains $_.Directory.Name } |
+        Sort-Object `
+            @{ Expression = { $preferred.IndexOf($_.Directory.Name) } }, `
+            @{ Expression = {
+                $parsed = [version]'0.0.0.0'
+                if ([version]::TryParse($_.Directory.Parent.Name, [ref]$parsed)) { $parsed }
+                else { [version]'0.0.0.0' }
+            }; Descending = $true } |
         Select-Object -First 1
     if ($null -eq $candidate) {
         throw 'SignTool.exe was not found in PATH or the Windows 10 SDK.'
@@ -226,7 +238,17 @@ test-signed package stays workflow-only and must never be published.
 "@ | Set-Content -LiteralPath (Join-Path $OutputDirectory 'INSTALL.txt') -Encoding utf8
 }
 finally {
-    Remove-Item "Cert:\CurrentUser\My\$($certificate.Thumbprint)" -Force -ErrorAction SilentlyContinue
+    # Never throw from finally: it would mask an in-flight failure. Report here, verify below.
+    try {
+        Remove-Item "Cert:\CurrentUser\My\$($certificate.Thumbprint)" -Force -ErrorAction Stop
+    } catch {
+        Write-Warning "Could not remove the disposable signing key: $($_.Exception.Message)"
+    }
+}
+
+if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$($certificate.Thumbprint)") {
+    throw ("The disposable signing key $($certificate.Thumbprint) is still in Cert:\CurrentUser\My. " +
+           'Remove it before trusting this host again.')
 }
 
 Write-Host "Staged test-signed migration package: $OutputDirectory"

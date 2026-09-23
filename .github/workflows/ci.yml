@@ -956,6 +956,9 @@ jobs:
           artifacts/msix-migration-test/${{ matrix.architecture }}/msix-metadata.json
           artifacts/msix-migration-test/${{ matrix.architecture }}/INSTALL.txt
         if-no-files-found: error
+        # The disposable signer is valid for 30 days and the package is not timestamped,
+        # so a longer retention would only offer an artifact that can no longer install.
+        retention-days: 30
 
     - name: Provision disposable Dev MSIX certificate
       shell: pwsh

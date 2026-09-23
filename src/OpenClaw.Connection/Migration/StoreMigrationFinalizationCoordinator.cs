@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
+using System.Security.Cryptography;
 using OpenClaw.Shared;
 
 namespace OpenClaw.Connection.Migration;
@@ -412,7 +413,8 @@ public sealed class StoreMigrationFinalizationCoordinator(
                 cleaner.ClearCompleted(durable.Record);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-                                             InvalidDataException)
+                                             InvalidDataException or FormatException or
+                                             CryptographicException)
             {
                 logger.Error($"Store migration record cleanup failed: {exception.Message}");
                 return new(StoreMigrationFinalizationState.RecordCleanupFailed);

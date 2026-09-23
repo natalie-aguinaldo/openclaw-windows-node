@@ -47,8 +47,16 @@ public sealed class MigrationStartupRecordReader(
                 ? new(MigrationStartupRecordStatus.None)
                 : new(MigrationStartupRecordStatus.Intent, intent);
         }
+        catch (MigrationPathRejectedException ex)
+        {
+            // A reparse point above the record directory is an environment shape, not a corrupt
+            // record. Recovery cannot repair it, so report it as an inspection problem instead.
+            logger.Error($"Store migration record path is unusable ({ex.Message}).");
+            return new(MigrationStartupRecordStatus.Unavailable);
+        }
         catch (Exception ex) when (ex is InvalidDataException or CryptographicException or
-                                   EndOfStreamException or ArgumentException or DecoderFallbackException)
+                                   EndOfStreamException or ArgumentException or FormatException or
+                                   DecoderFallbackException)
         {
             logger.Warn($"Store migration record requires recovery ({ex.GetType().Name}).");
             return new(MigrationStartupRecordStatus.Invalid);
@@ -63,7 +71,8 @@ public sealed class MigrationStartupRecordReader(
     private MigrationRecord? ReadFile(string fileName, string expectedKind)
     {
         var path = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName, fileName);
-        MigrationRecordCodec.RejectReparsePoints(path);
+        if (MigrationRecordCodec.HasReparsePointAncestor(path))
+            throw new MigrationPathRejectedException("Migration paths must not contain reparse points.");
         FileStream stream;
         try
         {

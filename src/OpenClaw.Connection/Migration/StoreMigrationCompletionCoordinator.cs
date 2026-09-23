@@ -109,7 +109,7 @@ public sealed class StoreMigrationCompletionCoordinator(
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                                           InvalidDataException or InvalidOperationException or
-                                          CryptographicException)
+                                          FormatException or CryptographicException)
         {
             logger.Error($"Store migration completion failed: {exception.Message}");
             return new(StoreMigrationCompletionState.ValidationFailed);

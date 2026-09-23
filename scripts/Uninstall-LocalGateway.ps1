@@ -349,7 +349,15 @@ function Resolve-AppDataDir {
                 continue
             }
 
-            $identityDir = Join-Path (Join-Path $DataDir 'gateways') $id
+            $gatewaysDir = Join-Path $DataDir 'gateways'
+            $identityDir = Join-Path $gatewaysDir $id
+            # This directory is deleted recursively, so the record id must stay a single
+            # path segment. A traversal id would otherwise escape the gateways directory.
+            if ($id -notmatch '^[A-Za-z0-9._-]+$' -or $id -eq '.' -or $id -eq '..') {
+                Add-CleanupWarning "Skipped identity cleanup for local gateway record with an unsafe id '$id'."
+                continue
+            }
+
             try {
                 if (Test-Path -LiteralPath $identityDir -PathType Container) {
                     Remove-Item -LiteralPath $identityDir -Recurse -Force -ErrorAction Stop
