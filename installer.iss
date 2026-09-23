@@ -143,20 +143,26 @@ function OpenMigrationOperationFile(
   external 'CreateFileW@kernel32.dll stdcall';
 function CloseMigrationOperationFile(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
-function MigrationPathAttributes(FileName: String): LongWord;
+function MigrationPathAttributes(FileName: String): Integer;
   external 'GetFileAttributesW@kernel32.dll stdcall';
 
 function MigrationPathIsOrdinary(Path: String): Boolean;
 var
-  Attributes: LongWord;
+  Attributes: Integer;
   Parent: String;
 begin
   Result := False;
   while Path <> '' do
   begin
+    // GetFileAttributesW reports failure as INVALID_FILE_ATTRIBUTES. That value is
+    // read as a signed -1 here rather than compared against an unsigned $FFFFFFFF
+    // literal, whose type Pascal Script resolves inconsistently. The bit pattern is
+    // identical, and the reparse-point test below is unaffected by the signedness.
     Attributes := MigrationPathAttributes(Path);
-    if Attributes = $FFFFFFFF then
+    if Attributes = -1 then
     begin
+      // ERROR_FILE_NOT_FOUND / ERROR_PATH_NOT_FOUND: nothing is there to be a
+      // reparse point. Any other failure means the component cannot be cleared.
       if (DLLGetLastError <> 2) and (DLLGetLastError <> 3) then
         Exit;
     end

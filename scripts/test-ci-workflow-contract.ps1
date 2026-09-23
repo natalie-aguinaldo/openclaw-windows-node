@@ -347,6 +347,7 @@ foreach ($token in @(
         "./scripts/test-ci-change-classifier.ps1",
         "./scripts/test-ci-gate-results.ps1",
         "./scripts/test-ci-workflow-contract.ps1",
+        "./scripts/Test-InstallerScriptCompiles.ps1 -RequireCompiler",
         "./scripts/test-stable-correction-release-validator.ps1"
     )) {
     Assert-Contains `
@@ -668,6 +669,8 @@ foreach ($token in @(
         '-MsixOutputDirectory "$env:RUNNER_TEMP\openclaw-dev-appx"',
         '.\scripts\Export-DevMsixArtifact.ps1',
         '.\scripts\Export-MigrationTestMsix.ps1 -Architecture',
+        'id: migration-switch',
+        "if: steps.migration-switch.outputs.enabled == 'true'",
         'name: openclaw-msix-dev-migration-test-${{ matrix.architecture }}',
         'artifacts/msix-migration-test/${{ matrix.architecture }}/OpenClaw-MigrationTest-${{ matrix.architecture }}.msix',
         'OpenClaw-MigrationTest.cer',

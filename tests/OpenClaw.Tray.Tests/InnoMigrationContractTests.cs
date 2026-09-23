@@ -339,6 +339,22 @@ public sealed class InnoMigrationContractTests
     }
 
     [Fact]
+    public void Installer_ReadsAttributeFailureAsSignedSentinel()
+    {
+        var installer = Read("installer.iss");
+        var scan = installer[installer.IndexOf("function MigrationPathIsOrdinary", StringComparison.Ordinal)..
+            installer.IndexOf("function InitializeUninstall:", StringComparison.Ordinal)];
+
+        // Pascal Script resolves the type of an unsigned $FFFFFFFF literal
+        // inconsistently, so the failure sentinel is compared as a signed -1.
+        Assert.Contains("function MigrationPathAttributes(FileName: String): Integer;", installer);
+        Assert.Contains("Attributes: Integer;", scan);
+        Assert.Contains("if Attributes = -1 then", scan);
+        Assert.DoesNotContain("= $FFFFFFFF", scan);
+        Assert.Contains("else if (Attributes and $400) <> 0 then", scan);
+    }
+
+    [Fact]
     public void RecordPackageIdentity_MatchesStoreManifest()
     {
         var manifest = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "Package.appxmanifest"));
