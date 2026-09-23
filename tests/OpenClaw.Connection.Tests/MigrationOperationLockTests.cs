@@ -62,7 +62,10 @@ public sealed class MigrationOperationLockTests
         var directory = new DirectoryInfo(
             Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName));
 
-        var marker = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
+        // The canary must be a trusted principal. A foreign grant is drift the acquisition is
+        // now required to scrub, so it cannot double as proof that no rewrite happened.
+        using var identity = WindowsIdentity.GetCurrent();
+        var marker = identity.User!;
         var security = directory.GetAccessControl();
         security.AddAccessRule(new FileSystemAccessRule(marker, FileSystemRights.Read,
             InheritanceFlags.None, PropagationFlags.None, AccessControlType.Allow));
@@ -75,7 +78,8 @@ public sealed class MigrationOperationLockTests
         Assert.Contains(
             directory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier))
                 .Cast<FileSystemAccessRule>(),
-            rule => rule.IdentityReference.Value == marker.Value);
+            rule => rule.IdentityReference.Value == marker.Value
+                    && rule.InheritanceFlags == InheritanceFlags.None);
     }
 
     [Fact]
@@ -95,6 +99,63 @@ public sealed class MigrationOperationLockTests
         using var reacquired = MigrationOperationLock.AcquireRuntime(binding);
 
         Assert.True(directory.GetAccessControl().AreAccessRulesProtected);
+    }
+
+    [Fact]
+    public void ProtectedButPermissiveDirectory_LosesTheForeignGrantOnNextAcquisition()
+    {
+        using var temp = new TempDirectory();
+        var binding = MigrationRecordTests.CreateRecord(temp, "intent").Binding;
+        using (MigrationOperationLock.AcquireRuntime(binding)) { }
+        var directory = new DirectoryInfo(
+            Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName));
+
+        // A protected DACL owned by this user can still let an unrelated principal delete
+        // completed.dpapi, which the uninstall checker reads as "no migration happened".
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        var security = directory.GetAccessControl();
+        security.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.FullControl,
+            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+            PropagationFlags.None, AccessControlType.Allow));
+        directory.SetAccessControl(security);
+        Assert.True(directory.GetAccessControl().AreAccessRulesProtected);
+        Assert.Contains(
+            directory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => Equals(rule.IdentityReference, users));
+
+        using var reacquired = MigrationOperationLock.AcquireRuntime(binding);
+
+        Assert.DoesNotContain(
+            directory.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => Equals(rule.IdentityReference, users));
+    }
+
+    [Fact]
+    public void ExplicitForeignGrantOnTheReceipt_IsScrubbedOnNextAcquisition()
+    {
+        using var temp = new TempDirectory();
+        var binding = MigrationRecordTests.CreateRecord(temp, "intent").Binding;
+        using (MigrationOperationLock.AcquireRuntime(binding)) { }
+        var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
+        var receipt = new FileInfo(Path.Combine(directory, MigrationRecordCodec.CompletionFileName));
+        File.WriteAllBytes(receipt.FullName, [1, 2, 3]);
+
+        // Hardening the directory rewrites inherited access only, so an explicit ACE placed
+        // directly on the receipt survives it and still permits deletion.
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        var security = receipt.GetAccessControl();
+        security.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.FullControl,
+            AccessControlType.Allow));
+        receipt.SetAccessControl(security);
+
+        using var reacquired = MigrationOperationLock.AcquireRuntime(binding);
+
+        Assert.DoesNotContain(
+            receipt.GetAccessControl().GetAccessRules(true, true, typeof(SecurityIdentifier))
+                .Cast<FileSystemAccessRule>(),
+            rule => Equals(rule.IdentityReference, users));
     }
 
     [Fact]
