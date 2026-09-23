@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Xunit.Sdk;
 
@@ -527,6 +528,95 @@ public sealed class InnoMigrationContractTests
         Assert.Equal(OpenClaw.Connection.Migration.MigrationRecordCodec.PackageName, identity.Attribute("Name")!.Value);
         Assert.Equal(OpenClaw.Connection.Migration.MigrationRecordCodec.PackagePublisher, identity.Attribute("Publisher")!.Value);
     }
+
+    [Fact]
+    public async Task GatewayUninstall_TreatsAWslLessHostAsNothingToRemove()
+    {
+        // Real uninstall proof on a host without WSL showed wsl.exe writing
+        // UTF-16LE into an 8-bit-decoded pipe, so every output pattern matched
+        // NUL-interleaved text and never fired. Exercise the real functions
+        // rather than asserting on source text, which cannot catch that.
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var target = Path.Combine(root, "scripts", "Uninstall-LocalGateway.ps1");
+        var probePath = Path.Combine(Path.GetTempPath(), $"openclaw-gateway-contract-{Guid.NewGuid():N}.ps1");
+        File.WriteAllText(probePath, GatewayOutputProbe.Replace("<SCRIPT_PATH>", target, StringComparison.Ordinal));
+
+        try
+        {
+            var powershell = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "System32",
+                "WindowsPowerShell",
+                "v1.0",
+                "powershell.exe");
+            var startInfo = new ProcessStartInfo(powershell)
+            {
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", probePath })
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(startInfo);
+            Assert.NotNull(process);
+            var standardOutput = process.StandardOutput.ReadToEndAsync();
+            var standardError = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
+            var result = $"{await standardOutput}{Environment.NewLine}{await standardError}";
+
+            Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { File.Delete(probePath); } catch (IOException) { }
+        }
+    }
+
+    private const string GatewayOutputProbe = @"
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('<SCRIPT_PATH>', [ref]$tokens, [ref]$errors)
+foreach ($name in @('ConvertTo-CleanProcessOutput', 'Test-DistroNotFound')) {
+    $found = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
+    }.GetNewClosure(), $true)
+    if (-not $found) { throw ""Missing function $name."" }
+    . ([scriptblock]::Create($found.Extent.Text))
+}
+
+function New-Utf16Bleed {
+    param([string]$Text)
+    return (-join ($Text.ToCharArray() | ForEach-Object { ""$_`0"" }))
+}
+
+$raw = New-Utf16Bleed 'The Windows Subsystem for Linux is not installed.'
+if (Test-DistroNotFound $raw) {
+    throw 'NUL-interleaved output must not match directly; sanitizing is what makes detection work.'
+}
+
+$clean = ConvertTo-CleanProcessOutput $raw
+if ($clean -ne 'The Windows Subsystem for Linux is not installed.') {
+    throw ""Sanitizer did not normalize UTF-16 output: $clean""
+}
+if (-not (Test-DistroNotFound $clean)) {
+    throw 'A host without WSL holds no gateway, so uninstall must treat it as nothing to remove.'
+}
+if (-not (Test-DistroNotFound (ConvertTo-CleanProcessOutput (New-Utf16Bleed 'There is no distribution with the supplied name.')))) {
+    throw 'Existing distro-not-found detection regressed.'
+}
+if (Test-DistroNotFound 'Access is denied.') {
+    throw 'A genuine failure must never be reported as already removed.'
+}
+
+Write-Output 'CONTRACT-OK'
+";
 
     private static string Read(params string[] segments) =>
         File.ReadAllText(Path.Combine(new[] { TestRepositoryPaths.GetRepositoryRoot() }.Concat(segments).ToArray()));

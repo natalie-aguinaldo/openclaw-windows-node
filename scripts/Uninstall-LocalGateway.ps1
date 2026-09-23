@@ -46,6 +46,21 @@ function ConvertTo-ProcessArgument {
     return '"' + ($escaped -replace '"', '\"') + '"'
 }
 
+function ConvertTo-CleanProcessOutput {
+    param([string]$Value)
+
+    if ([string]::IsNullOrEmpty($Value)) {
+        return ''
+    }
+
+    # wsl.exe emits UTF-16LE on many Windows builds while the redirected stream
+    # is decoded as 8-bit, which interleaves a NUL between every character and
+    # silently defeats all output matching. Dropping NUL normalizes both the
+    # UTF-16 and UTF-8 variants without pinning an encoding that varies by
+    # Windows version.
+    return ($Value -replace "`0", '')
+}
+
 function Start-BoundedProcess {
     param([string]$FilePath, [string]$Arguments, [int]$TimeoutMilliseconds)
 
@@ -71,8 +86,10 @@ function Start-BoundedProcess {
 
     # The parameterless wait lets the redirected streams finish flushing.
     $process.WaitForExit()
-    $output = (@($stdout.Result, $stderr.Result) |
-        Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join [Environment]::NewLine
+    $output = (@(
+        (ConvertTo-CleanProcessOutput $stdout.Result),
+        (ConvertTo-CleanProcessOutput $stderr.Result)
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join [Environment]::NewLine
     return [pscustomobject]@{ TimedOut = $false; ExitCode = [int]$process.ExitCode; Output = $output }
 }
 
@@ -635,9 +652,16 @@ function Test-DistroNotFound {
     }
 
     return $Output -match 'WSL_E_DISTRO_NOT_FOUND' -or
+        $Output -match 'WSL_E_DEFAULT_DISTRO_NOT_FOUND' -or
         $Output -match 'There is no distribution with the supplied name' -or
         $Output -match 'The specified distribution.*(could not be found|not found)' -or
-        $Output -match 'distribution.*not.*found'
+        $Output -match 'distribution.*not.*found' -or
+        # A host with no WSL, or with WSL but no distributions at all, cannot be
+        # holding our gateway. There is nothing to remove, so this is success and
+        # not the alarming "could not remove the local WSL gateway" failure.
+        $Output -match 'Windows Subsystem for Linux is not installed' -or
+        $Output -match 'Windows Subsystem for Linux has no installed distributions' -or
+        $Output -match 'no installed distributions'
 }
 
 function Test-DistroListed {
