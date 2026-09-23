@@ -18,56 +18,46 @@ public sealed class Migration2LocalizationTests
         "Migration2_CloseInnoWarningTitle", "Migration2_RemovalTitle", "Migration2_RemovalWarningTitle"
     };
 
+    private static readonly string[] InnoPromotionKeys =
+    {
+        "Migration2_InnoRecommendation.Text", "Migration2_InnoCardTitle.Text",
+        "Migration2_InnoCardDescription.Text", "Migration2_InnoAction",
+        "Migration2_InnoConsentTitle"
+    };
+
     [Theory]
-    [InlineData("en-us", "protected migration records", "If validation succeeds",
-        "blocked from starting normally", "Only after migration completion is recorded",
-        "manually uninstall", "only after removal of the previous app is verified",
-        "configuration, gateway, files, and models stay in place",
-        "nothing is uninstalled automatically", "without starting migration", "close safely")]
-    [InlineData("fr-fr", "données de migration protégées", "Si la validation réussit",
-        "ne pourra plus démarrer normalement", "Uniquement après l'enregistrement de la fin de la migration",
-        "désinstallez manuellement", "qu'après vérification de la désinstallation de l'application précédente",
-        "configuration existante, votre passerelle, vos fichiers et vos modèles resteront en place",
-        "rien ne sera désinstallé automatiquement", "sans démarrer la migration", "se fermer en toute sécurité")]
-    [InlineData("nl-nl", "beveiligde migratiegegevens", "Als de validatie slaagt",
-        "niet meer normaal starten", "Pas nadat de voltooiing van de migratie is vastgelegd",
-        "handmatig", "nadat de verwijdering van de vorige app is geverifieerd",
-        "configuratie, gateway, bestanden en modellen blijven op hun plaats",
-        "er wordt niets automatisch verwijderd", "zonder de migratie te starten", "veilig af te sluiten")]
-    [InlineData("pt-br", "registros protegidos de migração", "Se a validação for bem-sucedida",
-        "não poderá mais iniciar normalmente", "Somente após o registro da conclusão da migração",
-        "desinstale manualmente", "só poderá ser usada após a verificação da remoção do aplicativo anterior",
-        "configuração existente, gateway, arquivos e modelos permanecerão no mesmo local",
-        "nada será desinstalado automaticamente", "sem iniciar a migração", "encerrado com segurança")]
-    [InlineData("zh-cn", "受保护的迁移记录", "如果验证成功",
-        "将无法正常启动", "只有在迁移完成状态已记录后", "手动卸载",
-        "只有在确认旧版应用已移除后，才能使用 Store 版本",
-        "现有配置、网关、文件和模型将保留在原处",
-        "不会自动卸载任何应用", "不会开始迁移", "安全关闭")]
-    [InlineData("zh-tw", "受保護的移轉記錄", "如果驗證成功",
-        "將無法正常啟動", "只有在移轉完成狀態已記錄後", "手動解除安裝",
-        "只有在確認舊版應用程式已移除後，才能使用 Store 版本",
-        "現有設定、閘道、檔案和模型將保留在原處",
-        "不會自動解除安裝任何應用程式", "不會開始移轉", "安全關閉")]
+    [InlineData("en-us", "Microsoft Store opens", "close this app",
+        "without asking again", "settings, gateway, files, and models stay where they are")]
+    [InlineData("fr-fr", "Le Microsoft Store s'ouvre", "fermer cette application",
+        "sans redemander votre accord",
+        "paramètres, votre passerelle, vos fichiers et vos modèles restent en place")]
+    [InlineData("nl-nl", "De Microsoft Store wordt geopend", "deze app worden gesloten",
+        "zonder opnieuw om toestemming te vragen",
+        "instellingen, gateway, bestanden en modellen blijven op hun plaats")]
+    [InlineData("pt-br", "A Microsoft Store será aberta", "fechar este aplicativo",
+        "sem pedir autorização novamente",
+        "configurações, gateway, arquivos e modelos permanecem onde estão")]
+    [InlineData("zh-cn", "将打开 Microsoft Store", "关闭此应用",
+        "无需再次征求您的同意", "您的设置、网关、文件和模型将保留在原处")]
+    [InlineData("zh-tw", "將開啟 Microsoft Store", "關閉此應用程式",
+        "無需再次徵求您的同意", "您的設定、閘道、檔案和模型將保留在原處")]
     public void InnoDialog_DisclosesSafetyBoundariesInEveryLocale(
-        string locale, string protectedRecords, string validationCondition,
-        string startupBlock, string completionBeforeUninstall, string manualUninstall,
-        string verifiedRemoval, string retainedData, string noAutomaticUninstall,
-        string cancelWithoutMigration, string gracefulClose)
+        string locale, string storeOpens, string closesThisApp,
+        string noRepeatedPrompt, string retainedData)
     {
         var resources = ReadResources(locale);
         var consent = resources["Migration2_InnoConsent"];
-        foreach (var disclosure in new[]
-        {
-            protectedRecords, validationCondition, startupBlock, completionBeforeUninstall,
-            manualUninstall, verifiedRemoval, retainedData, noAutomaticUninstall,
-            cancelWithoutMigration, gracefulClose
-        })
+        // The dialog discloses the handoff grant and what it does not touch. Detailed
+        // removal and finalization guidance is delivered by the Store wizard at the step
+        // where the user can act on it, so it is deliberately absent here.
+        foreach (var disclosure in new[] { storeOpens, closesThisApp, noRepeatedPrompt, retainedData })
             Assert.Contains(disclosure, consent);
 
-        Assert.Contains(resources["Migration_StoreNotNow"], consent);
-        Assert.Contains(resources["Migration_StoreRetry"], consent);
-        Assert.Contains(resources["Migration2_InnoAction"], consent);
+        Assert.False(string.IsNullOrWhiteSpace(resources["Migration2_InnoConsentTitle"]));
+        // Chinese locales use the fullwidth question mark.
+        Assert.Contains(resources["Migration2_InnoConsentTitle"],
+            title => title is '?' or '\uFF1F');
+        Assert.NotEqual(resources["Migration2_InnoAction"], resources["Migration2_InnoConsentTitle"]);
         foreach (var nativeChoice in new[] { resources["Migration_StoreYes"], resources["Migration_StoreNo"] })
         {
             Assert.DoesNotContain(nativeChoice + ":", consent);
@@ -76,7 +66,6 @@ public sealed class Migration2LocalizationTests
         Assert.DoesNotContain("{0}", consent);
         Assert.DoesNotContain("{1}", consent);
         Assert.DoesNotContain("\u2014", consent);
-        Assert.Contains("30", consent);
     }
 
     [Theory]
@@ -235,6 +224,26 @@ public sealed class Migration2LocalizationTests
             Assert.DoesNotContain("\u2014", resources[key]);
             Assert.DoesNotContain("{0}", resources[key]);
             Assert.DoesNotContain("{1}", resources[key]);
+            if (locale != "en-us")
+                Assert.NotEqual(english[key], resources[key]);
+        }
+    }
+
+    [Theory]
+    [InlineData("en-us")]
+    [InlineData("fr-fr")]
+    [InlineData("nl-nl")]
+    [InlineData("pt-br")]
+    [InlineData("zh-cn")]
+    [InlineData("zh-tw")]
+    public void InnoPromotion_IsPresentAndLocalized(string locale)
+    {
+        var resources = ReadResources(locale);
+        var english = ReadResources("en-us");
+        foreach (var key in InnoPromotionKeys)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(resources[key]), key);
+            Assert.DoesNotContain("\u2014", resources[key]);
             if (locale != "en-us")
                 Assert.NotEqual(english[key], resources[key]);
         }

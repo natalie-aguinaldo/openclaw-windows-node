@@ -7285,17 +7285,25 @@
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 无法打开请求的页面。请重试，或在迁移完成后手动打开 Windows 设置 &gt; 应用 &gt; 已安装的应用。</value>
   </data>
+  <data name="Migration2_InnoRecommendation.Text" xml:space="preserve">
+    <value>推荐</value>
+  </data>
+  <data name="Migration2_InnoCardTitle.Text" xml:space="preserve">
+    <value>迁移到 Microsoft Store 版本</value>
+  </data>
+  <data name="Migration2_InnoCardDescription.Text" xml:space="preserve">
+    <value>通过 Microsoft Store 获取 OpenClaw 的后续更新。您现有的 OpenClaw 配置将会保留。</value>
+  </data>
   <data name="Migration2_InnoAction" xml:space="preserve">
     <value>安装 Store 版本并迁移</value>
   </data>
+  <data name="Migration2_InnoConsentTitle" xml:space="preserve">
+    <value>迁移到 Store 版本？</value>
+  </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>选择“安装 Store 版本并迁移”以打开 Microsoft Store 并授权迁移此 OpenClaw 配置。在 30 天内，安装并打开 Store 版本后，它可以请求此应用安全关闭并执行迁移，无需再次征求您的同意。
+    <value>将打开 Microsoft Store，供您安装 Store 版本。您打开该版本后，它可以关闭此应用并完成迁移，无需再次征求您的同意。
 
-迁移将验证您的设置和网关凭据，并保存受保护的迁移记录。如果验证成功，旧版应用（此应用）将无法正常启动。
-
-只有在迁移完成状态已记录后，才能通过 Windows 设置 &gt; 应用 &gt; 已安装的应用手动卸载此 OpenClaw Companion 应用，然后在 Store 迁移窗口中选择“重试”。只有在确认旧版应用已移除后，才能使用 Store 版本。您的现有配置、网关、文件和模型将保留在原处；不会自动卸载任何应用。
-
-选择“暂不”或关闭此对话框即可取消，不会开始迁移。</value>
+您的设置、网关、文件和模型将保留在原处。</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>已保存迁移授权。请安装并打开 Store 版本以继续。在确认迁移完成之前，请保留此应用。</value>

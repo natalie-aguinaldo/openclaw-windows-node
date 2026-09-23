@@ -7285,17 +7285,25 @@ Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows n'a pas pu ouvrir la page demandée. Réessayez ou ouvrez manuellement Paramètres Windows &gt; Applications &gt; Applications installées si la migration est terminée.</value>
   </data>
+  <data name="Migration2_InnoRecommendation.Text" xml:space="preserve">
+    <value>Recommandé</value>
+  </data>
+  <data name="Migration2_InnoCardTitle.Text" xml:space="preserve">
+    <value>Passer à la version du Microsoft Store</value>
+  </data>
+  <data name="Migration2_InnoCardDescription.Text" xml:space="preserve">
+    <value>Recevez les prochaines mises à jour d'OpenClaw via le Microsoft Store. Votre configuration OpenClaw existante sera conservée.</value>
+  </data>
   <data name="Migration2_InnoAction" xml:space="preserve">
     <value>Installer la version du Store et migrer</value>
   </data>
+  <data name="Migration2_InnoConsentTitle" xml:space="preserve">
+    <value>Passer à la version du Store ?</value>
+  </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Choisissez Installer la version du Store et migrer pour ouvrir le Microsoft Store et autoriser la migration de cette configuration OpenClaw. Pendant 30 jours, après son installation et son ouverture, la version du Store pourra demander à cette application de se fermer en toute sécurité et effectuer la migration sans redemander votre accord.
+    <value>Le Microsoft Store s'ouvre pour vous permettre d'installer la version du Store. Lorsque vous l'ouvrirez, elle pourra fermer cette application et terminer la migration sans redemander votre accord.
 
-La migration valide vos paramètres et les informations d'identification de votre passerelle, puis enregistre des données de migration protégées. Si la validation réussit, l'application précédente (cette application) ne pourra plus démarrer normalement.
-
-Uniquement après l'enregistrement de la fin de la migration, désinstallez manuellement cette application OpenClaw Companion dans Paramètres Windows &gt; Applications &gt; Applications installées, puis choisissez Réessayer dans la fenêtre de migration du Store. La version du Store ne pourra être utilisée qu'après vérification de la désinstallation de l'application précédente. Votre configuration existante, votre passerelle, vos fichiers et vos modèles resteront en place ; rien ne sera désinstallé automatiquement.
-
-Choisissez Pas maintenant ou fermez cette boîte de dialogue pour annuler sans démarrer la migration.</value>
+Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>Le consentement à la migration a été enregistré. Installez et ouvrez la version du Store pour continuer. Gardez cette application installée jusqu'à la confirmation de la fin de la migration.</value>

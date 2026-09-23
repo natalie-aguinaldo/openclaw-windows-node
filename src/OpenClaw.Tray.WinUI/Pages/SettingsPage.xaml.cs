@@ -53,7 +53,7 @@ public sealed partial class SettingsPage : Page
     public void Initialize()
     {
         StoreMigrationAction.Content = LocalizationHelper.GetString("Migration2_InnoAction");
-        StoreMigrationAction.Visibility = InnoMigrationHandoff.IsAvailable ? Visibility.Visible : Visibility.Collapsed;
+        StoreMigrationCard.Visibility = InnoMigrationHandoff.IsAvailable ? Visibility.Visible : Visibility.Collapsed;
         PopulateAppInfo();
         InitializeGatewayInfo();
         if (CurrentApp.Settings is { } settings)
@@ -71,7 +71,7 @@ public sealed partial class SettingsPage : Page
             var confirmation = new ContentDialog
             {
                 XamlRoot = XamlRoot,
-                Title = LocalizationHelper.GetString("Migration2_InnoAction"),
+                Title = LocalizationHelper.GetString("Migration2_InnoConsentTitle"),
                 Content = LocalizationHelper.GetString("Migration2_InnoConsent"),
                 PrimaryButtonText = LocalizationHelper.GetString("Migration2_InnoAction"),
                 CloseButtonText = LocalizationHelper.GetString("Migration_StoreNotNow"),

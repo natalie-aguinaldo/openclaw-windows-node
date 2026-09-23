@@ -32,6 +32,14 @@ primary action, and standard content/footer spacing. The title bar stays
 "Move to the Store version"; retry/recovery states do not use setup step dots.
 The window also sets the native OpenClaw icon for taskbar previews and the
 window switcher; the custom title-bar image alone does not supply that icon.
+The migration-capable Inno Settings page promotes this handoff with a
+theme-aware recommended card that reuses the same card padding, typography,
+accent badge, and primary-button styling as the rest of the app. The card
+carries no decorative icon, so its text aligns with every other settings row,
+and its action shares the row only on wide windows. Its confirmation dialog
+asks a question rather than repeating the button label, and states the handoff
+grant and preserved data; detailed removal and finalization guidance stays in
+the Store wizard, where the user can act on it.
 
 This is a separate pre-start workflow, not a page in the setup pipeline.
 `StoreMigrationStartupGuard` and `StoreMigrationWorkflow` retain migration

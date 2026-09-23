@@ -7285,17 +7285,25 @@
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 無法開啟要求的頁面。請再試一次，或在移轉完成後手動開啟 Windows 設定 &gt; 應用程式 &gt; 已安裝的應用程式。</value>
   </data>
+  <data name="Migration2_InnoRecommendation.Text" xml:space="preserve">
+    <value>建議</value>
+  </data>
+  <data name="Migration2_InnoCardTitle.Text" xml:space="preserve">
+    <value>移轉至 Microsoft Store 版本</value>
+  </data>
+  <data name="Migration2_InnoCardDescription.Text" xml:space="preserve">
+    <value>透過 Microsoft Store 取得 OpenClaw 的後續更新。您現有的 OpenClaw 設定將會保留。</value>
+  </data>
   <data name="Migration2_InnoAction" xml:space="preserve">
     <value>安裝 Store 版本並移轉</value>
   </data>
+  <data name="Migration2_InnoConsentTitle" xml:space="preserve">
+    <value>移轉至 Store 版本？</value>
+  </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>選擇「安裝 Store 版本並移轉」以開啟 Microsoft Store 並授權移轉此 OpenClaw 設定。在 30 天內，安裝並開啟 Store 版本後，它可以要求此應用程式安全關閉並執行移轉，無需再次徵求您的同意。
+    <value>將開啟 Microsoft Store，讓您安裝 Store 版本。您開啟該版本後，它可以關閉此應用程式並完成移轉，無需再次徵求您的同意。
 
-移轉將驗證您的設定和閘道認證，並儲存受保護的移轉記錄。如果驗證成功，舊版應用程式（此應用程式）將無法正常啟動。
-
-只有在移轉完成狀態已記錄後，才能透過 Windows 設定 &gt; 應用程式 &gt; 已安裝的應用程式手動解除安裝此 OpenClaw Companion 應用程式，然後在 Store 移轉視窗中選擇「重試」。只有在確認舊版應用程式已移除後，才能使用 Store 版本。您的現有設定、閘道、檔案和模型將保留在原處；不會自動解除安裝任何應用程式。
-
-選擇「現在不要」或關閉此對話方塊即可取消，不會開始移轉。</value>
+您的設定、閘道、檔案和模型將保留在原處。</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>已儲存移轉授權。請安裝並開啟 Store 版本以繼續。在確認移轉完成之前，請保留此應用程式。</value>

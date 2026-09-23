@@ -75,6 +75,25 @@ public sealed class InnoMigrationContractTests
         Assert.Contains(".HasValidConsent(installation.Version.ToString())", helper);
         Assert.Contains("Environment.ProcessPath", helper);
         var settings = Read("src", "OpenClaw.Tray.WinUI", "Pages", "SettingsPage.xaml.cs");
+        var settingsXaml = Read("src", "OpenClaw.Tray.WinUI", "Pages", "SettingsPage.xaml");
+        Assert.Contains("x:Name=\"StoreMigrationCard\"", settingsXaml);
+        Assert.Contains("Migration2_InnoRecommendation", settingsXaml);
+        Assert.Contains("Migration2_InnoCardTitle", settingsXaml);
+        Assert.Contains("Migration2_InnoCardDescription", settingsXaml);
+        var card = settingsXaml[
+            settingsXaml.IndexOf("x:Name=\"StoreMigrationCard\"", StringComparison.Ordinal)..
+            settingsXaml.IndexOf("<InfoBar x:Name=\"StoreMigrationStatus\"", StringComparison.Ordinal)];
+        Assert.Contains("x:Name=\"StoreMigrationAction\"", card);
+        Assert.Contains("Style=\"{StaticResource AccentButtonStyle}\"", card);
+        Assert.Contains("<Button.ContentTemplate>", card);
+        // The card carries no decorative icon tile so its text column aligns with
+        // every other settings row, and the action only shares a row on wide windows.
+        Assert.DoesNotContain("<FontIcon", card);
+        Assert.Contains("<AdaptiveTrigger MinWindowWidth=\"720\"/>", card);
+        Assert.True(card.IndexOf("Migration2_InnoRecommendation", StringComparison.Ordinal) <
+            card.IndexOf("Migration2_InnoCardTitle", StringComparison.Ordinal));
+        Assert.Contains("StoreMigrationCard.Visibility = InnoMigrationHandoff.IsAvailable", settings);
+        Assert.Contains("LocalizationHelper.GetString(\"Migration2_InnoConsentTitle\")", settings);
         Assert.Contains("DefaultButton = ContentDialogButton.Close", settings);
         Assert.True(settings.IndexOf("await confirmation.ShowAsync()", StringComparison.Ordinal) <
             settings.IndexOf("await InnoMigrationHandoff.GrantAndLaunchAsync()", StringComparison.Ordinal));

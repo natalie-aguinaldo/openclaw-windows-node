@@ -7349,17 +7349,25 @@ Your settings, gateway, files, and models stay in place.</value>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows could not open the requested page. Try again, or open Windows Settings &gt; Apps &gt; Installed apps manually if migration is complete.</value>
   </data>
+  <data name="Migration2_InnoRecommendation.Text" xml:space="preserve">
+    <value>Recommended</value>
+  </data>
+  <data name="Migration2_InnoCardTitle.Text" xml:space="preserve">
+    <value>Move to the Microsoft Store version</value>
+  </data>
+  <data name="Migration2_InnoCardDescription.Text" xml:space="preserve">
+    <value>Get future OpenClaw updates through Microsoft Store. Your existing OpenClaw setup will be preserved.</value>
+  </data>
   <data name="Migration2_InnoAction" xml:space="preserve">
     <value>Install Store version and migrate</value>
   </data>
+  <data name="Migration2_InnoConsentTitle" xml:space="preserve">
+    <value>Move to the Store version?</value>
+  </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Choose Install Store version and migrate to open the Microsoft Store and authorize migration of this OpenClaw setup. For 30 days, after you install and open the Store version, it can ask this app to close safely and migrate without asking for consent again.
+    <value>Microsoft Store opens so you can install the Store version. When you open it, it can close this app and finish the move without asking again.
 
-Migration validates your settings and gateway credentials and saves protected migration records. If validation succeeds, the previous app (this app) will be blocked from starting normally.
-
-Only after migration completion is recorded, manually uninstall this OpenClaw Companion app through Windows Settings &gt; Apps &gt; Installed apps, then choose Retry in the Store migration window. The Store version can be used only after removal of the previous app is verified. Your existing configuration, gateway, files, and models stay in place; nothing is uninstalled automatically.
-
-Choose Not now or dismiss this dialog to cancel without starting migration.</value>
+Your settings, gateway, files, and models stay where they are.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>Migration consent was saved. Install and open the Store version to continue. Keep this app installed until migration completion is confirmed.</value>

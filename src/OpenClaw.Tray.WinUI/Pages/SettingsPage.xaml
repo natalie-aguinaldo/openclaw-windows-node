@@ -32,9 +32,85 @@
                            Margin="0,0,0,8"/>
 
                 <!-- ═════════ General ═════════ -->
-                <Button x:Name="StoreMigrationAction" Visibility="Collapsed"
-                        Click="OnStoreMigration" HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="SettingsStoreMigration"/>
+                <Border x:Name="StoreMigrationCard" Visibility="Collapsed"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="{StaticResource SettingsRowPadding}"
+                        AutomationProperties.AutomationId="SettingsStoreMigrationCard">
+                    <Grid ColumnSpacing="16">
+                        <!--
+                            The action keeps its own row by default so a long
+                            localized label never starves the wrapping text
+                            column. Wide windows restore the single-row shape
+                            shared with every other settings row.
+                        -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup>
+                                <VisualState x:Name="StoreMigrationStackedState"/>
+                                <VisualState x:Name="StoreMigrationInlineState">
+                                    <VisualState.StateTriggers>
+                                        <AdaptiveTrigger MinWindowWidth="720"/>
+                                    </VisualState.StateTriggers>
+                                    <VisualState.Setters>
+                                        <Setter Target="StoreMigrationAction.(Grid.Row)" Value="0"/>
+                                        <Setter Target="StoreMigrationAction.(Grid.Column)" Value="1"/>
+                                        <Setter Target="StoreMigrationAction.HorizontalAlignment" Value="Right"/>
+                                        <Setter Target="StoreMigrationAction.Margin" Value="0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <!-- Badge leads so it stays beside the title and is never
+                                         clipped by a long translation. -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" CornerRadius="4" Padding="7,1"
+                                        VerticalAlignment="Center"
+                                        BorderBrush="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                        BorderThickness="1">
+                                    <TextBlock x:Uid="Migration2_InnoRecommendation" Text="Recommended"
+                                               Style="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                </Border>
+                                <TextBlock x:Uid="Migration2_InnoCardTitle" Grid.Column="1"
+                                           Text="Move to the Microsoft Store version"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap"/>
+                            </Grid>
+                            <TextBlock x:Uid="Migration2_InnoCardDescription"
+                                       Text="Get future OpenClaw updates through Microsoft Store. Your existing OpenClaw setup will be preserved."
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button x:Name="StoreMigrationAction" Grid.Row="1" Grid.Column="0"
+                                Click="OnStoreMigration" HorizontalAlignment="Left"
+                                VerticalAlignment="Center" Margin="0,10,0,0"
+                                MinWidth="100" MaxWidth="320"
+                                Style="{StaticResource AccentButtonStyle}"
+                                AutomationProperties.AutomationId="SettingsStoreMigration">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap"
+                                               TextAlignment="Center"/>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+                    </Grid>
+                </Border>
                 <InfoBar x:Name="StoreMigrationStatus" IsOpen="False" IsClosable="True"/>
 
                 <TextBlock x:Uid="SettingsPage_General" Text="General" Style="{StaticResource BodyStrongTextBlockStyle}"

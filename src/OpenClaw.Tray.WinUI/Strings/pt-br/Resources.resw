@@ -7339,17 +7339,25 @@ Suas configurações, gateway, arquivos e modelos permanecem no mesmo local.</va
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>O Windows não conseguiu abrir a página solicitada. Tente novamente ou abra Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados manualmente se a migração estiver concluída.</value>
   </data>
+  <data name="Migration2_InnoRecommendation.Text" xml:space="preserve">
+    <value>Recomendado</value>
+  </data>
+  <data name="Migration2_InnoCardTitle.Text" xml:space="preserve">
+    <value>Mudar para a versão da Microsoft Store</value>
+  </data>
+  <data name="Migration2_InnoCardDescription.Text" xml:space="preserve">
+    <value>Receba futuras atualizações do OpenClaw pela Microsoft Store. Sua configuração atual do OpenClaw será preservada.</value>
+  </data>
   <data name="Migration2_InnoAction" xml:space="preserve">
     <value>Instalar a versão da Store e migrar</value>
   </data>
+  <data name="Migration2_InnoConsentTitle" xml:space="preserve">
+    <value>Mudar para a versão da Store?</value>
+  </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Selecione Instalar a versão da Store e migrar para abrir a Microsoft Store e autorizar a migração desta configuração do OpenClaw. Durante 30 dias, depois que você instalar e abrir a versão da Store, ela poderá solicitar que este aplicativo seja encerrado com segurança e realizar a migração sem pedir autorização novamente.
+    <value>A Microsoft Store será aberta para você instalar a versão da Store. Quando você abri-la, ela poderá fechar este aplicativo e concluir a mudança sem pedir autorização novamente.
 
-A migração valida suas configurações e credenciais do gateway e salva registros protegidos de migração. Se a validação for bem-sucedida, o aplicativo anterior (este aplicativo) não poderá mais iniciar normalmente.
-
-Somente após o registro da conclusão da migração, desinstale manualmente este aplicativo OpenClaw Companion em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e selecione Tentar novamente na janela de migração da Store. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente.
-
-Selecione Agora não ou feche esta caixa de diálogo para cancelar sem iniciar a migração.</value>
+Suas configurações, gateway, arquivos e modelos permanecem onde estão.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>O consentimento para migração foi salvo. Instale e abra a versão da Store para continuar. Mantenha este aplicativo instalado até que a conclusão da migração seja confirmada.</value>
