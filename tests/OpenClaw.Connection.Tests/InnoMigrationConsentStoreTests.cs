@@ -69,6 +69,38 @@ public sealed class InnoMigrationConsentStoreTests
     }
 
     [Fact]
+    public void RuntimeReadLease_AllowsExplicitGrantAndInspection()
+    {
+        using var fixture = new Fixture();
+        using var runtime = MigrationOperationLock.AcquireRuntime(fixture.Binding);
+
+        fixture.Store.Grant(SourceVersion);
+
+        Assert.True(fixture.Store.HasValidConsent(SourceVersion));
+        Assert.False(File.Exists(fixture.IntentPath));
+        Assert.False(File.Exists(fixture.CompletionPath));
+        Assert.Throws<IOException>(() => new FileStream(
+            fixture.LockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None));
+    }
+
+    [Fact]
+    public void RuntimeReadLease_ExistingConsentInspectionRemainsReadOnly()
+    {
+        using var fixture = new Fixture();
+        fixture.Store.Grant(SourceVersion);
+        using var runtime = MigrationOperationLock.AcquireRuntime(fixture.Binding);
+        var before = Directory.GetFileSystemEntries(fixture.Directory).Order().ToArray();
+        var bytes = File.ReadAllBytes(fixture.ConsentPath);
+        var timestamp = Directory.GetLastWriteTimeUtc(fixture.Directory);
+
+        Assert.True(fixture.Store.HasValidConsent(SourceVersion));
+
+        Assert.Equal(before, Directory.GetFileSystemEntries(fixture.Directory).Order().ToArray());
+        Assert.Equal(bytes, File.ReadAllBytes(fixture.ConsentPath));
+        Assert.Equal(timestamp, Directory.GetLastWriteTimeUtc(fixture.Directory));
+    }
+
+    [Fact]
     public void MissingConsent_DoesNotCreateProfileOrMigrationDirectory()
     {
         using var fixture = new Fixture();
@@ -338,19 +370,33 @@ public sealed class InnoMigrationConsentStoreTests
         Assert.Single(fixture.Logger.Warnings);
     }
 
-    [Theory]
-    [InlineData(FileShare.None)]
-    [InlineData(FileShare.Read)]
-    public void PreparationOrUninstallLock_ExcludesConsentReadsAndWrites(FileShare share)
+    [Fact]
+    public void ExclusiveMigrationLock_ExcludesConsentReadsAndWrites()
     {
         using var fixture = new Fixture();
         fixture.Store.Grant(SourceVersion);
         var bytes = File.ReadAllBytes(fixture.ConsentPath);
         using var locked = new FileStream(Path.Combine(fixture.Directory, "prepare.lock"),
-            FileMode.Open, share == FileShare.Read ? FileAccess.Read : FileAccess.ReadWrite, share);
+            FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
         Assert.Throws<IOException>(() => fixture.Store.HasValidConsent(SourceVersion));
         Assert.Throws<IOException>(() => fixture.Store.Grant(SourceVersion));
+        Assert.Equal(bytes, File.ReadAllBytes(fixture.ConsentPath));
+        Assert.Empty(fixture.Logger.Warnings);
+    }
+
+    [Fact]
+    public void ConsentWriterLock_SerializesGrantsWithoutBlockingDurableConsentInspection()
+    {
+        using var fixture = new Fixture();
+        fixture.Store.Grant(SourceVersion);
+        var bytes = File.ReadAllBytes(fixture.ConsentPath);
+        using var writer = new FileStream(
+            Path.Combine(fixture.Directory, InnoMigrationConsentStore.WriterLockFileName),
+            FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        Assert.Throws<IOException>(() => fixture.Store.Grant(SourceVersion));
+        Assert.True(fixture.Store.HasValidConsent(SourceVersion));
         Assert.Equal(bytes, File.ReadAllBytes(fixture.ConsentPath));
         Assert.Empty(fixture.Logger.Warnings);
     }

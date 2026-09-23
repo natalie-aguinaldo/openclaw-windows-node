@@ -7130,7 +7130,11 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Er is een ondersteunde vorige installatie gevonden. Normaal opstarten is gepauzeerd. U kunt de migratie starten of Nu niet kiezen om de vorige app te blijven gebruiken.</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent. Dit voorbeeld wijzigt uw configuratie nog niet.</value>
+    <value>Er is een ondersteunde vorige installatie gevonden. Start de migratie alleen wanneer u klaar bent.
+
+Als u Migreren kiest, wordt uw configuratie gecontroleerd en worden beveiligde migratiegegevens opgeslagen. Als de controle slaagt, zal de vorige app niet meer normaal kunnen starten. U moet dan de vorige app verwijderen via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps en de Store-app opnieuw openen om de migratie af te ronden. Uw configuratie en gateway blijven behouden; er wordt niets automatisch verwijderd.
+
+Kies Nu niet om dit voorbeeld te sluiten zonder de migratie te starten en de vorige app te blijven gebruiken.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migreren</value>
@@ -7139,7 +7143,7 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Nu niet</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze niet. Dit voorbeeld heeft uw configuratie niet gewijzigd.</value>
+    <value>Sluit de vorige OpenClaw Companion-app en selecteer daarna Opnieuw proberen. Forceer niet dat de app stopt en verwijder deze nog niet. Verwijder de app pas nadat dit voorbeeld meldt dat de voltooiing van de migratie is vastgelegd.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Opnieuw proberen</value>
@@ -7184,7 +7188,13 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Overstappen naar de Store-versie</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Wilt u uw bestaande OpenClaw-configuratie migreren naar de Store-versie? OpenClaw sluit de vorige app en valideert uw instellingen en gatewayreferenties. Uw gateway, bestanden en modellen blijven op hun plaats. Na de migratie moet u de vorige app verwijderen voordat u de Store-versie gebruikt.</value>
+    <value>Wilt u uw bestaande OpenClaw-configuratie migreren naar de Store-versie?
+
+Als u Migreren kiest, wordt de vorige app gevraagd veilig af te sluiten, worden uw instellingen en gatewayreferenties gevalideerd en worden beveiligde migratiegegevens opgeslagen. Als de validatie slaagt, kan de vorige app niet meer normaal starten.
+
+Pas nadat de voltooiing van de migratie is vastgelegd, verwijdert u de vorige OpenClaw Companion-app handmatig via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps. Kies daarna Opnieuw proberen in dit venster. De Store-versie kan pas worden gebruikt nadat de verwijdering van de vorige app is geverifieerd. Uw bestaande configuratie, gateway, bestanden en modellen blijven op hun plaats; er wordt niets automatisch verwijderd.
+
+Kies Nu niet of sluit dit venster om te annuleren zonder de migratie te starten.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>De vorige app wordt gevraagd veilig af te sluiten...</value>
@@ -7199,10 +7209,10 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>De verwijdering wordt gecontroleerd en de migratie wordt afgerond...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Sluit de vorige OpenClaw Companion-app via het menu in het systeemvak en kies daarna Opnieuw proberen. Forceer het afsluiten niet en verwijder de app nog niet.</value>
+    <value>Sluit de vorige OpenClaw Companion-app via het menu in het systeemvak en kies daarna Opnieuw proberen. Forceer het afsluiten niet en verwijder de app nog niet. Verwijder de app pas nadat dit venster bevestigt dat de voltooiing van de migratie is vastgelegd. Kies na het verwijderen van de vorige app Opnieuw proberen om de verwijdering te verifiëren en de migratie af te ronden.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>De voltooiing van de migratie is vastgelegd. Verwijder alleen de vorige OpenClaw Companion-app via Geïnstalleerde apps in Windows en kies daarna Opnieuw proberen. Laat de Store-versie geïnstalleerd. Uw gemigreerde configuratie en gateway blijven behouden. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+    <value>De voltooiing van de migratie is vastgelegd. Verwijder alleen de vorige OpenClaw Companion-app handmatig via Geïnstalleerde apps in Windows en kies daarna Opnieuw proberen om de verwijdering te verifiëren en de migratie af te ronden. Laat de Store-versie geïnstalleerd. De Store-versie kan pas worden gebruikt nadat de verwijdering van de vorige app is geverifieerd. Uw bestaande configuratie, gateway, bestanden en modellen blijven op hun plaats; er wordt niets automatisch verwijderd. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw kon de migratie niet veilig voltooien. Verwijder de vorige app niet en voer geen gatewayopruiming uit. Bekijk het applogboek, los het probleem op en probeer het opnieuw.</value>
@@ -7235,7 +7245,13 @@ Het binaire bestand wxc-exec is niet gevonden. {1} Als dit een ontwikkelaarsbuil
     <value>Store-versie installeren en migreren</value>
   </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Wilt u de Microsoft Store openen en toestemming geven voor de migratie van deze OpenClaw-configuratie? Nadat u de Store-versie hebt geïnstalleerd en geopend, kan deze gedurende 30 dagen deze app sluiten en de migratie uitvoeren zonder opnieuw om toestemming te vragen. Uw gateway, bestanden en modellen blijven op hun plaats. Verwijder deze app pas wanneer de Store-versie bevestigt dat de migratie is voltooid.</value>
+    <value>Kies Store-versie installeren en migreren om de Microsoft Store te openen en toestemming te geven voor de migratie van deze OpenClaw-configuratie. Gedurende 30 dagen kan de Store-versie, nadat u deze hebt geïnstalleerd en geopend, deze app vragen veilig af te sluiten en de migratie uitvoeren zonder opnieuw om toestemming te vragen.
+
+Tijdens de migratie worden uw instellingen en gatewayreferenties gevalideerd en worden beveiligde migratiegegevens opgeslagen. Als de validatie slaagt, kan de vorige app (deze app) niet meer normaal starten.
+
+Pas nadat de voltooiing van de migratie is vastgelegd, verwijdert u deze OpenClaw Companion-app handmatig via Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps. Kies daarna Opnieuw proberen in het migratievenster van de Store-versie. De Store-versie kan pas worden gebruikt nadat de verwijdering van de vorige app is geverifieerd. Uw bestaande configuratie, gateway, bestanden en modellen blijven op hun plaats; er wordt niets automatisch verwijderd.
+
+Kies Nu niet of sluit dit dialoogvenster om te annuleren zonder de migratie te starten.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>De toestemming voor migratie is opgeslagen. Installeer en open de Store-versie om door te gaan. Laat deze app geïnstalleerd totdat de voltooiing van de migratie is bevestigd.</value>

@@ -19,10 +19,14 @@ submission. Dev-signed packages stay in Actions.
 
 ## Inno-to-Store migration foundation
 
-Issue #1374's migration experience remains disabled in ordinary builds.
-The Store workflow and Inno handoff require separate explicit Debug preview
-builds. Neither the production source-version floor nor a Store listing ID
-has been assigned. Production enablement is a separate release decision.
+Issue #1374 is delivered in two PRs: the preservation/startup foundation, then
+the complete migration experience and release enablement. There is no planned
+third PR. The Store product ID is **`9NFPR3BGDRR5`**. The selected first supported
+Inno release is **`v2026.9.5`**, the planned next patch after `v2026.9.4`, provided
+both PRs ship together. The fixed source floor is pinned to **`2026.9.5.0`**.
+Production remains disabled until the actual release artifacts and migration
+acceptance are verified. A listing ID is not evidence that a Store-distributed
+package has passed migration acceptance.
 
 `MigrationPreparation.Prepare` is the non-UI inventory API used after explicit
 consent and verified source shutdown. It inventories state without moving the WSL gateway or
@@ -85,25 +89,105 @@ remain unchanged. Explicit `--uninstall --confirm-destructive` remains a
 complete-removal operation and intentionally does not honor migration receipts.
 
 Inno acquires a read-only, read-shared handle on `store-migration\prepare.lock`
-before uninstall begins and retains it through payload/registration removal.
+before its normal startup receipt check and retains it until process exit, including
+failed startup or shutdown. The handle is deliberately not released by managed
+shutdown because a failed service disposal could leave state writers alive.
+Dev, packaged, and validated browse-only fixture runs do not take this Inno
+runtime lease; other isolated profiles use their resolved data directory.
+Uninstall also acquires a read-only, read-shared handle before effects and retains
+it through payload/registration removal.
 The cleanup script joins that lock (and also locks when invoked independently)
 before checking the receipt, retaining its handle until cleanup exits. These
 handles exclude Store's exclusive preparation/completion/finalization handle.
 An unavailable lock stops uninstall before effects; it never permits an unlocked
 fallback. Completion re-detects the exact source only after acquiring the lock,
 so an uninstall-first run cannot authorize a receipt from stale source evidence.
+Preparation likewise re-detects source evidence under the exclusive file lock.
+Both preparation and completion inspect the exact source image across all Windows
+sessions under that lock, using the same fail-closed process policy as finalization.
+Running sources and busy locks return the close-Inno/Retry decision; uncertain
+process inspection blocks migration without publishing a record.
+
+Explicit consent is allowed while Inno holds its runtime reader: consent reads
+and grants take a read-shared `prepare.lock` handle, which still excludes Store's
+exclusive preparation, completion, and finalization. Grants also take an exclusive
+`consent.lock` to serialize writers across sessions. A read never creates either
+lock. A durable consent reader can finish while another writer is waiting, and
+atomic replacement refuses to overwrite a read-locked record. Consent alone
+never permits state adoption or preservation-mode uninstall. Finalization removes
+the consent writer lock before deleting consent, intent, and completion, keeping
+the completion receipt last.
+
+The file handle, not the session-local single-instance mutex, provides continuous
+cross-session exclusion for participating Inno releases. Process inspection is a
+compatibility backstop for already-running older sources, not a lease preventing
+an older binary from starting after the scan. Production's minimum source version
+must therefore identify a verified release containing the lifetime-lock safeguard.
+Do not enable migration for older nonparticipating releases.
 
 Before rollout, prove exact signed x64 and ARM64 packages, storage/DPAPI access,
 restart recovery, current-head guidance, and manual uninstall preservation.
 Passing unit or PowerShell contract tests is not signed-package migration proof.
 
-### Migration experience preview
+### Coordinated production release
+
+`src\OpenClaw.Tray.WinUI\Migration.Build.props` owns the common Inno and Store
+build contract. The tray project imports it for both x64 and ARM64 publishing,
+including CI's installer and Store package payloads:
+
+| Property | Checked-in value | Shipping requirement |
+|---|---|---|
+| `MigrationStoreProductId` | `9NFPR3BGDRR5` | Verify the listing and installed production package identity. |
+| `MigrationMinimumSourceVersion` | `2026.9.5.0` | Verify that the selected first stable Inno release contains all preservation, lifetime-lock, and startup safeguards. |
+| `MigrationProductionEnabled` | `false` | Set to `true` only with the pinned floor and completed release acceptance. |
+
+Production builds emit `PRODUCTION_MIGRATION` and protected-flow configuration
+metadata only for non-Dev **Release** builds targeting `win-x64` or `win-arm64`.
+Enabling production without a valid, nonzero three- or four-part numeric source
+floor fails the build. Debug and Dev builds remain outside this production gate;
+Debug previews require their separate explicit flags. There is no runtime or
+environment-variable activation switch.
+
+The same coordinated release can introduce the safeguards and the full migration
+flow. A separate preliminary Inno release is not required. Users on older Inno
+versions must **update Inno first**, then migrate: Store installation cannot repair
+an older uninstaller or give an older running binary the lifetime lock.
+
+The minimum is the **fixed first supported Inno version**, not the current target
+app version, GitVersion output, or reserved MSIX package version. Do not raise it
+on each subsequent release. If the first release changes before shipping, update
+the single pinned value and repeat acceptance with those exact artifacts.
+
+Before enabling the checked-in switch or claiming issue #1374 complete:
+
+- Verify the selected `v2026.9.5` release contains both PRs and make that supported
+  Inno update available to existing users, with update-first guidance for older
+  sources. If the release number or contents change, revise the pin before shipping.
+- Prove exact production identity, Store listing handoff, DPAPI/storage access,
+  and signed x64 and ARM64 packages through the real distribution path.
+- Exercise fresh consent, running-Inno graceful shutdown, manual close/Retry,
+  restart recovery, older-source rejection, and ordinary non-migration startup.
+- Verify normal interactive and silent Inno removal preserves the completed
+  migration, while explicit full cleanup retains its separate destructive contract.
+- Verify saved gateway credentials, a real WSL or remote gateway connection,
+  Local AI state, and startup preference survive; Store services start only after
+  exact source removal and finalization.
+- Collect current UI evidence for longer consent, light/dark themes, compact
+  windows, scaling, keyboard navigation, and screen-reader behavior. Unit tests,
+  fixture screenshots, and locally test-signed packages do not replace missing
+  signed-package, ARM64, accessibility, or gateway continuity proof.
+
+Until these requirements are met, keep the shipping PR draft and list each
+unverified dependency explicitly. A synthetic source floor supplied for disposable
+package testing is not approval of a production release version.
+
+### Migration experience and Debug previews
 
 The Store-side preview hosts a dedicated WinUI migration window before normal
-services start. **Ordinary builds remain unchanged.** There is no
-production minimum source version, runtime toggle, or environment-variable
-bypass. Do not enable migration by choosing the current app version as a
-placeholder for a verified safeguard-containing Inno release.
+services start. **Default builds remain unchanged while release activation is
+pending.** Configured production builds use the same workflow. Do not enable
+migration by choosing the current app version as a placeholder for a verified
+safeguard-containing Inno release.
 
 An explicit test build may set `StoreMigrationPreview=true` and
 `StoreMigrationPreviewMinimumSourceVersion` to a three- or four-part numeric
@@ -130,8 +214,8 @@ dotnet publish .\src\OpenClaw.Tray.WinUI\OpenClaw.Tray.WinUI.csproj `
 ```
 
 Use that payload only in a disposable, exact current-user Inno fixture.
-Release, packaged, and Dev-identity Inno previews fail the build. No product ID
-is supplied by default. Without one, Settings hides **Install Store version
+Release, packaged, and Dev-identity Inno previews fail the build. No preview
+product ID is supplied by default. Without one, Settings hides **Install Store version
 and migrate**. The ID accepts only 12 uppercase ASCII letters/digits and opens
 `ms-windows-store://pdp/?ProductId=...`; do not substitute a guessed listing.
 The shutdown receiver can still be exercised without a Store listing.
@@ -166,6 +250,11 @@ The preview:
   consent already exists. An inventory intent never replaces consent.
   Keyboard focus defaults to Not now. Not now closes the Store window without
   starting services or changing source state.
+  Before acceptance, every locale discloses protected migration records, the
+  normal Inno startup block after successful validation, and the required manual
+  uninstall followed by Store finalization. It explains preservation, no automatic
+  uninstall, and the option to leave without starting migration. Retry guidance
+  permits uninstall only after the window reports recorded completion.
 - After consent, requests graceful exit through the existing current-user
   activation pipe. This is a private fixed IPC message, not an `openclaw:`
   route. Only the gated, exact Inno process accepts it after rechecking protected
@@ -198,9 +287,10 @@ The preview:
 This admission result is not an authorization to uninstall. The consent workflow
 reacquires exclusive ownership, revalidates source state, and writes completion
 only after its active-gateway credential check succeeds. Official signed-package
-acceptance on x64 and ARM64, local and remote gateway continuity, the compatible
-Inno release floor, Store listing assignment, and production enablement remain
-release gates. UI tests with fake operations are not package-boundary or real
+acceptance on x64 and ARM64, local and remote gateway continuity, verification
+of the selected Inno release's safeguards, actual Store handoff, and production
+enablement remain release gates. The source floor and Store listing ID are
+assigned above; UI tests with fake operations are not package-boundary or real
 migration proof.
 
 ## Release checklist

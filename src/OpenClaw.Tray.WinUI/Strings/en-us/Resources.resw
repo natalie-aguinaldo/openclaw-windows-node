@@ -7193,7 +7193,11 @@ Make sure the gateway is running.</value>
     <value>A supported previous installation was found. Normal startup is paused. You can start migration, or choose Not now to continue using the previous app.</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>A supported previous installation was found. Start migration only when you are ready. This preview will not change your setup yet.</value>
+    <value>A supported previous installation was found. Start migration only when you are ready.
+
+Choosing Migrate validates your setup and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally. You must then uninstall the previous app through Windows Settings &gt; Apps &gt; Installed apps and reopen the Store app to finish migration. Your setup and gateway will be preserved; nothing is uninstalled automatically.
+
+Choose Not now to exit this preview without starting migration and continue using the previous app.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrate</value>
@@ -7202,7 +7206,7 @@ Make sure the gateway is running.</value>
     <value>Not now</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Close the previous OpenClaw Companion app, then retry. Do not force-close it or uninstall it. This preview has not changed your setup.</value>
+    <value>Close the previous OpenClaw Companion app, then retry. Do not force-close it or uninstall it yet. Uninstall only after this preview tells you migration completion has been recorded.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Retry</value>
@@ -7247,7 +7251,13 @@ Make sure the gateway is running.</value>
     <value>Move to the Store version</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Migrate your existing OpenClaw setup to the Store version? OpenClaw will close the previous app and validate your settings and gateway credentials. Your gateway, files, and models stay in place. After migration, you must uninstall the previous app before using the Store version.</value>
+    <value>Migrate your existing OpenClaw setup to the Store version?
+
+Choosing Migrate asks the previous app to close safely, validates your settings and gateway credentials, and saves protected migration records. If validation succeeds, the previous app will be blocked from starting normally.
+
+Only after migration completion is recorded, manually uninstall the previous OpenClaw Companion app through Windows Settings &gt; Apps &gt; Installed apps, then choose Retry in this window. The Store version can be used only after removal of the previous app is verified. Your existing configuration, gateway, files, and models stay in place; nothing is uninstalled automatically.
+
+Choose Not now or close this window to cancel without starting migration.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>Asking the previous app to close safely...</value>
@@ -7262,10 +7272,10 @@ Make sure the gateway is running.</value>
     <value>Checking removal and finishing migration...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Close the previous OpenClaw Companion app from its tray menu, then choose Retry. Do not force-close or uninstall it yet.</value>
+    <value>Close the previous OpenClaw Companion app from its tray menu, then choose Retry. Do not force-close or uninstall it yet. Uninstall only after this window confirms that migration completion was recorded. After uninstalling the previous app, choose Retry to verify its removal and finish migration.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>Migration completion was recorded. Uninstall only the previous OpenClaw Companion app in Windows Installed apps, then choose Retry. Keep the Store version installed. Your migrated setup and gateway will be preserved. Do not delete migration data or run gateway cleanup.</value>
+    <value>Migration completion was recorded. Manually uninstall only the previous OpenClaw Companion app in Windows Installed apps, then choose Retry to verify its removal and finish migration. Keep the Store version installed. The Store version can be used only after removal of the previous app is verified. Your existing configuration, gateway, files, and models stay in place; nothing is uninstalled automatically. Do not delete migration data or run gateway cleanup.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw could not safely complete migration. Do not uninstall the previous app or run gateway cleanup. Check the app log, resolve the problem, and retry.</value>
@@ -7298,7 +7308,13 @@ Make sure the gateway is running.</value>
     <value>Install Store version and migrate</value>
   </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Open the Microsoft Store and authorize migration of this OpenClaw setup? After you install and open the Store version, it can close this app and migrate without asking again for 30 days. Your gateway, files, and models stay in place. Do not uninstall this app until the Store version confirms migration completion.</value>
+    <value>Choose Install Store version and migrate to open the Microsoft Store and authorize migration of this OpenClaw setup. For 30 days, after you install and open the Store version, it can ask this app to close safely and migrate without asking for consent again.
+
+Migration validates your settings and gateway credentials and saves protected migration records. If validation succeeds, the previous app (this app) will be blocked from starting normally.
+
+Only after migration completion is recorded, manually uninstall this OpenClaw Companion app through Windows Settings &gt; Apps &gt; Installed apps, then choose Retry in the Store migration window. The Store version can be used only after removal of the previous app is verified. Your existing configuration, gateway, files, and models stay in place; nothing is uninstalled automatically.
+
+Choose Not now or dismiss this dialog to cancel without starting migration.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>Migration consent was saved. Install and open the Store version to continue. Keep this app installed until migration completion is confirmed.</value>

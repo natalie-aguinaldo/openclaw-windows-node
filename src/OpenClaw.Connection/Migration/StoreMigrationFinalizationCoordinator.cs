@@ -114,28 +114,11 @@ public sealed class InnoSourceRemovalVerifier : IInnoSourceRemovalVerifier
             if (File.Exists(executable) || File.Exists(uninstaller))
                 return InnoSourceRemovalStatus.SourcePresent;
 
-            foreach (var process in _processes.FindSameNameProcesses())
-            {
-                switch (process.State)
-                {
-                    case InnoSourceProcessState.Exited:
-                    case InnoSourceProcessState.OwnedByOtherUser:
-                        continue;
-                    case InnoSourceProcessState.ImageResolved:
-                        if (process.ImagePath is null)
-                            return InnoSourceRemovalStatus.InspectionFailed;
-                        if (string.Equals(Path.GetFullPath(process.ImagePath), executable,
-                            StringComparison.OrdinalIgnoreCase))
-                        {
-                            return InnoSourceRemovalStatus.SourcePresent;
-                        }
-                        continue;
-                    default:
-                        // A same-name process owned by this user or whose owner cannot be
-                        // determined could be the source in another session.
-                        return InnoSourceRemovalStatus.InspectionFailed;
-                }
-            }
+            var activity = new InnoSourceActivityVerifier(executable, _processes).VerifyStopped();
+            if (activity == InnoSourceActivityStatus.Running)
+                return InnoSourceRemovalStatus.SourcePresent;
+            if (activity != InnoSourceActivityStatus.Stopped)
+                return InnoSourceRemovalStatus.InspectionFailed;
 
             using var mutex = new Mutex(false, _mutexName, out var createdNew);
             return createdNew ? InnoSourceRemovalStatus.Removed : InnoSourceRemovalStatus.SourcePresent;
@@ -312,11 +295,13 @@ public sealed class MigrationFinalizationRecordCleaner(MigrationBinding binding)
     {
         ArgumentNullException.ThrowIfNull(receipt);
         var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
+        var consentLockPath = Path.Combine(directory, InnoMigrationConsentStore.WriterLockFileName);
         var consentPath = Path.Combine(directory, MigrationRecordCodec.ConsentFileName);
         var intentPath = Path.Combine(directory, MigrationRecordCodec.IntentFileName);
         var completionPath = Path.Combine(directory, MigrationRecordCodec.CompletionFileName);
 
         MigrationRecordCodec.RejectReparsePoints(directory);
+        MigrationRecordCodec.RejectReparsePoints(consentLockPath);
         MigrationRecordCodec.RejectReparsePoints(consentPath);
         MigrationRecordCodec.RejectReparsePoints(intentPath);
         MigrationRecordCodec.RejectReparsePoints(completionPath);
@@ -326,6 +311,7 @@ public sealed class MigrationFinalizationRecordCleaner(MigrationBinding binding)
             throw new InvalidDataException("Completion receipt changed before cleanup.");
 
         // The receipt is the recovery anchor, so it is always deleted last.
+        File.Delete(consentLockPath);
         File.Delete(consentPath);
         File.Delete(intentPath);
         File.Delete(completionPath);

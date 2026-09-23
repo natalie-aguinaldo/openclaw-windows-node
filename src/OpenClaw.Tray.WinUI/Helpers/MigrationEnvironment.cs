@@ -17,6 +17,12 @@ internal static class MigrationEnvironment
     public static string? Metadata(string key) => typeof(MigrationEnvironment).Assembly
         .GetCustomAttributes<AssemblyMetadataAttribute>().SingleOrDefault(attribute => attribute.Key == key)?.Value;
 
+    public static string? StoreProductId =>
+        Metadata("MigrationStoreProductId") ?? Metadata("MigrationPreviewStoreProductId");
+
+    public static string? MinimumSourceVersion =>
+        Metadata("MigrationMinimumSourceVersion") ?? Metadata("StoreMigrationPreviewMinimumSourceVersion");
+
     public static MigrationBinding CreateBinding()
     {
         using var identity = WindowsIdentity.GetCurrent();

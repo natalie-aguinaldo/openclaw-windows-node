@@ -7183,7 +7183,11 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Uma instalação anterior compatível foi encontrada. A inicialização normal está pausada. Você pode iniciar a migração ou escolher Agora não para continuar usando o aplicativo anterior.</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>Uma instalação anterior compatível foi encontrada. Inicie a migração apenas quando estiver pronto. Esta prévia ainda não alterará sua configuração.</value>
+    <value>Uma instalação anterior compatível foi encontrada. Inicie a migração apenas quando estiver pronto.
+
+Escolher Migrar valida sua configuração e salva registros de migração protegidos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente. Você deverá então desinstalar o aplicativo anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e reabrir o aplicativo da Store para concluir a migração. Sua configuração e seu gateway serão preservados; nada será desinstalado automaticamente.
+
+Escolha Agora não para sair desta prévia sem iniciar a migração e continuar usando o aplicativo anterior.</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>Migrar</value>
@@ -7192,7 +7196,7 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Agora não</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>Feche o aplicativo OpenClaw Companion anterior e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo. Esta prévia não alterou sua configuração.</value>
+    <value>Feche o aplicativo OpenClaw Companion anterior e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda. Desinstale somente depois que esta prévia informar que a conclusão da migração foi registrada.</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>Tentar novamente</value>
@@ -7237,7 +7241,13 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Mudar para a versão da Store</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>Migrar sua configuração existente do OpenClaw para a versão da Store? O OpenClaw fechará o aplicativo anterior e validará suas configurações e credenciais do gateway. Seu gateway, arquivos e modelos permanecerão no mesmo local. Após a migração, você deverá desinstalar o aplicativo anterior antes de usar a versão da Store.</value>
+    <value>Migrar sua configuração existente do OpenClaw para a versão da Store?
+
+Ao selecionar Migrar, será solicitado que o aplicativo anterior seja encerrado com segurança, suas configurações e credenciais do gateway serão validadas e registros protegidos de migração serão salvos. Se a validação for bem-sucedida, o aplicativo anterior não poderá mais iniciar normalmente.
+
+Somente após o registro da conclusão da migração, desinstale manualmente o aplicativo OpenClaw Companion anterior em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e selecione Tentar novamente nesta janela. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente.
+
+Selecione Agora não ou feche esta janela para cancelar sem iniciar a migração.</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>Solicitando o encerramento seguro do aplicativo anterior...</value>
@@ -7252,10 +7262,10 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Verificando a desinstalação e finalizando a migração...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>Feche o aplicativo OpenClaw Companion anterior pelo menu na bandeja do sistema e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda.</value>
+    <value>Feche o aplicativo OpenClaw Companion anterior pelo menu na bandeja do sistema e selecione Tentar novamente. Não force o encerramento nem desinstale o aplicativo ainda. Desinstale somente após esta janela confirmar que a conclusão da migração foi registrada. Após desinstalar o aplicativo anterior, selecione Tentar novamente para verificar a remoção e finalizar a migração.</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>A conclusão da migração foi registrada. Desinstale apenas o aplicativo OpenClaw Companion anterior em Aplicativos instalados do Windows e selecione Tentar novamente. Mantenha a versão da Store instalada. Sua configuração migrada e seu gateway serão preservados. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+    <value>A conclusão da migração foi registrada. Desinstale manualmente apenas o aplicativo OpenClaw Companion anterior em Aplicativos instalados do Windows e selecione Tentar novamente para verificar a remoção e finalizar a migração. Mantenha a versão da Store instalada. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>O OpenClaw não conseguiu concluir a migração com segurança. Não desinstale o aplicativo anterior nem execute a limpeza do gateway. Consulte o log do aplicativo, resolva o problema e tente novamente.</value>
@@ -7288,7 +7298,13 @@ O binário wxc-exec não pôde ser localizado. {1} Se esta for uma build de dese
     <value>Instalar a versão da Store e migrar</value>
   </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>Abrir a Microsoft Store e autorizar a migração desta configuração do OpenClaw? Depois que você instalar e abrir a versão da Store, ela poderá fechar este aplicativo e realizar a migração sem pedir autorização novamente por 30 dias. Seu gateway, arquivos e modelos permanecerão no mesmo local. Não desinstale este aplicativo até que a versão da Store confirme a conclusão da migração.</value>
+    <value>Selecione Instalar a versão da Store e migrar para abrir a Microsoft Store e autorizar a migração desta configuração do OpenClaw. Durante 30 dias, depois que você instalar e abrir a versão da Store, ela poderá solicitar que este aplicativo seja encerrado com segurança e realizar a migração sem pedir autorização novamente.
+
+A migração valida suas configurações e credenciais do gateway e salva registros protegidos de migração. Se a validação for bem-sucedida, o aplicativo anterior (este aplicativo) não poderá mais iniciar normalmente.
+
+Somente após o registro da conclusão da migração, desinstale manualmente este aplicativo OpenClaw Companion em Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados e selecione Tentar novamente na janela de migração da Store. A versão da Store só poderá ser usada após a verificação da remoção do aplicativo anterior. Sua configuração existente, gateway, arquivos e modelos permanecerão no mesmo local; nada será desinstalado automaticamente.
+
+Selecione Agora não ou feche esta caixa de diálogo para cancelar sem iniciar a migração.</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>O consentimento para migração foi salvo. Instale e abra a versão da Store para continuar. Mantenha este aplicativo instalado até que a conclusão da migração seja confirmada.</value>

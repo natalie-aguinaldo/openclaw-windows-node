@@ -25,7 +25,7 @@ public sealed record StoreMigrationStartupDecision(
 
 /// <summary>
 /// Read-only admission before instance forwarding or normal app services.
-/// ConsentRequired is a handoff to a future consent workflow, not permission to migrate.
+/// ConsentRequired is a handoff to the consent workflow, not permission to migrate.
 /// </summary>
 public sealed class StoreMigrationStartupCoordinator(
     IInnoInstallationDetector detector,
@@ -40,7 +40,7 @@ public sealed class StoreMigrationStartupCoordinator(
         if (!MigrationVersionPolicy.TryParseReleaseVersion(minimumSourceVersion, out var minimum) ||
             architecture is not ("x64" or "arm64"))
         {
-            logger.Error("Store migration preview has no valid source-version or architecture policy.");
+            logger.Error("Store migration has no valid source-version or architecture policy.");
             return new(StoreMigrationStartupState.InspectionFailed);
         }
 

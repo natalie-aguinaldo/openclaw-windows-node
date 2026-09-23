@@ -173,6 +173,8 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
     {
         using var fixture = new Fixture();
         fixture.WriteRecords(autoStart: true);
+        var consentLockPath = Path.Combine(fixture.Directory, InnoMigrationConsentStore.WriterLockFileName);
+        File.WriteAllBytes(consentLockPath, []);
         var autoStart = new AutoStart();
 
         var result = await fixture.FinalizeAsync(
@@ -186,6 +188,7 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         Assert.True(autoStart.LastEnabled);
         Assert.False(File.Exists(fixture.IntentPath));
         Assert.False(File.Exists(fixture.ConsentPath));
+        Assert.False(File.Exists(consentLockPath));
         Assert.False(File.Exists(fixture.CompletionPath));
         Assert.Equal(MigrationStartupRecordStatus.None, fixture.ReadRecords().Status);
     }
@@ -207,6 +210,7 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
     }
 
     [Theory]
+    [InlineData("consent-lock")]
     [InlineData("consent")]
     [InlineData("intent")]
     [InlineData("completed")]
@@ -216,8 +220,11 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         fixture.WriteRecords();
         var consent = File.ReadAllBytes(fixture.ConsentPath);
         var completion = File.ReadAllBytes(fixture.CompletionPath);
+        var consentLockPath = Path.Combine(fixture.Directory, InnoMigrationConsentStore.WriterLockFileName);
+        File.WriteAllBytes(consentLockPath, []);
         var lockedPath = lockedKind switch
         {
+            "consent-lock" => consentLockPath,
             "consent" => fixture.ConsentPath,
             "intent" => fixture.IntentPath,
             _ => fixture.CompletionPath
@@ -228,10 +235,10 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
 
             Assert.Equal(StoreMigrationFinalizationState.RecordCleanupFailed, result.State);
             Assert.False(result.AllowsNormalStartup);
-            Assert.Equal(lockedKind == "consent", File.Exists(fixture.ConsentPath));
+            Assert.Equal(lockedKind is "consent-lock" or "consent", File.Exists(fixture.ConsentPath));
             Assert.Equal(lockedKind != "completed", File.Exists(fixture.IntentPath));
             Assert.Equal(completion, File.ReadAllBytes(fixture.CompletionPath));
-            if (lockedKind == "consent")
+            if (lockedKind is "consent-lock" or "consent")
                 Assert.Equal(consent, File.ReadAllBytes(fixture.ConsentPath));
         }
 

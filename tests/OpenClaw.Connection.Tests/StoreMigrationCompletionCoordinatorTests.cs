@@ -105,11 +105,11 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         // publish completion after the uninstaller's preservation check.
         using (fixture.OpenUninstallLock())
         {
-            Assert.Equal(StoreMigrationCompletionState.ValidationFailed, fixture.Complete(detector).State);
+            Assert.Equal(StoreMigrationCompletionState.InnoRunning, fixture.Complete(detector).State);
             Assert.Equal(0, detector.Calls);
             fixture.AssertNoReceipt();
         }
-        Assert.Equal(StoreMigrationCompletionState.ValidationFailed, fixture.Complete(detector).State);
+        Assert.Equal(StoreMigrationCompletionState.InnoRunning, fixture.Complete(detector).State);
         }
 
         Assert.Equal(StoreMigrationCompletionState.SourceChanged, fixture.Complete(detector).State);
@@ -144,6 +144,48 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         Assert.Equal(StoreMigrationCompletionState.NoActiveGateway, fixture.Complete().State);
         using var uninstall = fixture.OpenUninstallLock();
         fixture.AssertNoReceipt();
+    }
+
+    [Theory]
+    [InlineData(InnoSourceActivityStatus.Running, StoreMigrationCompletionState.InnoRunning)]
+    [InlineData(InnoSourceActivityStatus.InspectionFailed, StoreMigrationCompletionState.ValidationFailed)]
+    [InlineData(InnoSourceActivityStatus.Stopped, StoreMigrationCompletionState.Completed)]
+    public void CrossSessionInspection_RunsUnderExclusiveLockBeforeCompletion(
+        InnoSourceActivityStatus activity, StoreMigrationCompletionState expectedState)
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        var result = fixture.Complete(activity: new Activity(() =>
+        {
+            Assert.Throws<IOException>(() => MigrationOperationLock.AcquireRuntime(fixture.Binding));
+            return activity;
+        }));
+
+        Assert.Equal(expectedState, result.State);
+        if (activity != InnoSourceActivityStatus.Stopped)
+            fixture.AssertNoReceipt();
+        using var released = MigrationOperationLock.AcquireRuntime(fixture.Binding);
+    }
+
+    [Fact]
+    public void SourceRestartBetweenPreparationAndCompletion_BlocksUntilExit()
+    {
+        using var fixture = new Fixture();
+        fixture.AddActiveGateway(sharedToken: "shared");
+        fixture.Prepare();
+        using (MigrationOperationLock.AcquireRuntime(fixture.Binding))
+        {
+            Assert.Equal(StoreMigrationCompletionState.InnoRunning, fixture.Complete().State);
+            fixture.AssertNoReceipt();
+        }
+
+        Assert.Equal(StoreMigrationCompletionState.Completed, fixture.Complete().State);
+        using var runtime = MigrationOperationLock.AcquireRuntime(fixture.Binding);
+        var receipt = MigrationRecordCodec.ReadCompletion(
+            Path.Combine(fixture.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+                MigrationRecordCodec.CompletionFileName), fixture.Binding, DateTime.UtcNow);
+        Assert.Equal("completed", receipt.Kind);
     }
 
     private sealed class Fixture : IDisposable
@@ -193,13 +235,15 @@ public sealed class StoreMigrationCompletionCoordinatorTests
         public MigrationRecord Prepare() =>
             new MigrationPreparation(Binding).Prepare(_installation.Version.ToString());
 
-        public StoreMigrationCompletionDecision Complete(IInnoInstallationDetector? detector = null) =>
+        public StoreMigrationCompletionDecision Complete(IInnoInstallationDetector? detector = null,
+            IInnoSourceActivityVerifier? activity = null) =>
             new StoreMigrationCompletionCoordinator(
                 new LeaseProvider(),
                 detector ?? new Detector(_installation),
                 Binding,
                 new CredentialResolver(DeviceIdentityFileReader.Instance),
-                NullLogger.Instance)
+                NullLogger.Instance,
+                sourceActivity: activity ?? new Activity(() => InnoSourceActivityStatus.Stopped))
             .Complete(_installation, "2026.9.18.0");
 
         public void AssertNoReceipt() =>
@@ -216,6 +260,11 @@ public sealed class StoreMigrationCompletionCoordinatorTests
     private sealed class LeaseProvider : IMigrationSourceLeaseProvider
     {
         public IMigrationSourceLease TryAcquire() => new Lease();
+    }
+
+    private sealed class Activity(Func<InnoSourceActivityStatus> verify) : IInnoSourceActivityVerifier
+    {
+        public InnoSourceActivityStatus VerifyStopped() => verify();
     }
 
     private sealed class Lease : IMigrationSourceLease

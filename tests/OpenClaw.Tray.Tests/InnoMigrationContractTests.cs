@@ -21,7 +21,7 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotContain("new StoreMigrationStartupCoordinator(", app);
 
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "StoreMigrationStartupGuard.cs");
-        Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW\s+return false;\s+#else", helper);
+        Assert.Matches(@"#if !STORE_MIGRATION_PREVIEW && !PRODUCTION_MIGRATION\s+return false;\s+#else", helper);
         Assert.Contains("new StoreMigrationWorkflow(", helper);
         Assert.Contains("new StoreMigrationWindow(", helper);
         Assert.Contains("return !await window.ShowAsync()", helper);
@@ -37,6 +37,8 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new StoreMigrationAdoptionPreparationCoordinator(", helper);
         Assert.Contains("new MigrationPreparation(_binding!)", helper);
         Assert.Contains("new StoreMigrationCompletionCoordinator(", helper);
+        var workflow = Read("src", "OpenClaw.Tray.WinUI", "Services", "StoreMigrationWorkflow.cs");
+        Assert.Contains("StoreMigrationCompletionState.InnoRunning => StoreMigrationStage.CloseSource", workflow);
         Assert.Contains("new StoreMigrationFinalizationCoordinator(", helper);
         Assert.Contains("new MigrationFinalizationRecordCleaner(", helper);
         Assert.Contains("new InnoSourceRemovalVerifier(_binding!, AppIdentity.MutexBaseName)", helper);
@@ -67,7 +69,7 @@ public sealed class InnoMigrationContractTests
     public void InnoPreview_GatesHandoffAndUsesCanonicalShutdown()
     {
         var helper = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationHandoff.cs");
-        Assert.Contains("#if INNO_MIGRATION_PREVIEW", helper);
+        Assert.Contains("#if INNO_MIGRATION_PREVIEW || PRODUCTION_MIGRATION", helper);
         Assert.Contains("!AppIdentity.IsDev && !PackageHelper.IsPackaged", helper);
         Assert.Contains("!GatewayFixtureIsolation.IsEnabled", helper);
         Assert.Contains(".HasValidConsent(installation.Version.ToString())", helper);
@@ -82,7 +84,7 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("InnoMigrationHandoff.CreateShutdownHandler(_dispatcherQueue!, ExitApplication)", app);
         Assert.DoesNotContain("Process.Kill", helper);
 
-        var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
+        var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "Migration.Build.props"));
         var target = project.Descendants("Target").Single(element =>
             (string?)element.Attribute("Name") == "ValidateInnoMigrationPreview");
         Assert.Contains("'$(Configuration)' != 'Debug'", target.ToString());
@@ -111,7 +113,7 @@ public sealed class InnoMigrationContractTests
     [Fact]
     public void StorePreviewBuildGate_RequiresExplicitNonShippingConfiguration()
     {
-        var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "OpenClaw.Tray.WinUI.csproj"));
+        var project = System.Xml.Linq.XDocument.Parse(Read("src", "OpenClaw.Tray.WinUI", "Migration.Build.props"));
         var define = project.Descendants("DefineConstants")
             .Single(element => element.Value.Contains("STORE_MIGRATION_PREVIEW", StringComparison.Ordinal));
         Assert.Equal("'$(StoreMigrationPreview)' == 'true'", define.Parent!.Attribute("Condition")!.Value);
@@ -125,15 +127,49 @@ public sealed class InnoMigrationContractTests
         Assert.Empty(project.Descendants("StoreMigrationPreviewMinimumSourceVersion"));
     }
 
+    [Theory]
+    [InlineData("en-us", "blocked from starting normally", "uninstall the previous app", "This preview will not change your setup yet.", "This preview has not changed your setup.")]
+    [InlineData("fr-fr", "ne pourra plus démarrer normalement", "désinstaller l'application précédente", "Cet aperçu ne modifiera pas encore votre configuration.", "Cet aperçu n'a pas modifié votre configuration.")]
+    [InlineData("nl-nl", "niet meer normaal kunnen starten", "de vorige app verwijderen", "Dit voorbeeld wijzigt uw configuratie nog niet.", "Dit voorbeeld heeft uw configuratie niet gewijzigd.")]
+    [InlineData("pt-br", "não poderá mais iniciar normalmente", "desinstalar o aplicativo anterior", "Esta prévia ainda não alterará sua configuração.", "Esta prévia não alterou sua configuração.")]
+    [InlineData("zh-cn", "旧版应用将无法正常启动", "卸载旧版应用", "此预览尚不会更改您的配置。", "此预览未更改您的配置。")]
+    [InlineData("zh-tw", "舊版應用程式將無法正常啟動", "解除安裝舊版應用程式", "此預覽尚不會變更您的設定。", "此預覽未變更您的設定。")]
+    public void Consent_DisclosesStartupBlockAndRequiredRemovalInEveryLocale(
+        string locale, string startupBlock, string removal, string oldConsent, string oldRetry)
+    {
+        var resources = System.Xml.Linq.XDocument.Parse(
+            Read("src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
+        string Value(string key) => resources.Root!.Elements("data")
+            .Single(element => (string?)element.Attribute("name") == key).Element("value")!.Value;
+
+        var consent = Value("Migration_StoreConsent");
+        Assert.Contains(startupBlock, consent);
+        Assert.Contains(removal, consent);
+        Assert.Contains(Value("Migration_StoreMigrate"), consent);
+        Assert.Contains(Value("Migration_StoreNotNow"), consent);
+        Assert.DoesNotContain(oldConsent, consent);
+        Assert.DoesNotContain(oldRetry, Value("Migration_StoreCloseInno"));
+        if (locale == "en-us")
+        {
+            Assert.Contains("protected migration records", consent);
+            Assert.Contains("If validation succeeds", consent);
+            Assert.Contains("reopen the Store app to finish migration", consent);
+            Assert.Contains("Your setup and gateway will be preserved", consent);
+            Assert.Contains("nothing is uninstalled automatically", consent);
+            Assert.Contains("without starting migration", consent);
+            Assert.Contains("Uninstall only after", Value("Migration_StoreCloseInno"));
+        }
+    }
+
     [Fact]
     public void CompletedMigrationGuard_PrecedesSettingsAndActivation()
     {
         var app = Read("src", "OpenClaw.Tray.WinUI", "App.xaml.cs");
         var launch = app[app.IndexOf("private async Task OnLaunchedAsync", StringComparison.Ordinal)..];
-        var guard = launch.IndexOf("InnoMigrationStartupGuard.ShouldStopLaunch()", StringComparison.Ordinal);
+        var guard = launch.IndexOf("InnoMigrationStartupGuard.ShouldStopLaunch(out _innoMigrationLease)", StringComparison.Ordinal);
         Assert.True(guard > launch.IndexOf("await CliUninstallHandler.RunAsync", StringComparison.Ordinal));
         Assert.True(guard > launch.IndexOf("_mutex = new Mutex(true, mutexName", StringComparison.Ordinal));
-        Assert.Contains("if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch())", launch);
+        Assert.Contains("if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch(out _innoMigrationLease))", launch);
         Assert.True(guard < launch.IndexOf("new ActivationRouter(", StringComparison.Ordinal));
         Assert.True(guard < launch.IndexOf("new SettingsManager()", StringComparison.Ordinal));
         Assert.DoesNotContain("MigrationRecordCodec", app);
@@ -141,6 +177,14 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("AppIdentity.IsDev || PackageHelper.IsPackaged", helper);
         Assert.Contains("MigrationRecordCodec.ReadCompletion", helper);
         Assert.Contains("Migration_InnoCompleted", helper);
+        Assert.Contains("GatewayFixtureIsolation.IsEnabled", helper);
+        var acquire = helper.IndexOf("runtimeLease = MigrationOperationLock.AcquireRuntime(binding)", StringComparison.Ordinal);
+        Assert.True(acquire > 0 && acquire < helper.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal));
+        var lockFailure = helper[acquire..helper.IndexOf("var path =", StringComparison.Ordinal)];
+        Assert.Contains("InvalidDataException", lockFailure);
+        Assert.Contains("return ShowGuidance(\"Migration_InnoCheckFailed\")", lockFailure);
+        Assert.DoesNotContain("_innoMigrationLease", Read("src", "OpenClaw.Tray.WinUI", "App.AppShutdownCoordinator.cs"));
+        Assert.DoesNotContain("_innoMigrationLease?.Dispose", app);
     }
 
     [Fact]

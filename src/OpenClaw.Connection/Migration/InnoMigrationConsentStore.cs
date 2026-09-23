@@ -17,10 +17,13 @@ public sealed class InnoMigrationConsentStore(
     IOpenClawLogger logger,
     TimeProvider? timeProvider = null)
 {
+    internal const string WriterLockFileName = "consent.lock";
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
     /// <summary>
-    /// Writes a fresh 30-day grant under prepare.lock. Explicit confirmation may renew an
+    /// Writes a fresh 30-day grant under a shared prepare.lock lease and an exclusive
+    /// consent writer lock, so consent can be granted while Inno is running.
+    /// Explicit confirmation may renew an
     /// expired, otherwise valid grant or change its source version. Corrupt, wrong-kind,
     /// wrong-binding, and future-dated records require recovery and are never overwritten.
     /// Invalid-record failures surface as InvalidDataException with the original exception retained.
@@ -35,7 +38,10 @@ public sealed class InnoMigrationConsentStore(
         try
         {
             MigrationRecordStorage.CreateProtectedDirectory(directory);
-            using var migrationLock = AcquireLock(directory, FileMode.OpenOrCreate);
+            using var migrationLock = AcquireReadLease(directory, FileMode.OpenOrCreate);
+            var writerPath = Path.Combine(directory, WriterLockFileName);
+            MigrationRecordCodec.RejectReparsePoints(writerPath);
+            using var writerLock = new FileStream(writerPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
             var completionPath = Path.Combine(directory, MigrationRecordCodec.CompletionFileName);
             MigrationRecordCodec.RejectReparsePoints(completionPath);
@@ -81,7 +87,7 @@ public sealed class InnoMigrationConsentStore(
             // A grant appearing after this check can safely require fresh confirmation.
             if (!Exists(consentPath))
                 return false;
-            using var migrationLock = AcquireLock(directory, FileMode.Open);
+            using var migrationLock = AcquireReadLease(directory, FileMode.Open);
             var record = ReadConsent(directory, _clock.GetUtcNow().UtcDateTime, allowExpired: false);
             if (record is null)
                 return false;
@@ -99,11 +105,11 @@ public sealed class InnoMigrationConsentStore(
         }
     }
 
-    private static FileStream AcquireLock(string directory, FileMode mode)
+    private static FileStream AcquireReadLease(string directory, FileMode mode)
     {
         var lockPath = Path.Combine(directory, "prepare.lock");
         MigrationRecordCodec.RejectReparsePoints(lockPath);
-        return new FileStream(lockPath, mode, FileAccess.ReadWrite, FileShare.None);
+        return new FileStream(lockPath, mode, FileAccess.Read, FileShare.Read);
     }
 
     private MigrationRecord? ReadConsent(string directory, DateTime now, bool allowExpired)

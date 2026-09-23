@@ -31,7 +31,8 @@ public sealed class StoreMigrationCompletionCoordinator(
     MigrationBinding binding,
     ICredentialResolver credentialResolver,
     IOpenClawLogger logger,
-    TimeProvider? timeProvider = null)
+    TimeProvider? timeProvider = null,
+    IInnoSourceActivityVerifier? sourceActivity = null)
 {
     private readonly TimeProvider _clock = timeProvider ?? TimeProvider.System;
 
@@ -58,6 +59,15 @@ public sealed class StoreMigrationCompletionCoordinator(
             if (detected.Status != InnoInstallationStatus.Detected || detected.Installation != expected)
                 return new(StoreMigrationCompletionState.SourceChanged);
 
+            var activity = (sourceActivity ?? new InnoSourceActivityVerifier(expected.ExecutablePath)).VerifyStopped();
+            if (activity == InnoSourceActivityStatus.Running)
+                return new(StoreMigrationCompletionState.InnoRunning);
+            if (activity != InnoSourceActivityStatus.Stopped)
+            {
+                logger.Error("Store migration completion could not exclude source processes across sessions.");
+                return new(StoreMigrationCompletionState.ValidationFailed);
+            }
+
             var intent = ReadIntent(directory);
             var inventory = MigrationInventory.Capture(binding.RoamingDirectory, binding.LocalDirectory);
             if (intent.SourceVersion != expected.Version.ToString() ||
@@ -65,7 +75,6 @@ public sealed class StoreMigrationCompletionCoordinator(
             {
                 return new(StoreMigrationCompletionState.SourceChanged);
             }
-
             var registry = new GatewayRegistry(binding.RoamingDirectory, logger: logger);
             registry.Load();
             var active = registry.GetActive();
@@ -92,6 +101,11 @@ public sealed class StoreMigrationCompletionCoordinator(
             new MigrationCompletionReceiptWriter(binding, _clock).Write(receipt);
             logger.Info($"Store migration completion recorded: {receipt.MigrationId}.");
             return new(StoreMigrationCompletionState.Completed, receipt);
+        }
+        catch (IOException exception) when (MigrationOperationLock.IsBusy(exception))
+        {
+            logger.Info("Store migration completion is blocked by an active runtime or migration operation.");
+            return new(StoreMigrationCompletionState.InnoRunning);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                                           InvalidDataException or InvalidOperationException or

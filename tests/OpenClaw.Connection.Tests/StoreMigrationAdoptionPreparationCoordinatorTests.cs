@@ -54,7 +54,8 @@ public sealed class StoreMigrationAdoptionPreparationCoordinatorTests
             new LeaseProvider(lease),
             new Detector(() => new(InnoInstallationStatus.Detected, expected)),
             preparation,
-            NullLogger.Instance);
+            NullLogger.Instance,
+            new Activity(() => InnoSourceActivityStatus.Stopped));
 
         var result = coordinator.Prepare(expected);
 
@@ -67,6 +68,55 @@ public sealed class StoreMigrationAdoptionPreparationCoordinatorTests
         Assert.False(File.Exists(Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
             MigrationRecordCodec.CompletionFileName)));
         Assert.Contains("\"AutoStart\":true", File.ReadAllText(Path.Combine(binding.RoamingDirectory, "settings.json")));
+    }
+
+    [Theory]
+    [InlineData(InnoSourceActivityStatus.Running, StoreMigrationPreparationState.InnoRunning)]
+    [InlineData(InnoSourceActivityStatus.InspectionFailed, StoreMigrationPreparationState.ValidationFailed)]
+    [InlineData(InnoSourceActivityStatus.Stopped, StoreMigrationPreparationState.Prepared)]
+    public void CrossSessionInspection_RunsUnderExclusiveLockBeforePublication(
+        InnoSourceActivityStatus activity, StoreMigrationPreparationState expectedState)
+    {
+        using var temp = new TempDirectory();
+        using var environment = new EnvironmentScope().Set("OPENCLAW_STATE_DIR", null).Set("OPENCLAW_HOME", null);
+        var preparation = CreatePreparation(temp, out var binding);
+        var lease = new Lease();
+        var coordinator = new StoreMigrationAdoptionPreparationCoordinator(
+            new LeaseProvider(lease),
+            new Detector(() =>
+            {
+                Assert.Throws<IOException>(() => MigrationOperationLock.AcquireRuntime(binding));
+                return new(InnoInstallationStatus.Detected, Expected());
+            }),
+            preparation, NullLogger.Instance,
+            new Activity(() =>
+            {
+                Assert.Throws<IOException>(() => MigrationOperationLock.AcquireRuntime(binding));
+                return activity;
+            }));
+
+        Assert.Equal(expectedState, coordinator.Prepare(Expected()).State);
+        Assert.True(lease.Disposed);
+        Assert.Equal(activity == InnoSourceActivityStatus.Stopped,
+            File.Exists(Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+                MigrationRecordCodec.IntentFileName)));
+        using var released = MigrationOperationLock.AcquireRuntime(binding);
+    }
+
+    [Fact]
+    public void RuntimeLease_BlocksPreparationBeforeDetectionOrInventory()
+    {
+        using var temp = new TempDirectory();
+        var preparation = CreatePreparation(temp, out var binding);
+        using var runtime = MigrationOperationLock.AcquireRuntime(binding);
+        var coordinator = new StoreMigrationAdoptionPreparationCoordinator(
+            new LeaseProvider(new Lease()),
+            new Detector(() => throw new InvalidOperationException("Must not inspect a running source.")),
+            preparation, NullLogger.Instance);
+
+        Assert.Equal(StoreMigrationPreparationState.InnoRunning, coordinator.Prepare(Expected()).State);
+        Assert.False(File.Exists(Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,
+            MigrationRecordCodec.IntentFileName)));
     }
 
     private static MigrationPreparation CreatePreparation(TempDirectory temp, out MigrationBinding binding)
@@ -95,5 +145,10 @@ public sealed class StoreMigrationAdoptionPreparationCoordinatorTests
     {
         public bool Disposed { get; private set; }
         public void Dispose() => Disposed = true;
+    }
+
+    private sealed class Activity(Func<InnoSourceActivityStatus> verify) : IInnoSourceActivityVerifier
+    {
+        public InnoSourceActivityStatus VerifyStopped() => verify();
     }
 }

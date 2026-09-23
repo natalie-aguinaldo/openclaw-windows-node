@@ -31,7 +31,8 @@ public sealed class StoreMigrationAdoptionPreparationCoordinator(
     IMigrationSourceLeaseProvider leaseProvider,
     IInnoInstallationDetector detector,
     MigrationPreparation preparation,
-    IOpenClawLogger logger)
+    IOpenClawLogger logger,
+    IInnoSourceActivityVerifier? sourceActivity = null)
 {
     public StoreMigrationPreparationDecision Prepare(InnoInstallation expected)
     {
@@ -41,15 +42,30 @@ public sealed class StoreMigrationAdoptionPreparationCoordinator(
         if (lease is null)
             return new(StoreMigrationPreparationState.InnoRunning);
 
-        var detected = detector.Detect();
-        if (detected.Status != InnoInstallationStatus.Detected || detected.Installation != expected)
-            return new(StoreMigrationPreparationState.SourceChanged);
-
         try
         {
-            var intent = preparation.Prepare(expected.Version.ToString());
+            using var migrationLock = preparation.AcquireLock();
+            var detected = detector.Detect();
+            if (detected.Status != InnoInstallationStatus.Detected || detected.Installation != expected)
+                return new(StoreMigrationPreparationState.SourceChanged);
+
+            var activity = (sourceActivity ?? new InnoSourceActivityVerifier(expected.ExecutablePath)).VerifyStopped();
+            if (activity == InnoSourceActivityStatus.Running)
+                return new(StoreMigrationPreparationState.InnoRunning);
+            if (activity != InnoSourceActivityStatus.Stopped)
+            {
+                logger.Error("Store migration preparation could not exclude source processes across sessions.");
+                return new(StoreMigrationPreparationState.ValidationFailed);
+            }
+
+            var intent = preparation.PrepareUnderLock(expected.Version.ToString());
             logger.Info($"Store migration preparation completed: {intent.MigrationId}.");
             return new(StoreMigrationPreparationState.Prepared, intent);
+        }
+        catch (IOException exception) when (MigrationOperationLock.IsBusy(exception))
+        {
+            logger.Info("Store migration preparation is blocked by an active runtime or migration operation.");
+            return new(StoreMigrationPreparationState.InnoRunning);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException)
         {

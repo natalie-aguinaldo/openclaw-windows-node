@@ -96,6 +96,22 @@ public sealed class StoreMigrationWorkflowTests
         Assert.Equal((StoreMigrationStage)stage, workflow.Stage);
     }
 
+    [Fact]
+    public async Task SourceRestartsBeforeCompletion_RetryReinspectsAndPreservesConsent()
+    {
+        var operations = new Operations { Consent = true, Completed = StoreMigrationCompletionState.InnoRunning };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.Equal(StoreMigrationStage.CloseSource, workflow.Stage);
+        operations.Completed = StoreMigrationCompletionState.Completed;
+        operations.Calls.Clear();
+
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.AwaitingRemoval, workflow.Stage);
+        Assert.Equal(new[] { "inspect", "consent?", "close", "prepare", "complete" }, operations.Calls);
+    }
+
     [Theory]
     [InlineData(StoreMigrationStartupState.UpdateInno, StoreMigrationStage.UpdateRequired)]
     [InlineData(StoreMigrationStartupState.UnsupportedInstallation, StoreMigrationStage.Unsupported)]

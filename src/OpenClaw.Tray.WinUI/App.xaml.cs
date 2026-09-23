@@ -204,6 +204,9 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
     private readonly SshTunnelRecoveryBudget _sshTunnelRecoveryBudget = new();
     private GlobalHotkeyService? _globalHotkey;
     private Mutex? _mutex;
+    // Do not release during managed shutdown: a failed service disposal may leave state
+    // writers running. Windows closes this handle only when the process terminates.
+    private IDisposable? _innoMigrationLease;
     private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
     private AppState? _appState;
     internal AppState? AppState => _appState;
@@ -583,7 +586,7 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands, IPer
         }
 
         // Keep Inno's AppMutex held while finish-migration guidance is visible.
-        if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch())
+        if (ownsMutex && InnoMigrationStartupGuard.ShouldStopLaunch(out _innoMigrationLease))
         {
             Exit();
             return;

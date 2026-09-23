@@ -7129,7 +7129,11 @@
     <value>已找到受支持的旧版安装。正常启动已暂停。您可以开始迁移，或选择“暂不”以继续使用旧版应用。</value>
   </data>
   <data name="Migration_StoreConsent" xml:space="preserve">
-    <value>已找到受支持的旧版安装。请仅在准备好时开始迁移。此预览尚不会更改您的配置。</value>
+    <value>已找到受支持的旧版安装。请仅在准备好时开始迁移。
+
+选择“迁移”将验证您的配置并保存受保护的迁移记录。如果验证成功，旧版应用将无法正常启动。您必须随后通过 Windows 设置 &gt; 应用 &gt; 已安装的应用卸载旧版应用，然后重新打开 Store 应用以完成迁移。您的配置和网关将被保留；不会自动卸载任何内容。
+
+选择“暂不”可退出此预览而不开始迁移，并继续使用旧版应用。</value>
   </data>
   <data name="Migration_StoreMigrate" xml:space="preserve">
     <value>迁移</value>
@@ -7138,7 +7142,7 @@
     <value>暂不</value>
   </data>
   <data name="Migration_StoreCloseInno" xml:space="preserve">
-    <value>关闭旧版 OpenClaw Companion 应用，然后选择“重试”。请勿强制关闭或卸载该应用。此预览未更改您的配置。</value>
+    <value>关闭旧版 OpenClaw Companion 应用，然后选择“重试”。请勿强制关闭，也请暂时不要卸载。只有在此预览提示已记录迁移完成后，才可卸载旧版应用。</value>
   </data>
   <data name="Migration_StoreRetry" xml:space="preserve">
     <value>重试</value>
@@ -7183,7 +7187,13 @@
     <value>迁移到 Store 版本</value>
   </data>
   <data name="Migration2_Consent" xml:space="preserve">
-    <value>要将现有 OpenClaw 配置迁移到 Store 版本吗？OpenClaw 将关闭旧版应用并验证您的设置和网关凭据。您的网关、文件和模型将保留在原处。迁移后，您必须先卸载旧版应用，才能使用 Store 版本。</value>
+    <value>要将现有 OpenClaw 配置迁移到 Store 版本吗？
+
+选择“迁移”将请求旧版应用安全关闭，验证您的设置和网关凭据，并保存受保护的迁移记录。如果验证成功，旧版应用将无法正常启动。
+
+只有在迁移完成状态已记录后，才能通过 Windows 设置 &gt; 应用 &gt; 已安装的应用手动卸载旧版 OpenClaw Companion 应用，然后在此窗口中选择“重试”。只有在确认旧版应用已移除后，才能使用 Store 版本。您的现有配置、网关、文件和模型将保留在原处；不会自动卸载任何应用。
+
+选择“暂不”或关闭此窗口即可取消，不会开始迁移。</value>
   </data>
   <data name="Migration2_Closing" xml:space="preserve">
     <value>正在请求旧版应用安全关闭...</value>
@@ -7198,10 +7208,10 @@
     <value>正在检查卸载状态并完成迁移...</value>
   </data>
   <data name="Migration2_CloseInno" xml:space="preserve">
-    <value>请通过托盘菜单关闭旧版 OpenClaw Companion 应用，然后选择“重试”。暂时不要强制关闭或卸载该应用。</value>
+    <value>请通过托盘菜单关闭旧版 OpenClaw Companion 应用，然后选择“重试”。暂时不要强制关闭或卸载该应用。只有在此窗口确认迁移完成状态已记录后，才能卸载。卸载旧版应用后，请选择“重试”以验证移除状态并完成迁移。</value>
   </data>
   <data name="Migration2_AwaitingRemoval" xml:space="preserve">
-    <value>已记录迁移完成状态。请在 Windows 的“已安装的应用”中仅卸载旧版 OpenClaw Companion 应用，然后选择“重试”。请保留已安装的 Store 版本。已迁移的配置和网关将予以保留。请勿删除迁移数据或运行网关清理。</value>
+    <value>已记录迁移完成状态。请在 Windows 的“已安装的应用”中仅手动卸载旧版 OpenClaw Companion 应用，然后选择“重试”以验证移除状态并完成迁移。请保留已安装的 Store 版本。只有在确认旧版应用已移除后，才能使用 Store 版本。您的现有配置、网关、文件和模型将保留在原处；不会自动卸载任何应用。请勿删除迁移数据或运行网关清理。</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw 无法安全完成迁移。请勿卸载旧版应用或运行网关清理。请查看应用日志，解决问题后重试。</value>
@@ -7234,7 +7244,13 @@
     <value>安装 Store 版本并迁移</value>
   </data>
   <data name="Migration2_InnoConsent" xml:space="preserve">
-    <value>要打开 Microsoft Store 并授权迁移此 OpenClaw 配置吗？安装并打开 Store 版本后，它可以在 30 天内关闭此应用并执行迁移，无需再次征求您的同意。您的网关、文件和模型将保留在原处。在 Store 版本确认迁移完成之前，请勿卸载此应用。</value>
+    <value>选择“安装 Store 版本并迁移”以打开 Microsoft Store 并授权迁移此 OpenClaw 配置。在 30 天内，安装并打开 Store 版本后，它可以请求此应用安全关闭并执行迁移，无需再次征求您的同意。
+
+迁移将验证您的设置和网关凭据，并保存受保护的迁移记录。如果验证成功，旧版应用（此应用）将无法正常启动。
+
+只有在迁移完成状态已记录后，才能通过 Windows 设置 &gt; 应用 &gt; 已安装的应用手动卸载此 OpenClaw Companion 应用，然后在 Store 迁移窗口中选择“重试”。只有在确认旧版应用已移除后，才能使用 Store 版本。您的现有配置、网关、文件和模型将保留在原处；不会自动卸载任何应用。
+
+选择“暂不”或关闭此对话框即可取消，不会开始迁移。</value>
   </data>
   <data name="Migration2_InnoGranted" xml:space="preserve">
     <value>已保存迁移授权。请安装并打开 Store 版本以继续。在确认迁移完成之前，请保留此应用。</value>

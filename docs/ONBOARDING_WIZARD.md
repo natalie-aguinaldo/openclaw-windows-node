@@ -29,8 +29,12 @@ This is a separate pre-start workflow, not a page in the setup pipeline.
 `StoreMigrationStartupGuard` and `StoreMigrationWorkflow` retain migration
 ownership; displaying the window does not construct `SetupWindow`, install a
 gateway, or start normal app services. Consent, retry, and uninstall verification
-are unchanged, and production migration remains disabled. See
-[Release migration gates](RELEASING.md) for preview-build requirements.
+are unchanged. The same visual workflow serves configured production Release
+builds and explicit Debug previews. The first supported Inno release is pinned
+to `2026.9.5.0`; production defaults remain disabled until that release's
+artifacts are verified and acceptance is complete.
+See [Release migration gates](RELEASING.md) for the shared build contract and
+the two-PR coordinated-release requirements.
 
 ## Screen Details
 

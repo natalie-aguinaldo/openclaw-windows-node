@@ -1,5 +1,4 @@
 using System.Runtime.Versioning;
-using System.Security.Principal;
 using System.Text.Json;
 
 namespace OpenClaw.Connection.Migration;
@@ -15,16 +14,16 @@ public sealed class MigrationPreparation(MigrationBinding binding, TimeProvider?
 
     public MigrationRecord Prepare(string sourceVersion)
     {
-        using var identity = WindowsIdentity.GetCurrent();
-        if (binding.UserSid != identity.User?.Value)
-            throw new InvalidOperationException("Migration preparation must use the current Windows user.");
-        var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
-        MigrationRecordCodec.RejectReparsePoints(directory);
-        MigrationRecordStorage.CreateProtectedDirectory(directory);
-        var lockPath = Path.Combine(directory, "prepare.lock");
-        MigrationRecordCodec.RejectReparsePoints(lockPath);
-        using var migrationLock = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using var migrationLock = AcquireLock();
+        return PrepareUnderLock(sourceVersion);
+    }
 
+    internal FileStream AcquireLock() => MigrationOperationLock.AcquireExclusive(binding);
+
+    // The coordinator owns the lock through source inspection and publication.
+    internal MigrationRecord PrepareUnderLock(string sourceVersion)
+    {
+        var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         var completedPath = Path.Combine(directory, MigrationRecordCodec.CompletionFileName);
         // Even an invalid receipt needs explicit recovery, not an overwritten attempt.
         if (Path.Exists(completedPath))
