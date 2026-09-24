@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:element name="root" ns1:IsDataSet="true">
@@ -7156,9 +7156,6 @@
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw 无法安全验证旧版配置是否可迁移。未记录完成状态，旧版应用也未被更改。请关闭此预览，稍后重试。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
   </data>
-  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
-    <value>OpenClaw 无法解析活动网关的凭据。未记录完成状态，旧版应用也未被更改。请关闭此预览，恢复活动网关配置后再重试。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
-  </data>
   <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
     <value>OpenClaw 已记录迁移完成并保留了您的配置。请关闭此预览，通过 Windows 设置卸载旧版 OpenClaw Companion 应用，然后打开 Store 版本。请勿删除迁移数据或运行网关清理。</value>
   </data>
@@ -7263,9 +7260,6 @@
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw 无法安全完成迁移。请勿卸载旧版应用或运行网关清理。请查看应用日志，解决问题后重试。</value>
-  </data>
-  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
-    <value>活动网关没有可用的已保存凭据。请关闭此窗口，在旧版应用中恢复网关配置，然后重试迁移。暂时不要卸载旧版应用。</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
     <value>请先将旧版应用更新到受支持且具备迁移功能的版本。您的配置未被更改。</value>

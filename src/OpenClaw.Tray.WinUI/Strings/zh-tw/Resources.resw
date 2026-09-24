@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:element name="root" ns1:IsDataSet="true">
@@ -7156,9 +7156,6 @@
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw 無法安全驗證舊版設定是否可移轉。未記錄完成狀態，舊版應用程式也未被變更。請關閉此預覽，稍後再試。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
   </data>
-  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
-    <value>OpenClaw 無法解析作用中閘道的認證。未記錄完成狀態，舊版應用程式也未被變更。請關閉此預覽，還原作用中閘道設定後再試。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
-  </data>
   <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
     <value>OpenClaw 已記錄移轉完成並保留您的設定。請關閉此預覽，透過 Windows 設定解除安裝舊版 OpenClaw Companion 應用程式，然後開啟 Store 版本。請勿刪除移轉資料或執行閘道清理。</value>
   </data>
@@ -7263,9 +7260,6 @@
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw 無法安全完成移轉。請勿解除安裝舊版應用程式或執行閘道清理。請查看應用程式記錄，解決問題後重試。</value>
-  </data>
-  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
-    <value>作用中的閘道沒有可用的已儲存認證。請關閉此視窗，在舊版應用程式中還原閘道設定，然後重試移轉。暫時不要解除安裝舊版應用程式。</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
     <value>請先將舊版應用程式更新至受支援且具備移轉功能的版本。您的設定未被變更。</value>

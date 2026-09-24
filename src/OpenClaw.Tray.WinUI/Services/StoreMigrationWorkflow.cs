@@ -6,7 +6,7 @@ namespace OpenClawTray.Services;
 internal enum StoreMigrationStage
 {
     Inspecting, Consent, ClosingSource, Preparing, Completing, Finalizing,
-    CloseSource, AwaitingRemoval, ValidationFailed, CredentialUnavailable,
+    CloseSource, AwaitingRemoval, ValidationFailed,
     UpdateRequired, Unsupported, InspectionFailed, Recovery, FinalizationFailed,
     StartupRefused, Ready
 }
@@ -176,8 +176,6 @@ internal sealed class StoreMigrationWorkflow(
                 StoreMigrationCompletionState.Completed => StoreMigrationStage.AwaitingRemoval,
                 StoreMigrationCompletionState.InnoRunning => StoreMigrationStage.CloseSource,
                 StoreMigrationCompletionState.SourceChanged => StoreMigrationStage.Unsupported,
-                StoreMigrationCompletionState.NoActiveGateway or StoreMigrationCompletionState.CredentialUnavailable
-                    => StoreMigrationStage.CredentialUnavailable,
                 _ => StoreMigrationStage.ValidationFailed
             });
         }

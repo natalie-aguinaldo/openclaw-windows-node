@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:element name="root" ns1:IsDataSet="true">
@@ -7157,9 +7157,6 @@ Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige 
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw kon de vorige configuratie niet veilig valideren voor migratie. Er is geen voltooiing vastgelegd en de vorige app is niet gewijzigd. Sluit dit voorbeeld en probeer het later opnieuw. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
   </data>
-  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
-    <value>OpenClaw kon geen referentie voor de actieve gateway oplossen. Er is geen voltooiing vastgelegd en de vorige app is niet gewijzigd. Sluit dit voorbeeld en herstel de configuratie van de actieve gateway voordat u het opnieuw probeert. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
-  </data>
   <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
     <value>OpenClaw heeft de voltooiing van de migratie vastgelegd en uw configuratie behouden. Sluit dit voorbeeld, verwijder de vorige OpenClaw Companion-app via Windows-instellingen en open daarna de Store-versie. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
@@ -7264,9 +7261,6 @@ Uw instellingen, gateway, bestanden en modellen blijven op hun plaats.</value>
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw kon de migratie niet veilig voltooien. Verwijder de vorige app niet en voer geen gatewayopruiming uit. Bekijk het applogboek, los het probleem op en probeer het opnieuw.</value>
-  </data>
-  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
-    <value>De actieve gateway heeft geen bruikbare opgeslagen referentie. Sluit dit venster en herstel de gatewayconfiguratie in de vorige app. Probeer daarna de migratie opnieuw. Verwijder de vorige app nog niet.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
     <value>Werk de vorige app eerst bij naar een ondersteunde versie met migratieondersteuning. Uw configuratie is niet gewijzigd.</value>

@@ -57,7 +57,10 @@ public sealed class InnoMigrationContractTests
         // close silently and leave the startup task quietly disabled.
         Assert.Contains("StoreMigrationFinalizationState.StartupPreferenceRefused", workflow);
         Assert.Contains("StoreMigrationStage.StartupRefused", workflow);
-        Assert.Contains("new CredentialResolver(DeviceIdentityFileReader.Instance)", helper);
+        // Migration leaves gateway state in place and inventory capture already rejects damaged
+        // identities, so completion must not resolve credentials. Reintroducing a resolver here
+        // would re-block installs that simply never finished pairing.
+        Assert.DoesNotContain("CredentialResolver", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
         Assert.Contains("RequestMigrationShutdownAsync", helper);
         Assert.Contains("coordinator.Retry()", helper);

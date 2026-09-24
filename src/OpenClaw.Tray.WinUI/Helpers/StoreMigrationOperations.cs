@@ -82,8 +82,7 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
         var version = global::Windows.ApplicationModel.Package.Current.Id.Version;
         var targetVersion = $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}";
         return Task.Run(() => new StoreMigrationCompletionCoordinator(
-            new InnoMutexLeaseProvider(), _detector!, _binding!,
-            new CredentialResolver(DeviceIdentityFileReader.Instance), _logger)
+            new InnoMutexLeaseProvider(), _detector!, _binding!, _logger)
             .Complete(installation, targetVersion).State);
     }
 

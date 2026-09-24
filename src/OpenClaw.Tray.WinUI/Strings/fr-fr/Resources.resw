@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:schema id="root">
     <xs:element name="root" ns1:IsDataSet="true">
@@ -7156,9 +7156,6 @@ Choisissez {1} pour quitter cet aperçu sans démarrer la migration et continuer
   <data name="Migration_StoreValidationFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu valider en toute sécurité la configuration précédente pour la migration. Aucune finalisation n'a été enregistrée et l'application précédente n'a pas été modifiée. Fermez cet aperçu et réessayez plus tard. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
-  <data name="Migration_StoreCredentialUnavailable" xml:space="preserve">
-    <value>OpenClaw n'a pas pu résoudre un identifiant pour la passerelle active. Aucune finalisation n'a été enregistrée et l'application précédente n'a pas été modifiée. Fermez cet aperçu et restaurez la configuration de la passerelle active avant de réessayer. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
-  </data>
   <data name="Migration_StoreAwaitingInnoRemoval" xml:space="preserve">
     <value>OpenClaw a enregistré la fin de la migration et préservé votre configuration. Fermez cet aperçu, désinstallez l'application OpenClaw Companion précédente dans les paramètres Windows, puis ouvrez la version du Store. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
@@ -7263,9 +7260,6 @@ Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place
   </data>
   <data name="Migration2_ValidationFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu terminer la migration en toute sécurité. Ne désinstallez pas l'application précédente et ne lancez pas le nettoyage de la passerelle. Consultez le journal de l'application, résolvez le problème et réessayez.</value>
-  </data>
-  <data name="Migration2_CredentialUnavailable" xml:space="preserve">
-    <value>La passerelle active ne dispose d'aucune information d'identification enregistrée utilisable. Fermez cette fenêtre et restaurez la configuration de la passerelle dans l'application précédente, puis réessayez la migration. Ne désinstallez pas encore l'application précédente.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
     <value>Mettez d'abord l'application précédente à jour vers une version compatible prenant en charge la migration. Votre configuration n'a pas été modifiée.</value>

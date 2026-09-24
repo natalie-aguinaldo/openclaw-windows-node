@@ -128,7 +128,6 @@ public sealed partial class StoreMigrationWindow : Window
             StoreMigrationStage.CloseSource => "CloseInno",
             StoreMigrationStage.AwaitingRemoval => "AwaitingRemoval",
             StoreMigrationStage.ValidationFailed => "ValidationFailed",
-            StoreMigrationStage.CredentialUnavailable => "CredentialUnavailable",
             StoreMigrationStage.UpdateRequired => "UpdateRequired",
             StoreMigrationStage.Unsupported => "Unsupported",
             StoreMigrationStage.Recovery => "Recovery",

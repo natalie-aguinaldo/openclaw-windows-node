@@ -84,8 +84,6 @@ public sealed class StoreMigrationWorkflowTests
     }
 
     [Theory]
-    [InlineData(StoreMigrationCompletionState.NoActiveGateway, StoreMigrationStage.CredentialUnavailable)]
-    [InlineData(StoreMigrationCompletionState.CredentialUnavailable, StoreMigrationStage.CredentialUnavailable)]
     [InlineData(StoreMigrationCompletionState.InnoRunning, StoreMigrationStage.CloseSource)]
     [InlineData(StoreMigrationCompletionState.SourceChanged, StoreMigrationStage.Unsupported)]
     public async Task FailedCompletion_DoesNotOfferRemoval(StoreMigrationCompletionState result, object stage)
