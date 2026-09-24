@@ -224,6 +224,11 @@ public sealed class MigrationRecordTests
             RedirectStandardError = true,
             CreateNoWindow = true
         };
+        // Point the checker at an isolated repository holding only unrelated packages. The
+        // developer machines and self-hosted agents that run this suite may have the real Store
+        // package installed, which legitimately preserves the gateway and would make the
+        // no-migration cases below fail on those machines and pass everywhere else.
+        using var repository = new StoreMigrationPackagePresenceTests.TempPackageRepository();
         foreach (var argument in new[]
         {
             "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
@@ -231,7 +236,8 @@ public sealed class MigrationRecordTests
             "-AppRoot", record.Binding.InstallDirectory,
             "-Architecture", kind == "wrong-path" ? "arm64" : "x64",
             "-RoamingDirectory", record.Binding.RoamingDirectory,
-            "-LocalDirectory", record.Binding.LocalDirectory
+            "-LocalDirectory", record.Binding.LocalDirectory,
+            "-PackageRepositoryKey", repository.KeyPath
         })
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
@@ -589,7 +595,7 @@ public sealed class MigrationRecordTests
         };
     }
 
-    private static string RepositoryRoot()
+    internal static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(Environment.GetEnvironmentVariable("OPENCLAW_REPO_ROOT") ?? AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "installer.iss")))

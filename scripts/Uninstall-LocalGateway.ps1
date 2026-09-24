@@ -781,6 +781,12 @@ try {
             Write-GatewayLog 'Completed Store migration: preserving gateway and generated state.'
             exit 10
         }
+        if ($migrationResult -eq 11) {
+            # Not a failure, so do not log it as one. The Store app is registered and is the
+            # likely owner of this gateway; the caller surfaces its own instructions.
+            Write-GatewayLog 'Store app is registered without a migration receipt: preserving gateway and generated state.'
+            exit 11
+        }
         if ($migrationResult -ne 0) {
             throw "Migration preservation check failed (exit $migrationResult). Gateway cleanup was not started."
         }

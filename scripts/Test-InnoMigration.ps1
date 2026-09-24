@@ -2,10 +2,16 @@
 .SYNOPSIS
     Read-only check for a completed, same-user Inno-to-Store migration.
 .DESCRIPTION
-    Exit 10 means preservation is required. Exit 0 means no receipt is present.
-    Exit 2 means the migration state could not be established; callers must not
+    Exit 10 means a validated receipt requires preservation. Exit 11 means the Store app
+    is registered but its receipt is missing, which also requires preservation and, unlike
+    exit 2, tells the caller the Store app is the likely owner of the gateway so it must
+    not advise removing it by hand. Exit 0 means no receipt is present and no Store app is
+    registered. Exit 2 means the migration state could not be established; callers must not
     start cleanup. A receipt that exists but does not validate is exit 2, never
     exit 0: schema, DPAPI, or binding drift must not authorize destroying state.
+    An absent receipt is exit 0 only when the Store package is not installed for this
+    user. Package registration outlives the migration directory, so deleting the
+    receipt cannot by itself manufacture exit 0.
     The record codec is the exact source compiled into OpenClaw.Connection.
 #>
 [CmdletBinding()]
@@ -15,6 +21,16 @@ param(
     [Parameter(Mandatory = $true)][ValidateSet('x64', 'arm64')][string]$Architecture,
     [string]$RoamingDirectory,
     [string]$LocalDirectory,
+    # This is the one input that can suppress the preservation signal, so it exists only so
+    # tests can point at an isolated repository: a developer machine usually has the real
+    # package installed, which would make every negative case unrunnable. The uninstaller
+    # builds its command line from compile-time constants and never passes this. No caller
+    # may ever pass a value derived from untrusted input.
+    # Whitespace passes ValidateNotNullOrEmpty but would be dropped by the watchdog's
+    # forwarding guard, leaving the child on the real default while the parent used the
+    # override. Reject it here so parent and child can never disagree.
+    [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
+    [string]$PackageRepositoryKey = 'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages',
     [int]$TimeoutSeconds = 90,
     [switch]$NoWatchdog
 )
@@ -112,6 +128,69 @@ function Test-MigrationStateAuthority {
     }
 }
 
+function Get-StorePackageState {
+    param([string]$RepositoryKey)
+
+    # The decisive check for an absent receipt. Authority evidence stored beside the
+    # receipt is not durable: whoever can delete completed.dpapi can usually delete the
+    # directory holding that evidence too, which made absence indistinguishable from
+    # tampering. Package registration is owned by the deployment stack rather than by
+    # the migration directory, so it survives that deletion.
+    #
+    # Matching on the package name alone is deliberate. A package that merely resembles
+    # ours can only cause preservation, never removal, so a broad match errs toward
+    # keeping the gateway. Only a missed match is dangerous, so the match stays wide.
+    #
+    # Read through .NET registry types for the same reason the ACL checks avoid Get-Acl:
+    # a module autoload failure in the uninstaller's PowerShell must not decide this.
+    #
+    # A missing or empty repository is reported as Indeterminate rather than Absent. This key
+    # is writable by the current user, so the principal who can delete the receipt can also
+    # delete the package registration that replaces it. Without that distinction, deletion
+    # would be the easy path to exit 0 while a merely unreadable hive preserved, which is
+    # backwards. Every real Windows profile has hundreds of registered packages, so zero is
+    # evidence of tampering, not evidence of absence.
+    #
+    # Three states rather than a boolean because the caller must say something truthful to
+    # the user. "The Store app is installed, keep the gateway" and "this hive is unreadable,
+    # so keep the gateway to be safe" are both preserve, but they are not the same claim and
+    # they need different exit codes and different instructions.
+    #
+    # Residual risk, accepted and not closed here: a same-user attacker can delete only our
+    # own package subkey and leave the rest, which still yields exit 0. Closing that needs a
+    # signal outside the user's write scope, and %ProgramFiles%\WindowsApps cannot serve
+    # because an unelevated process may not enumerate it. A foreign principal holding rights
+    # on the migration directory, which is the case the authority check was written for,
+    # cannot reach this hive at all.
+
+    # Resolved before the try so that a rename of the codec constant fails loudly here
+    # instead of being swallowed into a permanent, and permanently misexplained, preserve.
+    $prefix = [OpenClaw.Connection.Migration.MigrationRecordCodec]::PackageName + '_'
+    try {
+        $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($RepositoryKey, $false)
+        if ($null -eq $key) {
+            return 'Indeterminate'
+        }
+        try {
+            $names = $key.GetSubKeyNames()
+            if ($null -eq $names -or @($names).Count -eq 0) {
+                return 'Indeterminate'
+            }
+            foreach ($name in $names) {
+                if ($name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    return 'Present'
+                }
+            }
+        } finally {
+            $key.Dispose()
+        }
+        return 'Absent'
+    } catch {
+        # An unreadable repository is uncertainty, and uncertainty preserves the gateway.
+        return 'Indeterminate'
+    }
+}
+
 function ConvertTo-ProcessArgument {
     param([string]$Value)
 
@@ -168,6 +247,11 @@ if (-not $NoWatchdog -and $TimeoutSeconds -gt 0) {
         }
         if (-not [string]::IsNullOrWhiteSpace($LocalDirectory)) {
             $arguments += @('-LocalDirectory', (ConvertTo-ProcessArgument $LocalDirectory))
+        }
+        # Must be forwarded, or the child silently falls back to the default repository
+        # and the parent's verdict reflects a different machine state than it was asked about.
+        if (-not [string]::IsNullOrWhiteSpace($PackageRepositoryKey)) {
+            $arguments += @('-PackageRepositoryKey', (ConvertTo-ProcessArgument $PackageRepositoryKey))
         }
         $watchdogResult = Start-BoundedProcess `
             -FilePath (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') `
@@ -229,6 +313,22 @@ try {
         # could not have been tampered with. A foreign owner can delete completed.dpapi,
         # and that deletion is indistinguishable from absence here, so refuse to treat
         # unverifiable state as consent to unregister the gateway.
+        #
+        # The installed Store package is checked first because it outlives the whole
+        # migration directory, which holds every ACL trace the authority check reads.
+        $packageState = Get-StorePackageState -RepositoryKey $PackageRepositoryKey
+        if ($packageState -eq 'Present') {
+            # Distinct from exit 2 on purpose. Here we know the Store app is installed and
+            # is the likely owner of this gateway, so the uninstaller must not repeat its
+            # generic "we could not tell" advice to run wsl --unregister, which would
+            # destroy exactly what this branch just preserved.
+            Write-Warning 'The Store app is registered on this PC but its migration receipt is missing. Preserving generated state and gateway.'
+            exit 11
+        }
+        if ($packageState -eq 'Indeterminate') {
+            Write-Warning 'Installed Store packages could not be read, so migration could not be ruled out. Preserving generated state and gateway.'
+            exit 2
+        }
         if (-not (Test-MigrationStateAuthority -Directory (Split-Path -Parent $receiptPath))) {
             Write-Warning 'Migration state authority could not be verified. Preserving generated state and gateway.'
             exit 2

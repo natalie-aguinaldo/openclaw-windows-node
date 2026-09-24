@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using OpenClaw.Connection.Migration;
 using Xunit.Sdk;
 
 namespace OpenClaw.Tray.Tests;
@@ -315,11 +316,22 @@ public sealed class InnoMigrationContractTests
             @"if MigrationResult <> 0 then\s+begin\s+" +
             @"LocalGatewayCleanupRequested := False;\s+" +
             @"if MigrationResult = 10 then\s+Log\('[^']*'\)\s+" +
+            @"else if MigrationResult = 11 then\s+(?://[^\n]*\n\s*)*ReportStoreAppOwnsGateway\s+" +
             @"else\s+WarnMigrationCheckUnavailable;\s+Exit;\s+end;\s+if UninstallSilent\(\)",
             installer);
-        // An unverifiable migration state must be reported, not silently swallowed.
+        // An unverifiable migration state must be reported, not silently swallowed, and a
+        // registered Store app must divert before the wsl --unregister advice is shown.
         Assert.Matches(
             @"procedure WarnMigrationCheckUnavailable;\s+begin\s+" +
+            @"(?://[^\n]*\n\s*)*" +
+            @"if StoreAppRegistered then\s+begin\s+ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
+            @"Log\([\s\S]*?\);\s+" +
+            @"if not UninstallSilent\(\) then\s+MsgBox\(",
+            installer);
+        // A known-installed Store app gets its own report, so the generic path's
+        // wsl --unregister advice can never reach the state it would destroy.
+        Assert.Matches(
+            @"procedure ReportStoreAppOwnsGateway;\s+begin\s+" +
             @"Log\([\s\S]*?\);\s+" +
             @"if not UninstallSilent\(\) then\s+MsgBox\(",
             installer);
@@ -330,6 +342,8 @@ public sealed class InnoMigrationContractTests
         Assert.Matches(
             @"if Started and \(ResultCode = 10\) then\s+begin\s+" +
             @"Log\('[^']*'\);\s+Exit;\s+end;\s+" +
+            @"if Started and \(ResultCode = 11\) then\s+begin\s+" +
+            @"(?://[^\n]*\n\s*)*ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
             @"if Started and \(ResultCode = 0\) then\s+begin\s+" +
             @"LocalGatewayCleanupSucceeded := True;\s+Log\('[^']*'\);\s+Exit;\s+end;",
             installer);
@@ -444,6 +458,96 @@ public sealed class InnoMigrationContractTests
             Assert.DoesNotMatch(
                 Regex.Escape($"Source: \"{helper}\"") + @"[^\n]*uninsneveruninstall",
                 installer);
+    }
+
+    // The preserve path must not hand the user the command that destroys what it just
+    // preserved. Exit 11 means "the Store app is registered and is probably using this
+    // gateway", so routing it back to the generic could-not-confirm advice, which tells
+    // the user to run wsl --unregister, would reopen the data loss by other means.
+    [Fact]
+    public void Installer_DoesNotAdviseUnregisteringWhenTheStoreAppOwnsTheGateway()
+    {
+        var installer = Read("installer.iss");
+        var procedure = installer[installer.IndexOf(
+            "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)..];
+        procedure = procedure[..procedure.IndexOf(
+            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)];
+
+        Assert.Contains("Do not run", procedure);
+        // The destructive instruction belongs only to the genuinely-uncertain path.
+        Assert.DoesNotContain("If OpenClaw is already removed", procedure);
+
+        var choice = installer[installer.IndexOf(
+            "procedure EnsureLocalGatewayCleanupChoice;", StringComparison.Ordinal)..];
+        var elevenBranch = choice.IndexOf("MigrationResult = 11", StringComparison.Ordinal);
+        Assert.True(elevenBranch >= 0, "Exit 11 must have its own branch.");
+        Assert.True(
+            choice.IndexOf("ReportStoreAppOwnsGateway", elevenBranch, StringComparison.Ordinal) >= 0,
+            "Exit 11 must route to the Store-app-owns-gateway message.");
+    }
+
+    // Every route to "could not confirm" is reachable on a machine that has already
+    // migrated: an undecryptable receipt, a watchdog that cannot start, a missing
+    // PowerShell. In those states the generic advice tells the user to run
+    // wsl --unregister, which destroys the gateway the installed Store app is using.
+    // Package presence must gate the message itself, not just the one branch where the
+    // checker managed to report exit 11.
+    [Fact]
+    public void Installer_ChecksForTheStoreAppBeforeAdvisingUnregister()
+    {
+        var installer = Read("installer.iss");
+        var warn = installer[installer.IndexOf(
+            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)..];
+        warn = warn[..warn.IndexOf("procedure EnsureLocalGatewayCleanupChoice;", StringComparison.Ordinal)];
+
+        var guard = warn.IndexOf("if StoreAppRegistered then", StringComparison.Ordinal);
+        Assert.True(guard >= 0, "The uncertain path must consult package presence.");
+
+        // Match the advice itself, not the explanatory comment that also names the command.
+        var destructive = warn.IndexOf("wsl --unregister {#MyDistroName}'", StringComparison.Ordinal);
+        Assert.True(destructive > 0, "The uncertain path still owns the unregister advice.");
+        Assert.True(
+            guard < destructive,
+            "The package-presence guard must precede the destructive advice.");
+        Assert.True(
+            warn.IndexOf("ReportStoreAppOwnsGateway", guard, StringComparison.Ordinal) < destructive,
+            "A registered Store app must divert to the non-destructive message.");
+        // Without the early exit the guard would fall through and print both messages.
+        Assert.Contains("Exit;", warn[guard..destructive]);
+    }
+
+    // Absence is only meaningful if it is read from the identity the Store app actually
+    // registers under, and only if the unreadable and empty shapes fail closed. The
+    // Packages key is user-writable, so an empty enumeration is tampering, not absence.
+    [Fact]
+    public void Installer_PinsTheStorePackageIdentity()
+    {
+        var installer = Read("installer.iss");
+        Assert.Contains(
+            $"#define MyStorePackageName \"{MigrationRecordCodec.PackageName}\"",
+            installer);
+
+        var function = installer[installer.IndexOf(
+            "function StoreAppRegistered: Boolean;", StringComparison.Ordinal)..];
+        function = function[..function.IndexOf(
+            "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)];
+
+        Assert.Contains("AppModel\\Repository\\Packages", function);
+        Assert.Contains("'{#MyStorePackageName}'", function);
+        // Case-insensitive prefix match anchored at position 1, so a package merely
+        // containing the name cannot masquerade as ours.
+        Assert.Contains("Pos(Prefix, Lowercase(Names[I])) = 1", function);
+
+        var unreadable = function.IndexOf("if not RegGetSubkeyNames", StringComparison.Ordinal);
+        var empty = function.IndexOf("if GetArrayLength(Names) = 0 then", StringComparison.Ordinal);
+        Assert.True(unreadable >= 0 && empty > unreadable);
+        // Both uncertain shapes must yield True, which suppresses the destructive advice.
+        Assert.Contains("Result := True;", function[unreadable..empty]);
+        Assert.Contains("Result := True;", function[empty..]);
+        // The only False is the fully-enumerated, no-match outcome at the end.
+        Assert.Equal(
+            function.LastIndexOf("Result := False;", StringComparison.Ordinal),
+            function.IndexOf("Result := False;", StringComparison.Ordinal));
     }
 
     [Fact]

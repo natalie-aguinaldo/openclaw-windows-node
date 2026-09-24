@@ -27,6 +27,12 @@
 #define MyAppURL "https://github.com/openclaw/openclaw-windows-node"
 #define MyAppExeName "OpenClaw.Tray.WinUI.exe"
 
+; Must stay equal to MigrationRecordCodec.PackageName. The uninstaller reads the
+; packaged-app registration under this identity to decide whether the Store app is
+; present, and a drift here would silently restore the destructive advice.
+; Pinned by InnoMigrationContractTests.Installer_PinsTheStorePackageIdentity.
+#define MyStorePackageName "OpenClawFoundation.OpenClaw"
+
 ; MyAppArch should be passed via /DMyAppArch=x64 or /DMyAppArch=arm64
 #ifndef MyAppArch
   #define MyAppArch "x64"
@@ -296,8 +302,71 @@ begin
   Log('Migration preservation check returned ' + IntToStr(Result) + '.');
 end;
 
+function StoreAppRegistered: Boolean;
+var
+  Names: TArrayOfString;
+  I: Integer;
+  Prefix: String;
+begin
+  // Read directly rather than relying on the checker, because several routes to a
+  // preserve verdict happen when the checker could not run at all. This is the only
+  // signal available in those cases, and it decides what we tell the user, never
+  // whether we destroy anything.
+  Prefix := Lowercase('{#MyStorePackageName}' + '_');
+  if not RegGetSubkeyNames(HKEY_CURRENT_USER,
+      'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages',
+      Names) then
+  begin
+    // Unreadable, so the Store app cannot be ruled out. Withhold the destructive advice.
+    Result := True;
+    Exit;
+  end;
+
+  if GetArrayLength(Names) = 0 then
+  begin
+    // Every real profile has hundreds of registered packages. Zero means the hive was
+    // tampered with or is unreadable, which is uncertainty, not absence.
+    Result := True;
+    Exit;
+  end;
+
+  for I := 0 to GetArrayLength(Names) - 1 do
+  begin
+    if Pos(Prefix, Lowercase(Names[I])) = 1 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+
+  Result := False;
+end;
+
+procedure ReportStoreAppOwnsGateway;
+begin
+  Log('Store app registration found without a migration receipt: preserving the local WSL gateway.');
+  if not UninstallSilent() then
+    MsgBox(
+      'OpenClaw from the Microsoft Store is installed on this PC and is using the local WSL gateway.' + #13#10#13#10 +
+      'The gateway and its generated state were left in place, so the Store app keeps working.' + #13#10#13#10 +
+      'Do not run "wsl --unregister {#MyDistroName}". That would delete the gateway the Store app is ' +
+      'still using. If you want to remove it later, open OpenClaw and choose ' +
+      'Settings > Local Gateway > Remove Local Gateway.',
+      mbInformation, MB_OK);
+end;
+
 procedure WarnMigrationCheckUnavailable;
 begin
+  // Most routes here mean the check could not run, and several of them are reachable on
+  // a machine that has already migrated. Telling that user to run wsl --unregister would
+  // destroy the gateway the installed Store app is using, so ask the registry directly
+  // before saying anything destructive.
+  if StoreAppRegistered then
+  begin
+    ReportStoreAppOwnsGateway;
+    Exit;
+  end;
+
   Log('Migration preservation check unavailable: skipping destructive gateway cleanup. ' +
       'The {#MyDistroName} WSL distro and ' +
       ExpandConstant('{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}') +
@@ -336,6 +405,10 @@ begin
     LocalGatewayCleanupRequested := False;
     if MigrationResult = 10 then
       Log('Completed Store migration: preserving generated state and local WSL gateway.')
+    else if MigrationResult = 11 then
+      // The checker positively identified an installed Store app, so the generic
+      // "could not confirm" advice would be both untrue and destructive here.
+      ReportStoreAppOwnsGateway
     else
       WarnMigrationCheckUnavailable;
     Exit;
@@ -438,6 +511,15 @@ begin
     if Started and (ResultCode = 10) then
     begin
       Log('Completed Store migration detected before cleanup. Generated state will be preserved.');
+      Exit;
+    end;
+
+    if Started and (ResultCode = 11) then
+    begin
+      // The cleanup script re-runs the check, so the Store app can be registered between
+      // the initial decision and this point. That is a deliberate refusal, not a failure,
+      // and must not surface a Retry dialog offering to destroy the gateway again.
+      ReportStoreAppOwnsGateway;
       Exit;
     end;
 
