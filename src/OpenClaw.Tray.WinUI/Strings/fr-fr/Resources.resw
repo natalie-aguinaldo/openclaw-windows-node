@@ -4277,7 +4277,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Port local</value>
   </data>
   <data name="ConnectionPage_SaveAmpConnect.Content" xml:space="preserve">
-    <value>Enregistrer &amp;amp; connecter</value>
+    <value>Enregistrer &amp; connecter</value>
   </data>
   <data name="ConnectionPage_Cancel.Content" xml:space="preserve">
     <value>Annuler</value>
@@ -4538,7 +4538,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Confidentialité Windows</value>
   </data>
   <data name="PermissionsPage_CameraMicrophoneAmpScreen.Text" xml:space="preserve">
-    <value>Accès caméra, microphone &amp;amp; écran</value>
+    <value>Accès caméra, microphone &amp; écran</value>
   </data>
   <data name="PermissionsPage_SystemLevelPrivacyPermissions.Text" xml:space="preserve">
     <value>Les autorisations de confidentialité au niveau système sont gérées par Windows. Ouvrez les Paramètres de confidentialité Windows pour accorder ou révoquer l'accès à OpenClaw.</value>
@@ -4616,7 +4616,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Lecture seule</value>
   </data>
   <data name="SandboxPage_ReadAmpWrite.Content" xml:space="preserve">
-    <value>Lecture &amp;amp; écriture</value>
+    <value>Lecture &amp; écriture</value>
   </data>
   <data name="SandboxPage_Downloads.Text" xml:space="preserve">
     <value>Téléchargements</value>
@@ -4628,7 +4628,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Lecture seule</value>
   </data>
   <data name="SandboxPage_ReadAmpWrite2.Content" xml:space="preserve">
-    <value>Lecture &amp;amp; écriture</value>
+    <value>Lecture &amp; écriture</value>
   </data>
   <data name="SandboxPage_Desktop.Text" xml:space="preserve">
     <value>Bureau</value>
@@ -4640,7 +4640,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Lecture seule</value>
   </data>
   <data name="SandboxPage_ReadAmpWrite3.Content" xml:space="preserve">
-    <value>Lecture &amp;amp; écriture</value>
+    <value>Lecture &amp; écriture</value>
   </data>
   <data name="SandboxPage_ToolDirectoriesOnYour.Text" xml:space="preserve">
     <value>Les répertoires d'outils de votre PATH bénéficient également d'un accès en lecture seule dans le bac à sable, afin que les outils en ligne de commande comme git, node, python et dotnet soient utilisables. Les racines de lecteur ne sont jamais accordées.</value>
@@ -4658,7 +4658,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Lecture seule</value>
   </data>
   <data name="SandboxPage_ReadAmpWrite4.Content" xml:space="preserve">
-    <value>Lecture &amp;amp; écriture</value>
+    <value>Lecture &amp; écriture</value>
   </data>
   <data name="SandboxPage_NoCustomFoldersAdded.Text" xml:space="preserve">
     <value>Aucun dossier personnalisé ajouté.</value>
@@ -4682,7 +4682,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Écriture: l'agent peut remplacer votre presse-papiers (sans pouvoir le lire)</value>
   </data>
   <data name="SandboxPage_ReadAmpWrite5.Content" xml:space="preserve">
-    <value>Lecture &amp;amp; écriture</value>
+    <value>Lecture &amp; écriture</value>
   </data>
   <data name="SandboxPage_Network.Text" xml:space="preserve">
     <value>📡 Réseau</value>
@@ -4980,7 +4980,7 @@ Les commandes sont bloquées tant que le sandboxing est indisponible, car le blo
     <value>Installation MSIX détectée</value>
   </data>
   <data name="SettingsPage_MSIXInstallationDetected.Message" xml:space="preserve">
-    <value>La suppression d'OpenClaw via Paramètres Windows &amp;amp;#x2192; Applications ne nettoiera PAS la passerelle locale (distribution WSL, image disque). Utilisez d'abord Supprimer la passerelle locale ci-dessous, puis désinstallez OpenClaw.</value>
+    <value>La suppression d'OpenClaw via Paramètres Windows → Applications ne nettoiera PAS la passerelle locale (distribution WSL, image disque). Utilisez d'abord Supprimer la passerelle locale ci-dessous, puis désinstallez OpenClaw.</value>
   </data>
   <data name="SettingsPage_RemovesTheWSLDistro.Text" xml:space="preserve">
     <value>Supprime la distribution WSL (OpenClawGateway), son image disque, l'entrée de démarrage automatique et efface les identifiants de la passerelle. Votre jeton MCP est conservé. L'intégration sera réinitialisée.</value>
