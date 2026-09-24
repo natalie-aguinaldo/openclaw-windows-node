@@ -404,10 +404,15 @@ public sealed class InnoMigrationContractTests
             installer);
         // An unverifiable migration state must be reported, not silently swallowed, and a
         // registered Store app must divert before the wsl --unregister advice is shown.
+        // Anything that is not a positively observed absence diverts to the uncertainty
+        // message, so the destructive advice can never be the fall-through default.
         Assert.Matches(
-            @"procedure WarnMigrationCheckUnavailable;\s+begin\s+" +
+            @"procedure WarnMigrationCheckUnavailable;\s+var\s+Presence: String;\s+begin\s+" +
             @"(?://[^\n]*\n\s*)*" +
-            @"if StoreAppRegistered then\s+begin\s+ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
+            @"Presence := StorePackagePresence;\s+" +
+            @"if Presence = 'Present' then\s+begin\s+ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
+            @"if Presence <> 'Absent' then\s+begin\s+(?://[^\n]*\n\s*)*" +
+            @"ReportStoreAppStateUnknown;\s+Exit;\s+end;\s+" +
             @"Log\([\s\S]*?\);\s+" +
             @"if not UninstallSilent\(\) then\s+MsgBox\(",
             installer);
@@ -591,8 +596,11 @@ public sealed class InnoMigrationContractTests
         var installer = Read("installer.iss");
         var procedure = installer[installer.IndexOf(
             "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)..];
+        // Terminate at the next procedure, not at WarnMigrationCheckUnavailable, so this
+        // stays pinned to the ownership message alone. Slicing past a neighbouring
+        // procedure would let these assertions be satisfied by the wrong one.
         procedure = procedure[..procedure.IndexOf(
-            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)];
+            "procedure ReportStoreAppStateUnknown;", StringComparison.Ordinal)];
 
         Assert.Contains("Do not run", procedure);
         // The destructive instruction belongs only to the genuinely-uncertain path.
@@ -621,7 +629,7 @@ public sealed class InnoMigrationContractTests
             "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)..];
         warn = warn[..warn.IndexOf("procedure EnsureLocalGatewayCleanupChoice;", StringComparison.Ordinal)];
 
-        var guard = warn.IndexOf("if StoreAppRegistered then", StringComparison.Ordinal);
+        var guard = warn.IndexOf("Presence := StorePackagePresence;", StringComparison.Ordinal);
         Assert.True(guard >= 0, "The uncertain path must consult package presence.");
 
         // Match the advice itself, not the explanatory comment that also names the command.
@@ -633,6 +641,13 @@ public sealed class InnoMigrationContractTests
         Assert.True(
             warn.IndexOf("ReportStoreAppOwnsGateway", guard, StringComparison.Ordinal) < destructive,
             "A registered Store app must divert to the non-destructive message.");
+        // Only a positively observed absence may reach the unregister advice. Expressing the
+        // safe route as "anything that is not Absent" keeps preservation the default, so an
+        // unrecognized state cannot fall through to permanent data loss guidance.
+        Assert.Contains("if Presence <> 'Absent' then", warn[guard..destructive]);
+        Assert.True(
+            warn.IndexOf("ReportStoreAppStateUnknown", guard, StringComparison.Ordinal) < destructive,
+            "Uncertainty must divert before the destructive advice.");
         // Without the early exit the guard would fall through and print both messages.
         Assert.Contains("Exit;", warn[guard..destructive]);
     }
@@ -649,7 +664,7 @@ public sealed class InnoMigrationContractTests
             installer);
 
         var function = installer[installer.IndexOf(
-            "function StoreAppRegistered: Boolean;", StringComparison.Ordinal)..];
+            "function StorePackagePresence: String;", StringComparison.Ordinal)..];
         function = function[..function.IndexOf(
             "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)];
 
@@ -662,13 +677,48 @@ public sealed class InnoMigrationContractTests
         var unreadable = function.IndexOf("if not RegGetSubkeyNames", StringComparison.Ordinal);
         var empty = function.IndexOf("if GetArrayLength(Names) = 0 then", StringComparison.Ordinal);
         Assert.True(unreadable >= 0 && empty > unreadable);
-        // Both uncertain shapes must yield True, which suppresses the destructive advice.
-        Assert.Contains("Result := True;", function[unreadable..empty]);
-        Assert.Contains("Result := True;", function[empty..]);
-        // The only False is the fully-enumerated, no-match outcome at the end.
+        // Both uncertain shapes must yield Indeterminate. That still suppresses the
+        // destructive advice, but it must not be reported to the user as a known
+        // installation, because neither shape observed one.
+        Assert.Contains("Result := 'Indeterminate';", function[unreadable..empty]);
+        Assert.Contains("Result := 'Indeterminate';", function[empty..]);
+        // Present is reachable only from an actual prefix match, never from uncertainty.
+        Assert.Single(Regex.Matches(function, @"Result := 'Present';"));
+        // The only Absent is the fully-enumerated, no-match outcome at the end.
         Assert.Equal(
-            function.LastIndexOf("Result := False;", StringComparison.Ordinal),
-            function.IndexOf("Result := False;", StringComparison.Ordinal));
+            function.LastIndexOf("Result := 'Absent';", StringComparison.Ordinal),
+            function.IndexOf("Result := 'Absent';", StringComparison.Ordinal));
+    }
+
+    // Preserving the gateway and claiming to know why are different acts. The unreadable
+    // and tampered-hive shapes observe no package at all, so the notice for them must not
+    // assert that the Store app is installed and using the gateway, and must still
+    // withhold the wsl --unregister advice that the genuinely-absent path owns.
+    [Fact]
+    public void Installer_DescribesAnUnreadablePackageRegistryAsUncertainNotOwned()
+    {
+        var installer = Read("installer.iss");
+        var unknown = installer[installer.IndexOf(
+            "procedure ReportStoreAppStateUnknown;", StringComparison.Ordinal)..];
+        unknown = unknown[..unknown.IndexOf(
+            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)];
+
+        // No ownership claim: the phrases the Present path uses must not appear here.
+        Assert.DoesNotContain("is installed on this PC and is using", unknown);
+        Assert.DoesNotContain("keeps working", unknown);
+        Assert.Contains("could not check whether", unknown);
+        // Uncertainty still preserves, and still refuses to hand over the destructive command.
+        Assert.Contains("left in place", unknown);
+        Assert.DoesNotContain("wsl --unregister", unknown);
+        Assert.Contains("Settings > Local Gateway > Remove Local Gateway", unknown);
+
+        // The silent path shows no dialog, so the log line is the only audit trail. It must
+        // name what was left behind, exactly as the genuinely-absent path does.
+        var log = unknown[..unknown.IndexOf("if not UninstallSilent()", StringComparison.Ordinal)];
+        Assert.Contains("could not be read", log);
+        Assert.Contains("{#MyDistroName}", log);
+        Assert.Contains(@"{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}", log);
+        Assert.Contains("were left in place", log);
     }
 
     [Fact]
