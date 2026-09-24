@@ -7,7 +7,8 @@ internal enum StoreMigrationStage
 {
     Inspecting, Consent, ClosingSource, Preparing, Completing, Finalizing,
     CloseSource, AwaitingRemoval, ValidationFailed, CredentialUnavailable,
-    UpdateRequired, Unsupported, InspectionFailed, Recovery, FinalizationFailed, Ready
+    UpdateRequired, Unsupported, InspectionFailed, Recovery, FinalizationFailed,
+    StartupRefused, Ready
 }
 
 internal interface IStoreMigrationOperations
@@ -47,9 +48,16 @@ internal sealed class StoreMigrationWorkflow(
     /// blocking. Otherwise a close raced against startup inspection would wave the user through
     /// a handoff that had already moved data.
     /// </para>
+    /// <para>
+    /// <see cref="StoreMigrationStage.StartupRefused"/> is excluded alongside
+    /// <see cref="StoreMigrationStage.Ready"/>: finalization succeeded and cleared the receipt,
+    /// so the window is only reporting that Windows refused the startup task. Blocking there
+    /// would withhold an app whose migration is complete.
+    /// </para>
     /// </summary>
     public bool BlocksStartup =>
-        (!_admissionResolved || _holdsCompletedHandoff) && Stage != StoreMigrationStage.Ready;
+        (!_admissionResolved || _holdsCompletedHandoff) &&
+        Stage is not (StoreMigrationStage.Ready or StoreMigrationStage.StartupRefused);
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
     // Seeded from the caller's admission so a receipt observed before this workflow existed is
@@ -85,6 +93,14 @@ internal sealed class StoreMigrationWorkflow(
             {
                 SetStage(StoreMigrationStage.Finalizing);
                 var result = await operations.FinalizeAsync();
+                // A durable startup refusal still finalizes the migration, so it must not be
+                // folded into Ready: the user has to be told that only Windows can re-enable
+                // the startup task. Launch still proceeds once they close the window.
+                if (result.State == StoreMigrationFinalizationState.StartupPreferenceRefused)
+                {
+                    SetStage(StoreMigrationStage.StartupRefused);
+                    return;
+                }
                 SetStage(result.AllowsNormalStartup ? StoreMigrationStage.Ready : result.State switch
                 {
                     StoreMigrationFinalizationState.AwaitingInnoRemoval => StoreMigrationStage.AwaitingRemoval,

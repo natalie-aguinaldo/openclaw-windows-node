@@ -27,6 +27,12 @@
 #define MyAppURL "https://github.com/openclaw/openclaw-windows-node"
 #define MyAppExeName "OpenClaw.Tray.WinUI.exe"
 
+; Must stay equal to MigrationRecordCodec.PackageName. The uninstaller reads the
+; packaged-app registration under this identity to decide whether the Store app is
+; present, and a drift here would silently restore the destructive advice.
+; Pinned by InnoMigrationContractTests.Installer_PinsTheStorePackageIdentity.
+#define MyStorePackageName "OpenClawFoundation.OpenClaw"
+
 ; MyAppArch should be passed via /DMyAppArch=x64 or /DMyAppArch=arm64
 #ifndef MyAppArch
   #define MyAppArch "x64"
@@ -102,6 +108,9 @@ Name: "startupicon"; Description: "Start {#MyAppName} when Windows starts"; Grou
 ; WinUI Tray app - include all files (WinUI needs DLLs, not single-file)
 Source: "{#publish}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 ; WSL gateway uninstall helper copied to {tmp} by [Code] during uninstall.
+; Uninstall reads these during usUninstall, which runs before Inno removes
+; files, so they must not carry uninsneveruninstall. Retaining them would
+; strand the helpers in {app} on every uninstall that keeps the local gateway.
 Source: "scripts\Uninstall-LocalGateway.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "scripts\Test-InnoMigration.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "src\OpenClaw.Connection\Migration\MigrationRecordCodec.cs"; DestDir: "{app}"; Flags: ignoreversion
@@ -136,6 +145,7 @@ var
   LocalGatewayCleanupSucceeded: Boolean;
   MigrationOperationHandle: THandle;
   MigrationOperationLocked: Boolean;
+  MigrationOperationUnavailable: Boolean;
 
 function OpenMigrationOperationFile(
   FileName: String; DesiredAccess, ShareMode: LongWord; SecurityAttributes: Integer;
@@ -205,29 +215,46 @@ function InitializeUninstall: Boolean;
 var
   Directory: String;
   LockPath: String;
+  LastError: LongWord;
 begin
   Result := True;
 #ifndef DevBuild
+  MigrationOperationUnavailable := True;
   Directory := ExpandConstant('{userappdata}\{#MyInstallDir}\store-migration');
   LockPath := Directory + '\prepare.lock';
-  Result := MigrationPathIsOrdinary(LockPath);
-  if Result then
-    Result := ForceDirectories(Directory);
-  if Result then
+  // Kept as separate tests rather than one boolean expression: ForceDirectories must
+  // never run when the path check rejected a reparse point, and Pascal Script
+  // short-circuit behavior is not worth betting a redirected directory create on.
+  if not MigrationPathIsOrdinary(LockPath) then
+    Log('Migration state path is not an ordinary directory. Uninstall continues and preserves the local gateway.')
+  else if ForceDirectories(Directory) then
   begin
     // Shared read handles allow our cleanup child to join, but exclude Store's
     // FileShare.None writer. Keep this handle through registry/payload removal.
     MigrationOperationHandle := OpenMigrationOperationFile(
       LockPath, $80000000, 1, 0, 4, $80, 0);
-    Result := MigrationOperationHandle <> THandle(-1);
-    MigrationOperationLocked := Result;
+    if MigrationOperationHandle <> THandle(-1) then
+    begin
+      MigrationOperationLocked := True;
+      MigrationOperationUnavailable := False;
+    end
+    else
+    begin
+      LastError := DLLGetLastError;
+      // Only a migration actively holding the lock may stop an uninstall. Any other
+      // failure means migration state is merely unreadable, which must never trap the
+      // user in an app they cannot remove. Continue and suppress destructive cleanup.
+      if (LastError = 32) or (LastError = 33) then
+      begin
+        Result := False;
+        Log('Migration state is locked by an in-progress migration. Uninstall stopped before changing the installation.');
+        if not UninstallSilent() then
+          MsgBox('OpenClaw migration is currently running. Close the Store migration preview, then retry uninstall.', mbError, MB_OK);
+      end;
+    end;
   end;
-  if not Result then
-  begin
-    Log('Could not lock migration state. Uninstall stopped before changing the installation.');
-    if not UninstallSilent() then
-      MsgBox('OpenClaw migration is busy or its state cannot be accessed. Close the Store migration preview and retry uninstall.', mbError, MB_OK);
-  end;
+  if Result and MigrationOperationUnavailable then
+    Log('Migration state could not be locked. Uninstall continues and preserves the local gateway.');
 #endif
 end;
 
@@ -306,6 +333,85 @@ begin
   Log('Migration preservation check returned ' + IntToStr(Result) + '.');
 end;
 
+function StoreAppRegistered: Boolean;
+var
+  Names: TArrayOfString;
+  I: Integer;
+  Prefix: String;
+begin
+  // Read directly rather than relying on the checker, because several routes to a
+  // preserve verdict happen when the checker could not run at all. This is the only
+  // signal available in those cases, and it decides what we tell the user, never
+  // whether we destroy anything.
+  Prefix := Lowercase('{#MyStorePackageName}' + '_');
+  if not RegGetSubkeyNames(HKEY_CURRENT_USER,
+      'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages',
+      Names) then
+  begin
+    // Unreadable, so the Store app cannot be ruled out. Withhold the destructive advice.
+    Result := True;
+    Exit;
+  end;
+
+  if GetArrayLength(Names) = 0 then
+  begin
+    // Every real profile has hundreds of registered packages. Zero means the hive was
+    // tampered with or is unreadable, which is uncertainty, not absence.
+    Result := True;
+    Exit;
+  end;
+
+  for I := 0 to GetArrayLength(Names) - 1 do
+  begin
+    if Pos(Prefix, Lowercase(Names[I])) = 1 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+
+  Result := False;
+end;
+
+procedure ReportStoreAppOwnsGateway;
+begin
+  Log('Store app registration found without a migration receipt: preserving the local WSL gateway.');
+  if not UninstallSilent() then
+    MsgBox(
+      'OpenClaw from the Microsoft Store is installed on this PC and is using the local WSL gateway.' + #13#10#13#10 +
+      'The gateway and its generated state were left in place, so the Store app keeps working.' + #13#10#13#10 +
+      'Do not run "wsl --unregister {#MyDistroName}". That would delete the gateway the Store app is ' +
+      'still using. If you want to remove it later, open OpenClaw and choose ' +
+      'Settings > Local Gateway > Remove Local Gateway.',
+      mbInformation, MB_OK);
+end;
+
+procedure WarnMigrationCheckUnavailable;
+begin
+  // Most routes here mean the check could not run, and several of them are reachable on
+  // a machine that has already migrated. Telling that user to run wsl --unregister would
+  // destroy the gateway the installed Store app is using, so ask the registry directly
+  // before saying anything destructive.
+  if StoreAppRegistered then
+  begin
+    ReportStoreAppOwnsGateway;
+    Exit;
+  end;
+
+  Log('Migration preservation check unavailable: skipping destructive gateway cleanup. ' +
+      'The {#MyDistroName} WSL distro and ' +
+      ExpandConstant('{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}') +
+      ' were left in place.');
+  if not UninstallSilent() then
+    MsgBox(
+      'Setup could not confirm whether your OpenClaw data was migrated to the Store app.' + #13#10#13#10 +
+      'The local WSL gateway and its generated state were left in place so nothing is lost.' + #13#10#13#10 +
+      'If you want to remove them, open OpenClaw and choose Settings > Local Gateway > ' +
+      'Remove Local Gateway before uninstalling. If OpenClaw is already removed, run:' + #13#10#13#10 +
+      'wsl --unregister {#MyDistroName}',
+      mbInformation, MB_OK);
+end;
+
 procedure EnsureLocalGatewayCleanupChoice;
 var
   MigrationResult: Integer;
@@ -315,14 +421,27 @@ begin
 
   LocalGatewayCleanupChoiceInitialized := True;
 
+  // Cleanup runs a child process that must join the migration lock. Without it the
+  // uninstall cannot prove the gateway is unowned, so preservation is the only safe answer.
+  if MigrationOperationUnavailable then
+  begin
+    LocalGatewayCleanupRequested := False;
+    WarnMigrationCheckUnavailable;
+    Exit;
+  end;
+
   MigrationResult := CheckCompletedStoreMigration;
   if MigrationResult <> 0 then
   begin
     LocalGatewayCleanupRequested := False;
     if MigrationResult = 10 then
       Log('Completed Store migration: preserving generated state and local WSL gateway.')
+    else if MigrationResult = 11 then
+      // The checker positively identified an installed Store app, so the generic
+      // "could not confirm" advice would be both untrue and destructive here.
+      ReportStoreAppOwnsGateway
     else
-      Log('Migration preservation check unavailable: skipping destructive gateway cleanup.');
+      WarnMigrationCheckUnavailable;
     Exit;
   end;
 
@@ -362,7 +481,7 @@ begin
 
   if not FileExists(SourceScriptPath) then
   begin
-    ResultCode := 2;
+    ResultCode := 102;
     Log('Local gateway cleanup script is missing: ' + SourceScriptPath);
     Result := False;
     Exit;
@@ -373,7 +492,7 @@ begin
 
   if not CopyFile(SourceScriptPath, TempScriptPath, False) then
   begin
-    ResultCode := 3;
+    ResultCode := 103;
     Log('Failed to copy local gateway cleanup script to: ' + TempScriptPath);
     Result := False;
     Exit;
@@ -426,10 +545,25 @@ begin
       Exit;
     end;
 
+    if Started and (ResultCode = 11) then
+    begin
+      // The cleanup script re-runs the check, so the Store app can be registered between
+      // the initial decision and this point. That is a deliberate refusal, not a failure,
+      // and must not surface a Retry dialog offering to destroy the gateway again.
+      ReportStoreAppOwnsGateway;
+      Exit;
+    end;
+
     if Started and (ResultCode = 0) then
     begin
       LocalGatewayCleanupSucceeded := True;
       Log('Local gateway cleanup completed successfully.');
+      Exit;
+    end;
+
+    if Started and (ResultCode = 2) then
+    begin
+      WarnMigrationCheckUnavailable;
       Exit;
     end;
 

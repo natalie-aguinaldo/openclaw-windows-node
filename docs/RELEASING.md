@@ -74,9 +74,12 @@ against a malicious process already running as that user.
 the same parser and validation policy runs in the app and in Windows PowerShell
 5.1 during uninstall. Inno ships the source and `Test-InnoMigration.ps1`, waits
 for the read-only check to exit, and does not load the tray executable for
-uninstall. The check returns 10 for validated completion, 0 for missing/invalid
-completion, and 2 for operational failure. Invalid records are diagnosed;
-operational check failures skip destructive cleanup rather than guessing.
+uninstall. The check returns 10 for validated completion, 0 only when no receipt
+is present, and 2 when a receipt exists but cannot be validated or the check
+could not run. A present-but-unverifiable receipt (DPAPI failure, schema drift
+from the frozen codec, or binding mismatch) preserves state rather than
+guessing, so it never authorizes destructive cleanup. The check also bounds
+itself with a watchdog so a stalled `Add-Type` cannot hang uninstall.
 
 With valid completion, normal Inno startup shows finish-migration guidance
 instead of starting services. The guidance keeps Inno's installer mutex held;
@@ -99,8 +102,12 @@ it through payload/registration removal.
 The cleanup script joins that lock (and also locks when invoked independently)
 before checking the receipt, retaining its handle until cleanup exits. These
 handles exclude Store's exclusive preparation/completion/finalization handle.
-An unavailable lock stops uninstall before effects; it never permits an unlocked
-fallback. Completion re-detects the exact source only after acquiring the lock,
+Only a lock held by an in-progress migration stops uninstall before effects. Any
+other unavailable lock means migration state is merely unreadable, so uninstall
+continues and suppresses destructive gateway cleanup rather than trapping the user
+in an app they cannot remove. Neither path permits an unlocked fallback that would
+allow destructive cleanup. Completion re-detects the exact source only after
+acquiring the lock,
 so an uninstall-first run cannot authorize a receipt from stale source evidence.
 Preparation likewise re-detects source evidence under the exclusive file lock.
 Both preparation and completion inspect the exact source image across all Windows
@@ -232,7 +239,6 @@ The Store-side preview hosts a dedicated WinUI migration window before normal
 services start. Release non-Dev builds now ship this experience by default;
 Debug and Dev builds do not. Do not enable migration by choosing the current app
 version as a placeholder for a verified safeguard-containing Inno release.
-
 An explicit test build may set `StoreMigrationPreview=true` and
 `StoreMigrationPreviewMinimumSourceVersion` to a three- or four-part numeric
 test source version. This is accepted only for **Debug MSIX builds with the

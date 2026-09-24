@@ -37,11 +37,21 @@ internal static class InnoMigrationStartupGuard
         {
             runtimeLease = MigrationOperationLock.AcquireRuntime(binding);
         }
+        catch (IOException ex) when (MigrationOperationLock.IsBusy(ex))
+        {
+            Logger.Error("Migration state is locked by an in-progress migration; Inno startup blocked.");
+            return ShowGuidance("Migration_InnoCheckFailed");
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or
                                    InvalidDataException or ArgumentException or NotSupportedException or
                                    InvalidOperationException or System.Security.SecurityException)
         {
-            Logger.Warn($"Migration runtime lock unavailable ({ex.GetType().Name}); checking the receipt without a lease.");
+            // An unreachable lock says nothing about whether a migration completed. Only an
+            // exclusive holder does, and that case is handled above. The receipt check below
+            // stays authoritative and fails closed on its own, so continuing here loses
+            // same-session coordination rather than safety. Refusing to launch would lock a
+            // user who never migrated out of their app over an inaccessible zero-byte file.
+            Logger.Warn($"Migration runtime lock unavailable ({ex.GetType().Name}); continuing without it.");
         }
 
         var path = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName,

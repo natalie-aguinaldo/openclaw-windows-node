@@ -7234,6 +7234,9 @@ Escolha {1} para sair desta prévia sem iniciar a migração e continuar usando 
   <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
     <value>O OpenClaw não conseguiu concluir a migração com segurança. A inicialização normal está bloqueada e o recibo de migração foi preservado para recuperação. Feche esta prévia e tente novamente mais tarde. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
+  <data name="Migration_StoreStartupRefused" xml:space="preserve">
+    <value>O OpenClaw concluiu a migração, mas o Windows não permitiu iniciar o OpenClaw Companion ao entrar. Seus dados e configurações foram migrados. Para iniciar o OpenClaw automaticamente, ative o OpenClaw Companion em Configurações > Aplicativos > Inicializar ou fale com seu administrador se a inicialização for gerenciada por política.</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Uma migração anterior precisa de recuperação ou finalização. Esta versão de teste não pode continuá-la nem iniciar normalmente. Feche esta prévia. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>

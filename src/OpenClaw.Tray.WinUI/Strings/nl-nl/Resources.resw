@@ -7181,6 +7181,9 @@ Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige 
   <data name="Migration_StoreFinalizationFailed" xml:space="preserve">
     <value>OpenClaw kon de voltooide migratie niet veilig afronden. Normaal opstarten is geblokkeerd en het migratiebewijs is voor herstel bewaard. Sluit dit voorbeeld en probeer het later opnieuw. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
+  <data name="Migration_StoreStartupRefused" xml:space="preserve">
+    <value>OpenClaw heeft de migratie voltooid, maar Windows heeft OpenClaw Companion niet bij het aanmelden ingeschakeld. Uw gegevens en instellingen zijn gemigreerd. Als u OpenClaw automatisch wilt starten, schakelt u OpenClaw Companion in via Instellingen > Apps > Opstarten, of neem contact op met uw beheerder als opstarten door beleid wordt beheerd.</value>
+  </data>
   <data name="Migration_StorePending" xml:space="preserve">
     <value>Een vorige migratie moet worden hersteld of afgerond. Deze testversie kan die migratie niet voortzetten of normaal starten. Sluit dit voorbeeld. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
   </data>

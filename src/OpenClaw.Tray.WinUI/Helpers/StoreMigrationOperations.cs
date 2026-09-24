@@ -98,8 +98,20 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
 
     private sealed class StoreMigrationAutoStartApplier : IStoreMigrationAutoStartApplier
     {
-        public async Task ApplyAsync(bool enabled) =>
-            await AutoStartManager.SetAutoStartAsync(enabled);
+        public async Task ApplyAsync(bool enabled)
+        {
+            try
+            {
+                await AutoStartManager.SetAutoStartAsync(enabled);
+            }
+            catch (AutoStartRefusedException exception) when (exception.IsDurable)
+            {
+                // Only Windows can re-enable a durably refused startup task. Translating it here
+                // is what lets finalization report StartupPreferenceRefused and clear the receipt
+                // instead of retrying a preference that can never succeed.
+                throw new StoreMigrationAutoStartRefusedException(exception.Message, exception);
+            }
+        }
     }
 
     private sealed class InnoMutexProbe : IInnoInstanceProbe

@@ -13,13 +13,27 @@ public enum StoreMigrationFinalizationState
     AwaitingInnoRemoval,
     InspectionFailed,
     StartupPreferenceFailed,
+    StartupPreferenceRefused,
     RecordCleanupFailed,
     Finalized
 }
 
 public sealed record StoreMigrationFinalizationDecision(StoreMigrationFinalizationState State)
 {
-    public bool AllowsNormalStartup => State == StoreMigrationFinalizationState.Finalized;
+    /// <summary>
+    /// A refused startup preference still finalizes the migration: Windows gave a durable answer,
+    /// so the receipt is cleared and launch proceeds rather than retrying on every start.
+    /// </summary>
+    /// <remarks>
+    /// A failed startup preference also allows launch. Finalization only reaches that step once
+    /// the Inno source is verified removed, so the receipt no longer protects anything and a
+    /// cosmetic startup preference must never block the app forever. The receipt is retained, so
+    /// the preference is retried on the next launch.
+    /// </remarks>
+    public bool AllowsNormalStartup =>
+        State is StoreMigrationFinalizationState.Finalized
+              or StoreMigrationFinalizationState.StartupPreferenceRefused
+              or StoreMigrationFinalizationState.StartupPreferenceFailed;
 }
 
 public enum InnoSourceRemovalStatus
@@ -44,6 +58,17 @@ public interface IStoreMigrationAutoStartApplier
 {
     Task ApplyAsync(bool enabled);
 }
+
+/// <summary>
+/// Signals that the host platform durably refused the startup preference, for example when the
+/// user or policy disabled startup for the app.
+/// </summary>
+/// <remarks>
+/// A refusal is an answer, not a failure. Finalization must continue and clear the receipt so the
+/// user is not blocked from launching on every start. Transient failures must not use this type.
+/// </remarks>
+public sealed class StoreMigrationAutoStartRefusedException(string message, Exception? innerException = null)
+    : Exception(message, innerException);
 
 /// <summary>
 /// Captures the bounded migration inventory at finalization time.
@@ -397,9 +422,15 @@ public sealed class StoreMigrationFinalizationCoordinator(
                 return new(StoreMigrationFinalizationState.InspectionFailed);
             }
 
+            var startupRefused = false;
             try
             {
                 await autoStart.ApplyAsync(durable.Record.AutoStart).ConfigureAwait(false);
+            }
+            catch (StoreMigrationAutoStartRefusedException exception)
+            {
+                logger.Warn($"Store migration startup preference refused by Windows: {exception.Message}");
+                startupRefused = true;
             }
             catch (Exception exception) when (exception is COMException or IOException or
                                              UnauthorizedAccessException or InvalidOperationException)
@@ -421,7 +452,9 @@ public sealed class StoreMigrationFinalizationCoordinator(
             }
 
             logger.Info($"Store migration finalized: {durable.Record.MigrationId}.");
-            return new(StoreMigrationFinalizationState.Finalized);
+            return new(startupRefused
+                ? StoreMigrationFinalizationState.StartupPreferenceRefused
+                : StoreMigrationFinalizationState.Finalized);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
                                          InvalidDataException)

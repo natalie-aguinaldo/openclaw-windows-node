@@ -76,7 +76,8 @@ public sealed partial class StoreMigrationWindow : Window
         Progress.IsActive = _workflow.IsBusy;
         Progress.Visibility = _workflow.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         Primary.IsEnabled = Dismiss.IsEnabled = !_workflow.IsBusy;
-        Primary.Visibility = _workflow.Stage == StoreMigrationStage.Recovery
+        // Recovery has nothing to retry; a refused startup task can only be changed in Windows.
+        Primary.Visibility = _workflow.Stage is StoreMigrationStage.Recovery or StoreMigrationStage.StartupRefused
             ? Visibility.Collapsed : Visibility.Visible;
         Primary.Content = LocalizationHelper.GetString(_workflow.Stage == StoreMigrationStage.Consent
             ? "Migration_StoreMigrate" : "Migration_StoreRetry");
@@ -96,7 +97,8 @@ public sealed partial class StoreMigrationWindow : Window
         if (!_workflow.IsBusy)
         {
             // Consent defaults to the non-destructive action; keyboard activation cannot auto-confirm.
-            (_workflow.Stage is StoreMigrationStage.Consent or StoreMigrationStage.Recovery ? Dismiss : Primary)
+            (_workflow.Stage is StoreMigrationStage.Consent or StoreMigrationStage.Recovery
+                or StoreMigrationStage.StartupRefused ? Dismiss : Primary)
                 .Focus(FocusState.Programmatic);
         }
     }
@@ -112,7 +114,11 @@ public sealed partial class StoreMigrationWindow : Window
         var consentVisibility = _workflow.Stage == StoreMigrationStage.Consent
             ? Visibility.Visible : Visibility.Collapsed;
         ConsentSteps.Visibility = ConsentHint.Visibility = consentVisibility;
-        Status.Text = LocalizationHelper.GetString("Migration2_" + (_workflow.Stage switch
+        // Reuses the existing refusal string rather than adding a Migration2_ key, because every
+        // new resource has to be seeded across all locales.
+        Status.Text = _workflow.Stage == StoreMigrationStage.StartupRefused
+            ? LocalizationHelper.GetString("Migration_StoreStartupRefused")
+            : LocalizationHelper.GetString("Migration2_" + (_workflow.Stage switch
         {
             StoreMigrationStage.Consent => "Consent",
             StoreMigrationStage.ClosingSource => "Closing",

@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using OpenClaw.Connection.Migration;
 using Xunit.Sdk;
 
 namespace OpenClaw.Tray.Tests;
@@ -45,6 +47,16 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new MigrationInventoryCapture(_binding!)", helper);
         Assert.Contains("AutoStartManager.SetAutoStartAsync(enabled)", helper);
         Assert.DoesNotContain(".GetAwaiter().GetResult()", helper);
+        // A Windows startup refusal is a durable answer, not a transient failure. The applier must
+        // translate it so finalization clears the receipt instead of blocking every future launch.
+        Assert.Contains("catch (AutoStartRefusedException exception) when (exception.IsDurable)", helper);
+        Assert.Contains(
+            "throw new StoreMigrationAutoStartRefusedException(exception.Message, exception)",
+            helper);
+        // The refusal has to reach the user: finalization succeeds, so the window would otherwise
+        // close silently and leave the startup task quietly disabled.
+        Assert.Contains("StoreMigrationFinalizationState.StartupPreferenceRefused", workflow);
+        Assert.Contains("StoreMigrationStage.StartupRefused", workflow);
         Assert.Contains("new CredentialResolver(DeviceIdentityFileReader.Instance)", helper);
         Assert.DoesNotContain("TaskDialogIndirect", helper);
         Assert.Contains("RequestMigrationShutdownAsync", helper);
@@ -63,6 +75,67 @@ public sealed class InnoMigrationContractTests
         Assert.DoesNotContain("ReleaseMutex", finalizer);
         Assert.DoesNotContain("SettingsManager", finalizer);
         Assert.DoesNotContain("CliUninstall", finalizer);
+    }
+
+    /// <summary>
+    /// The migration lock coordinates with a Store migration that most users will never run.
+    /// It must never become a reason an ordinary user cannot start or uninstall the app: only
+    /// a live contended lock may block, and an unreadable one must degrade instead.
+    /// </summary>
+    [Fact]
+    public void InaccessibleMigrationLock_BlocksNeitherStartupNorUninstall()
+    {
+        var guard = Read("src", "OpenClaw.Tray.WinUI", "Helpers", "InnoMigrationStartupGuard.cs");
+        var acquire = guard.IndexOf("MigrationOperationLock.AcquireRuntime(binding)", StringComparison.Ordinal);
+        var busy = guard.IndexOf("catch (IOException ex) when (MigrationOperationLock.IsBusy(ex))",
+            StringComparison.Ordinal);
+        Assert.True(busy > acquire, "Only a contended lock may block Inno startup.");
+        var receipt = guard.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal);
+        var degrade = guard.IndexOf("continuing without it", StringComparison.Ordinal);
+        Assert.InRange(degrade, busy, receipt);
+        // The degraded path must fall through to the receipt check rather than showing guidance,
+        // because ShowGuidance returns true and would stop the launch it is meant to preserve.
+        Assert.DoesNotContain("ShowGuidance", guard[degrade..receipt]);
+
+        var installer = Read("installer.iss");
+        var uninstall = installer[installer.IndexOf("function InitializeUninstall", StringComparison.Ordinal)..];
+        uninstall = uninstall[..uninstall.IndexOf("procedure DeinitializeUninstall", StringComparison.Ordinal)];
+        Assert.Matches(@"if \(LastError = 32\) or \(LastError = 33\) then\s+begin\s+Result := False;", uninstall);
+        Assert.Single(Regex.Matches(uninstall, @"Result := False;"));
+        Assert.Contains("MigrationOperationUnavailable := True;", uninstall);
+
+        // An unavailable lock must still suppress destructive cleanup, since the cleanup child
+        // cannot join a lock the uninstaller never obtained.
+        var choice = installer[installer.IndexOf("procedure EnsureLocalGatewayCleanupChoice", StringComparison.Ordinal)..];
+        var suppression = choice.IndexOf("if MigrationOperationUnavailable then", StringComparison.Ordinal);
+        Assert.InRange(suppression, 0, choice.IndexOf("MigrationResult := CheckCompletedStoreMigration",
+            StringComparison.Ordinal));
+        Assert.Contains("WarnMigrationCheckUnavailable;", choice[suppression..]);
+    }
+
+    /// <summary>
+    /// Preservation is a dead end unless the notice carries the removal path itself. No document
+    /// in this repository is linked from the uninstaller, and the user may have no app left.
+    /// </summary>
+    [Fact]
+    public void PreservationNotice_CarriesItsOwnRemovalInstructions()
+    {
+        var installer = Read("installer.iss");
+        var warn = installer[installer.IndexOf("procedure WarnMigrationCheckUnavailable", StringComparison.Ordinal)..];
+        warn = warn[..warn.IndexOf("procedure EnsureLocalGatewayCleanupChoice", StringComparison.Ordinal)];
+
+        Assert.Contains("wsl --unregister {#MyDistroName}", warn);
+        Assert.Contains("Settings > Local Gateway > ", warn);
+        Assert.DoesNotContain("uninstall documentation", warn);
+        // The silent path skips the dialog, so the log line is the only audit trail an
+        // enterprise administrator gets. It must name what was left behind.
+        var log = warn[..warn.IndexOf("if not UninstallSilent()", StringComparison.Ordinal)];
+        Assert.Contains("{#MyDistroName}", log);
+        Assert.Contains(@"{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}", log);
+
+        var doc = Read("docs", "uninstall-portable.md");
+        Assert.Contains("Installer Uninstall Preserved the Local Gateway", doc);
+        Assert.Contains("wsl --unregister OpenClawGateway", doc);
     }
 
     [Fact]
@@ -130,7 +203,8 @@ public sealed class InnoMigrationContractTests
         var code = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml.cs");
         Assert.Contains("ms-settings:appsfeatures", code);
         Assert.Contains("StoreMigrationStage.AwaitingRemoval", code);
-        Assert.Contains("StoreMigrationStage.Consent or StoreMigrationStage.Recovery ? Dismiss : Primary", code);
+        Assert.Contains("StoreMigrationStage.Consent or StoreMigrationStage.Recovery", code);
+        Assert.Contains("or StoreMigrationStage.StartupRefused ? Dismiss : Primary", code);
         Assert.Contains("args.Cancel = true", code);
     }
 
@@ -149,6 +223,50 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("StoreMigrationPreviewMinimumSourceVersion", guard.ToString());
         Assert.DoesNotContain(project.Descendants("StoreMigrationPreview"), element => element.Value == "true");
         Assert.Empty(project.Descendants("StoreMigrationPreviewMinimumSourceVersion"));
+    }
+
+    /// <summary>
+    /// A durable startup refusal is invisible otherwise: finalization clears the receipt and the
+    /// app launches normally, so the only signal the user ever gets that OpenClaw will never start
+    /// at sign-in again would be a log line. The notice must be shown, and it must not block launch.
+    /// This branch now lives in the migration window rather than the pre-launch message box, so the
+    /// stage must be reached before the allows-normal-startup fold and must stay outside BlocksStartup.
+    /// </summary>
+    [Fact]
+    public void StartupRefusal_NotifiesTheUserWithoutBlockingLaunch()
+    {
+        var workflow = Read("src", "OpenClaw.Tray.WinUI", "Services", "StoreMigrationWorkflow.cs");
+        var refusal = workflow.IndexOf(
+            "result.State == StoreMigrationFinalizationState.StartupPreferenceRefused", StringComparison.Ordinal);
+        Assert.True(refusal > 0, "Finalization must special-case a durable startup refusal.");
+        Assert.True(refusal < workflow.IndexOf("result.AllowsNormalStartup ?", StringComparison.Ordinal),
+            "The refusal must be handled before it is folded into Ready.");
+        Assert.Contains("StoreMigrationStage.Ready or StoreMigrationStage.StartupRefused", workflow);
+
+        var window = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml.cs");
+        Assert.Contains(@"LocalizationHelper.GetString(""Migration_StoreStartupRefused"")", window);
+        Assert.Contains("StoreMigrationStage.Recovery or StoreMigrationStage.StartupRefused", window);
+    }
+
+    [Theory]
+    [InlineData("en-us", "Settings > Apps > Startup")]
+    [InlineData("fr-fr", "Paramètres > Applications > Démarrage")]
+    [InlineData("nl-nl", "Instellingen > Apps > Opstarten")]
+    [InlineData("pt-br", "Configurações > Aplicativos > Inicializar")]
+    [InlineData("zh-cn", "设置 > 应用 > 启动")]
+    [InlineData("zh-tw", "設定 > 應用程式 > 啟動")]
+    public void StartupRefusalNotice_PointsAtTheWindowsStartupSettingInEveryLocale(
+        string locale, string startupSetting)
+    {
+        var resources = System.Xml.Linq.XDocument.Parse(
+            Read("src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"));
+        var notice = resources.Root!.Elements("data")
+            .Single(element => (string?)element.Attribute("name") == "Migration_StoreStartupRefused")
+            .Element("value")!.Value;
+
+        Assert.Contains(startupSetting, notice);
+        Assert.Contains("OpenClaw Companion", notice);
+        Assert.DoesNotContain("—", notice);
     }
 
     [Theory]
@@ -233,8 +351,7 @@ public sealed class InnoMigrationContractTests
         Assert.True(acquire > 0 && acquire < helper.IndexOf("MigrationRecordCodec.ReadCompletion", StringComparison.Ordinal));
         var lockFailure = helper[acquire..helper.IndexOf("var path =", StringComparison.Ordinal)];
         Assert.Contains("InvalidDataException", lockFailure);
-        // Only a readable receipt may block startup; an unavailable lease must not.
-        Assert.DoesNotContain("ShowGuidance", lockFailure);
+        Assert.Contains("return ShowGuidance(\"Migration_InnoCheckFailed\")", lockFailure);
         var receiptRejected = helper[helper.IndexOf("Migration completion receipt rejected", StringComparison.Ordinal)..];
         Assert.Contains("return false;", receiptRejected);
         Assert.DoesNotContain("_innoMigrationLease", Read("src", "OpenClaw.Tray.WinUI", "App.AppShutdownCoordinator.cs"));
@@ -245,6 +362,7 @@ public sealed class InnoMigrationContractTests
     public void Installer_ChecksCompletionBeforeChoiceAndNeverDeletesPreservedState()
     {
         var installer = Read("installer.iss");
+        Assert.Contains("Source: \"scripts\\Uninstall-LocalGateway.ps1\"", installer);
         Assert.Contains("Source: \"scripts\\Test-InnoMigration.ps1\"", installer);
         Assert.Contains("Source: \"src\\OpenClaw.Connection\\Migration\\MigrationRecordCodec.cs\"", installer);
         AssertPreservationGuards(installer);
@@ -278,7 +396,24 @@ public sealed class InnoMigrationContractTests
             @"if MigrationResult <> 0 then\s+begin\s+" +
             @"LocalGatewayCleanupRequested := False;\s+" +
             @"if MigrationResult = 10 then\s+Log\('[^']*'\)\s+" +
-            @"else\s+Log\('[^']*'\);\s+Exit;\s+end;\s+if UninstallSilent\(\)",
+            @"else if MigrationResult = 11 then\s+(?://[^\n]*\n\s*)*ReportStoreAppOwnsGateway\s+" +
+            @"else\s+WarnMigrationCheckUnavailable;\s+Exit;\s+end;\s+if UninstallSilent\(\)",
+            installer);
+        // An unverifiable migration state must be reported, not silently swallowed, and a
+        // registered Store app must divert before the wsl --unregister advice is shown.
+        Assert.Matches(
+            @"procedure WarnMigrationCheckUnavailable;\s+begin\s+" +
+            @"(?://[^\n]*\n\s*)*" +
+            @"if StoreAppRegistered then\s+begin\s+ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
+            @"Log\([\s\S]*?\);\s+" +
+            @"if not UninstallSilent\(\) then\s+MsgBox\(",
+            installer);
+        // A known-installed Store app gets its own report, so the generic path's
+        // wsl --unregister advice can never reach the state it would destroy.
+        Assert.Matches(
+            @"procedure ReportStoreAppOwnsGateway;\s+begin\s+" +
+            @"Log\([\s\S]*?\);\s+" +
+            @"if not UninstallSilent\(\) then\s+MsgBox\(",
             installer);
         Assert.Matches(
             @"begin\s+if not LocalGatewayCleanupRequested then\s+Exit;\s+" +
@@ -287,6 +422,8 @@ public sealed class InnoMigrationContractTests
         Assert.Matches(
             @"if Started and \(ResultCode = 10\) then\s+begin\s+" +
             @"Log\('[^']*'\);\s+Exit;\s+end;\s+" +
+            @"if Started and \(ResultCode = 11\) then\s+begin\s+" +
+            @"(?://[^\n]*\n\s*)*ReportStoreAppOwnsGateway;\s+Exit;\s+end;\s+" +
             @"if Started and \(ResultCode = 0\) then\s+begin\s+" +
             @"LocalGatewayCleanupSucceeded := True;\s+Log\('[^']*'\);\s+Exit;\s+end;",
             installer);
@@ -357,6 +494,230 @@ public sealed class InnoMigrationContractTests
     }
 
     [Fact]
+    public void CleanupScript_BoundsEveryChildProcessWait()
+    {
+        var script = Read("scripts", "Uninstall-LocalGateway.ps1");
+        // A hung wsl.exe or checker must not block uninstall forever, and a
+        // timed-out operation is indeterminate rather than successful.
+        Assert.DoesNotMatch(@"-Wait\b", script);
+        Assert.DoesNotMatch(@"(?m)^\s*(\$\w+ = )?Start-Process\b", script);
+        Assert.Contains("$process.WaitForExit($TimeoutMilliseconds)", script);
+        Assert.Contains("-TimeoutMilliseconds ($WslTimeoutSeconds * 1000)", script);
+        Assert.Contains("-TimeoutMilliseconds ($MigrationCheckTimeoutSeconds * 1000)", script);
+        Assert.Contains("did not finish within $WslTimeoutSeconds seconds", script);
+        Assert.Contains("did not finish within $MigrationCheckTimeoutSeconds seconds", script);
+    }
+
+    [Fact]
+    public void CleanupScript_KeepsCheckerDiagnostics()
+    {
+        var script = Read("scripts", "Uninstall-LocalGateway.ps1");
+        // Exit 2 is an irreversible-decision input. Losing the checker's stderr
+        // reduces every support case to an opaque exit code.
+        Assert.Contains("Migration preservation check output:", script);
+        Assert.Contains("Migration preservation check exited $migrationResult.", script);
+        // Child arguments must use the shared quoting helper, not hand-rolled quotes.
+        Assert.Contains("'-AppRoot', (ConvertTo-ProcessArgument $AppRoot)", script);
+        AssertBoundedProcessHelper(script);
+    }
+
+    [Fact]
+    public void CleanupScript_ReportsPreDestructiveFailuresAsUncertain()
+    {
+        var script = Read("scripts", "Uninstall-LocalGateway.ps1").ReplaceLineEndings("\n");
+        // Read-only discovery stays inside the admission phase; only the two
+        // genuinely destructive steps leave it. A deleted flag flip must fail here.
+        Assert.Matches(
+            @"function Enter-DestructivePhase \{\s+#[^\n]*\n\s+\$script:MigrationAdmissionPhase = \$false\s+\}",
+            script);
+        Assert.Matches(
+            @"function Remove-GatewayDirectory \{\s+Enter-DestructivePhase",
+            script);
+        Assert.Matches(
+            @"Enter-DestructivePhase\s+\$unregisterResult = Invoke-Wsl -Arguments @\('--unregister'",
+            script);
+        Assert.Equal(2, Regex.Matches(script, @"^\s*Enter-DestructivePhase\s*$",
+            RegexOptions.Multiline).Count);
+        Assert.Matches(
+            @"\$failureExitCode = if \(\$script:MigrationAdmissionPhase\) \{ 2 \} else \{ 1 \}",
+            script);
+        Assert.Contains("exit $failureExitCode", script);
+        // Locating wsl.exe and listing distros destroy nothing, so they must not
+        // sit past the admission boundary in the main flow.
+        var main = script[script.LastIndexOf("\ntry {", StringComparison.Ordinal)..];
+        Assert.DoesNotMatch(
+            @"Enter-DestructivePhase[\s\S]*?\$script:WslPath = Get-WslExePath",
+            main);
+    }
+
+    [Fact]
+    public void Installer_RoutesCheckerUncertaintyToPreservationNotRetry()
+    {
+        var installer = Read("installer.iss");
+        // Exit 2 means "unknown", so offering Retry against an unchanging verdict
+        // is misleading. It must reach the preservation notice instead.
+        Assert.Matches(
+            @"if Started and \(ResultCode = 2\) then\s+begin\s+" +
+            @"WarnMigrationCheckUnavailable;\s+Exit;\s+end;",
+            installer);
+        // The installer's own failure codes must not collide with the script contract.
+        Assert.DoesNotMatch(@"ResultCode := [0-9];", installer);
+        // The preservation notice must not name files uninstall is about to delete.
+        Assert.DoesNotContain("run Uninstall-LocalGateway.ps1 from", installer);
+        // These helpers run during usUninstall, before Inno removes files, so they
+        // need no retention flag. Retaining them stranded all three in {app} on
+        // every uninstall that kept the local gateway, including the ordinary
+        // non-migration "keep my gateway" choice.
+        foreach (var helper in new[]
+        {
+            "scripts\\Uninstall-LocalGateway.ps1", "scripts\\Test-InnoMigration.ps1",
+            "src\\OpenClaw.Connection\\Migration\\MigrationRecordCodec.cs"
+        })
+            Assert.DoesNotMatch(
+                Regex.Escape($"Source: \"{helper}\"") + @"[^\n]*uninsneveruninstall",
+                installer);
+    }
+
+    // The preserve path must not hand the user the command that destroys what it just
+    // preserved. Exit 11 means "the Store app is registered and is probably using this
+    // gateway", so routing it back to the generic could-not-confirm advice, which tells
+    // the user to run wsl --unregister, would reopen the data loss by other means.
+    [Fact]
+    public void Installer_DoesNotAdviseUnregisteringWhenTheStoreAppOwnsTheGateway()
+    {
+        var installer = Read("installer.iss");
+        var procedure = installer[installer.IndexOf(
+            "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)..];
+        procedure = procedure[..procedure.IndexOf(
+            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)];
+
+        Assert.Contains("Do not run", procedure);
+        // The destructive instruction belongs only to the genuinely-uncertain path.
+        Assert.DoesNotContain("If OpenClaw is already removed", procedure);
+
+        var choice = installer[installer.IndexOf(
+            "procedure EnsureLocalGatewayCleanupChoice;", StringComparison.Ordinal)..];
+        var elevenBranch = choice.IndexOf("MigrationResult = 11", StringComparison.Ordinal);
+        Assert.True(elevenBranch >= 0, "Exit 11 must have its own branch.");
+        Assert.True(
+            choice.IndexOf("ReportStoreAppOwnsGateway", elevenBranch, StringComparison.Ordinal) >= 0,
+            "Exit 11 must route to the Store-app-owns-gateway message.");
+    }
+
+    // Every route to "could not confirm" is reachable on a machine that has already
+    // migrated: an undecryptable receipt, a watchdog that cannot start, a missing
+    // PowerShell. In those states the generic advice tells the user to run
+    // wsl --unregister, which destroys the gateway the installed Store app is using.
+    // Package presence must gate the message itself, not just the one branch where the
+    // checker managed to report exit 11.
+    [Fact]
+    public void Installer_ChecksForTheStoreAppBeforeAdvisingUnregister()
+    {
+        var installer = Read("installer.iss");
+        var warn = installer[installer.IndexOf(
+            "procedure WarnMigrationCheckUnavailable;", StringComparison.Ordinal)..];
+        warn = warn[..warn.IndexOf("procedure EnsureLocalGatewayCleanupChoice;", StringComparison.Ordinal)];
+
+        var guard = warn.IndexOf("if StoreAppRegistered then", StringComparison.Ordinal);
+        Assert.True(guard >= 0, "The uncertain path must consult package presence.");
+
+        // Match the advice itself, not the explanatory comment that also names the command.
+        var destructive = warn.IndexOf("wsl --unregister {#MyDistroName}'", StringComparison.Ordinal);
+        Assert.True(destructive > 0, "The uncertain path still owns the unregister advice.");
+        Assert.True(
+            guard < destructive,
+            "The package-presence guard must precede the destructive advice.");
+        Assert.True(
+            warn.IndexOf("ReportStoreAppOwnsGateway", guard, StringComparison.Ordinal) < destructive,
+            "A registered Store app must divert to the non-destructive message.");
+        // Without the early exit the guard would fall through and print both messages.
+        Assert.Contains("Exit;", warn[guard..destructive]);
+    }
+
+    // Absence is only meaningful if it is read from the identity the Store app actually
+    // registers under, and only if the unreadable and empty shapes fail closed. The
+    // Packages key is user-writable, so an empty enumeration is tampering, not absence.
+    [Fact]
+    public void Installer_PinsTheStorePackageIdentity()
+    {
+        var installer = Read("installer.iss");
+        Assert.Contains(
+            $"#define MyStorePackageName \"{MigrationRecordCodec.PackageName}\"",
+            installer);
+
+        var function = installer[installer.IndexOf(
+            "function StoreAppRegistered: Boolean;", StringComparison.Ordinal)..];
+        function = function[..function.IndexOf(
+            "procedure ReportStoreAppOwnsGateway;", StringComparison.Ordinal)];
+
+        Assert.Contains("AppModel\\Repository\\Packages", function);
+        Assert.Contains("'{#MyStorePackageName}'", function);
+        // Case-insensitive prefix match anchored at position 1, so a package merely
+        // containing the name cannot masquerade as ours.
+        Assert.Contains("Pos(Prefix, Lowercase(Names[I])) = 1", function);
+
+        var unreadable = function.IndexOf("if not RegGetSubkeyNames", StringComparison.Ordinal);
+        var empty = function.IndexOf("if GetArrayLength(Names) = 0 then", StringComparison.Ordinal);
+        Assert.True(unreadable >= 0 && empty > unreadable);
+        // Both uncertain shapes must yield True, which suppresses the destructive advice.
+        Assert.Contains("Result := True;", function[unreadable..empty]);
+        Assert.Contains("Result := True;", function[empty..]);
+        // The only False is the fully-enumerated, no-match outcome at the end.
+        Assert.Equal(
+            function.LastIndexOf("Result := False;", StringComparison.Ordinal),
+            function.IndexOf("Result := False;", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Checker_ReportsUncertaintyWhenItsWatchdogCannotStart()
+    {
+        var script = Read("scripts", "Test-InnoMigration.ps1");
+        var start = script.IndexOf("-TimeoutMilliseconds ($TimeoutSeconds * 1000)", StringComparison.Ordinal);
+        var handler = script[start..script.IndexOf("if ($null -ne $watchdogResult)", start, StringComparison.Ordinal)];
+        // Falling back to the inline Add-Type check would reintroduce the unbounded
+        // stall the watchdog exists to prevent, and installer.iss waits for this
+        // process with ewWaitUntilTerminated.
+        Assert.Contains("exit 2", handler);
+        Assert.DoesNotContain("$watchdogResult = $null", handler);
+    }
+
+    [Fact]
+    public void Checker_TreatsUnverifiableReceiptAsPreserveNotAbsent()
+    {
+        var script = Read("scripts", "Test-InnoMigration.ps1");
+        var handler = script[script.LastIndexOf("} catch {", StringComparison.Ordinal)..];
+        // Only a genuinely absent receipt may authorize the existing uninstall
+        // policy. Schema, DPAPI, or binding drift must fail closed.
+        Assert.Contains("[IO.FileNotFoundException]", handler);
+        Assert.Contains("[IO.DirectoryNotFoundException]", handler);
+        Assert.DoesNotContain("CryptographicException", handler);
+        Assert.DoesNotContain("InvalidDataException", handler);
+        Assert.Single(Regex.Matches(handler, @"exit 0"));
+        Assert.Contains("exit 2", handler);
+        Assert.Contains("-TimeoutMilliseconds ($TimeoutSeconds * 1000)", script);
+        // $PSHOME resolves to the PowerShell 7 directory under pwsh, which has no
+        // powershell.exe. The watchdog must name Windows PowerShell explicitly.
+        Assert.DoesNotContain("Join-Path $PSHOME", script);
+        Assert.Contains("System32\\WindowsPowerShell\\v1.0\\powershell.exe", script);
+        Assert.Contains("$watchdogResult.Output.Trim()", script);
+        AssertBoundedProcessHelper(script);
+    }
+
+    private static void AssertBoundedProcessHelper(string script)
+    {
+        // Start-Process -PassThru returns a null ExitCode once output is redirected,
+        // which silently turned every verdict into exit 0. Drive the process directly,
+        // and start both reads before waiting so a full pipe cannot deadlock.
+        Assert.Contains("$psi.UseShellExecute = $false", script);
+        Assert.Contains("[System.Diagnostics.Process]::Start($psi)", script);
+        Assert.Matches(
+            @"\$stdout = \$process\.StandardOutput\.ReadToEndAsync\(\)\s+" +
+            @"\$stderr = \$process\.StandardError\.ReadToEndAsync\(\)\s+\r?\n?\s*" +
+            @"if \(-not \$process\.WaitForExit\(\$TimeoutMilliseconds\)\)",
+            script);
+        Assert.Contains("ExitCode = [int]$process.ExitCode", script);    }
+
+    [Fact]
     public void Installer_HoldsMigrationLockThroughEntireUninstall()
     {
         var installer = Read("installer.iss");
@@ -365,12 +726,16 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("#ifndef DevBuild", initialize);
         Assert.Contains(@"{userappdata}\{#MyInstallDir}\store-migration", initialize);
         Assert.Contains(@"'\prepare.lock'", initialize);
-        Assert.Contains("Result := MigrationPathIsOrdinary(LockPath);", initialize);
-        Assert.Contains("Result := ForceDirectories(Directory);", initialize);
+        Assert.Contains("if not MigrationPathIsOrdinary(LockPath) then", initialize);
+        Assert.Contains("else if ForceDirectories(Directory) then", initialize);
+        // A rejected reparse path must never reach ForceDirectories, so the two checks
+        // stay sequential rather than relying on Pascal Script short-circuit evaluation.
+        Assert.DoesNotContain("MigrationPathIsOrdinary(LockPath) and", initialize);
         Assert.Matches(@"OpenMigrationOperationFile\(\s*LockPath, \$80000000, 1, 0, 4, \$80, 0\)", initialize);
-        Assert.Contains("Result := MigrationOperationHandle <> THandle(-1);", initialize);
-        Assert.Contains("MigrationOperationLocked := Result;", initialize);
-        Assert.Contains("if not Result then", initialize);
+        Assert.Matches(
+            @"if MigrationOperationHandle <> THandle\(-1\) then\s+begin\s+" +
+            @"MigrationOperationLocked := True;\s+MigrationOperationUnavailable := False;",
+            initialize);
         Assert.Matches(@"procedure DeinitializeUninstall;\s*begin\s*if MigrationOperationLocked then\s*begin\s*" +
                        @"CloseMigrationOperationFile\(MigrationOperationHandle\);", installer);
         Assert.Single(Regex.Matches(installer, @"CloseMigrationOperationFile\(MigrationOperationHandle\)"));
@@ -549,6 +914,154 @@ public sealed class InnoMigrationContractTests
         catch (UnauthorizedAccessException) { }
     }
 
+    [Fact]
+    public async Task GatewayUninstall_PassesWslControlFlagsUnquoted()
+    {
+        // Real VM proof showed every wsl.exe call failing with
+        // "/bin/sh: --list: not found" and exit 127. wsl.exe matches its control
+        // flags against the raw command line, so a quoted "--unregister" is run
+        // as a command inside the distro and the gateway is never unregistered.
+        // Source-text assertions cannot catch this; exercise the real function.
+        var result = await RunGatewayProbeAsync(ProcessArgumentProbe);
+        Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GatewayUninstall_TreatsAWslLessHostAsNothingToRemove()
+    {
+        // Real uninstall proof on a host without WSL showed wsl.exe writing
+        // UTF-16LE into an 8-bit-decoded pipe, so every output pattern matched
+        // NUL-interleaved text and never fired. Exercise the real functions
+        // rather than asserting on source text, which cannot catch that.
+        var result = await RunGatewayProbeAsync(GatewayOutputProbe);
+        Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+    }
+
+    private static async Task<string> RunGatewayProbeAsync(string probe)
+    {
+        var root = TestRepositoryPaths.GetRepositoryRoot();
+        var target = Path.Combine(root, "scripts", "Uninstall-LocalGateway.ps1");
+        var probePath = Path.Combine(Path.GetTempPath(), $"openclaw-gateway-contract-{Guid.NewGuid():N}.ps1");
+        File.WriteAllText(probePath, probe.Replace("<SCRIPT_PATH>", target, StringComparison.Ordinal));
+
+        try
+        {
+            var powershell = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "System32",
+                "WindowsPowerShell",
+                "v1.0",
+                "powershell.exe");
+            var startInfo = new ProcessStartInfo(powershell)
+            {
+                WorkingDirectory = root,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            foreach (var argument in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", probePath })
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            using var process = Process.Start(startInfo);
+            Assert.NotNull(process);
+            var standardOutput = process.StandardOutput.ReadToEndAsync();
+            var standardError = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
+            return $"{await standardOutput}{Environment.NewLine}{await standardError}";
+        }
+        finally
+        {
+            try { File.Delete(probePath); } catch (IOException) { }
+        }
+    }
+
+    private const string ProcessArgumentProbe = @"
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('<SCRIPT_PATH>', [ref]$tokens, [ref]$errors)
+$found = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'ConvertTo-ProcessArgument'
+}.GetNewClosure(), $true)
+if (-not $found) { throw 'Missing function ConvertTo-ProcessArgument.' }
+. ([scriptblock]::Create($found.Extent.Text))
+
+foreach ($flag in @('--list', '--quiet', '--terminate', '--unregister', '-File', '-AppRoot')) {
+    $actual = ConvertTo-ProcessArgument $flag
+    if ($actual -ne $flag) {
+        throw ""wsl.exe control flag must stay unquoted: $flag became $actual.""
+    }
+}
+
+# A bare distro name needs no quotes either, and quoting it is what wsl.exe
+# rejected in the real uninstall proof.
+if ((ConvertTo-ProcessArgument 'OpenClawGateway') -ne 'OpenClawGateway') {
+    throw 'A simple value must not be quoted.'
+}
+
+# Values that genuinely need quoting must still be protected, or a path with a
+# space would split into two arguments.
+if ((ConvertTo-ProcessArgument 'C:\Program Files\OpenClaw') -ne '""C:\Program Files\OpenClaw""') {
+    throw 'A value containing a space must be quoted.'
+}
+if ((ConvertTo-ProcessArgument 'C:\dir with space\') -ne '""C:\dir with space\\""') {
+    throw 'A trailing backslash must be doubled so it cannot escape the closing quote.'
+}
+if ((ConvertTo-ProcessArgument 'say ""hi""') -ne '""say \""hi\""""') {
+    throw 'An embedded quote must be escaped.'
+}
+if ((ConvertTo-ProcessArgument '') -ne '""""') {
+    throw 'An empty argument must survive as an empty quoted token.'
+}
+
+Write-Output 'CONTRACT-OK'
+";
+
+
+    private const string GatewayOutputProbe = @"
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('<SCRIPT_PATH>', [ref]$tokens, [ref]$errors)
+foreach ($name in @('ConvertTo-CleanProcessOutput', 'Test-DistroNotFound')) {
+    $found = $ast.Find({
+        param($node)
+        $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name
+    }.GetNewClosure(), $true)
+    if (-not $found) { throw ""Missing function $name."" }
+    . ([scriptblock]::Create($found.Extent.Text))
+}
+
+function New-Utf16Bleed {
+    param([string]$Text)
+    return (-join ($Text.ToCharArray() | ForEach-Object { ""$_`0"" }))
+}
+
+$raw = New-Utf16Bleed 'The Windows Subsystem for Linux is not installed.'
+if (Test-DistroNotFound $raw) {
+    throw 'NUL-interleaved output must not match directly; sanitizing is what makes detection work.'
+}
+
+$clean = ConvertTo-CleanProcessOutput $raw
+if ($clean -ne 'The Windows Subsystem for Linux is not installed.') {
+    throw ""Sanitizer did not normalize UTF-16 output: $clean""
+}
+if (-not (Test-DistroNotFound $clean)) {
+    throw 'A host without WSL holds no gateway, so uninstall must treat it as nothing to remove.'
+}
+if (-not (Test-DistroNotFound (ConvertTo-CleanProcessOutput (New-Utf16Bleed 'There is no distribution with the supplied name.')))) {
+    throw 'Existing distro-not-found detection regressed.'
+}
+if (Test-DistroNotFound 'Access is denied.') {
+    throw 'A genuine failure must never be reported as already removed.'
+}
+
+Write-Output 'CONTRACT-OK'
+";
     private static string Read(params string[] segments) =>
         File.ReadAllText(Path.Combine(new[] { TestRepositoryPaths.GetRepositoryRoot() }.Concat(segments).ToArray()));
 }

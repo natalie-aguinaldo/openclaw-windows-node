@@ -248,7 +248,10 @@ public sealed class StoreMigrationWorkflowTests
 
     [Theory]
     [InlineData(StoreMigrationFinalizationState.AwaitingInnoRemoval, StoreMigrationStage.AwaitingRemoval)]
-    [InlineData(StoreMigrationFinalizationState.StartupPreferenceFailed, StoreMigrationStage.FinalizationFailed)]
+    // A transient startup-preference failure still finalizes the migration, so the app proceeds.
+    // A durable refusal is the only one the user must be told about.
+    [InlineData(StoreMigrationFinalizationState.StartupPreferenceFailed, StoreMigrationStage.Ready)]
+    [InlineData(StoreMigrationFinalizationState.StartupPreferenceRefused, StoreMigrationStage.StartupRefused)]
     [InlineData(StoreMigrationFinalizationState.RecordCleanupFailed, StoreMigrationStage.FinalizationFailed)]
     [InlineData(StoreMigrationFinalizationState.InspectionFailed, StoreMigrationStage.InspectionFailed)]
     public async Task RemovalRetry_ResumesOnlyAfterSuccessfulFinalization(
@@ -262,6 +265,26 @@ public sealed class StoreMigrationWorkflowTests
         await workflow.ContinueAsync(CancellationToken.None);
         Assert.Equal(new[] { "inspect", "finalize" }, operations.Calls);
         Assert.Equal((StoreMigrationStage)stage, workflow.Stage);
+    }
+
+    /// <summary>
+    /// The refusal notice exists to be read, not to trap the user: Windows alone can re-enable the
+    /// startup task, so the window must surface the stage while still letting the app launch.
+    /// </summary>
+    [Fact]
+    public async Task DurableStartupRefusal_SurfacesTheNoticeWithoutBlockingStartup()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.StartupPreferenceRefused
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.StartupRefused, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
     }
 
     [Fact]
