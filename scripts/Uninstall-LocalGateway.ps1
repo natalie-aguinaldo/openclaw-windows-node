@@ -41,6 +41,18 @@ if ($DistroName -notmatch '^[A-Za-z0-9._-]+$') {
 function ConvertTo-ProcessArgument {
     param([string]$Value)
 
+    # wsl.exe matches its control flags against the raw command line without
+    # stripping quotes, so a quoted "--unregister" is not recognized as a flag
+    # and is executed as a command inside the distro instead. Quoting every
+    # argument therefore broke every wsl.exe call with /bin/sh: --list: not
+    # found and exit 127. Quote only values that actually need it.
+    if ([string]::IsNullOrEmpty($Value)) {
+        return '""'
+    }
+    if ($Value -notmatch '[\s"]') {
+        return $Value
+    }
+
     # Double any trailing backslashes so the closing quote is not escaped.
     $escaped = $Value -replace '(\\+)$', '$1$1'
     return '"' + ($escaped -replace '"', '\"') + '"'

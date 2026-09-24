@@ -530,16 +530,34 @@ public sealed class InnoMigrationContractTests
     }
 
     [Fact]
+    public async Task GatewayUninstall_PassesWslControlFlagsUnquoted()
+    {
+        // Real VM proof showed every wsl.exe call failing with
+        // "/bin/sh: --list: not found" and exit 127. wsl.exe matches its control
+        // flags against the raw command line, so a quoted "--unregister" is run
+        // as a command inside the distro and the gateway is never unregistered.
+        // Source-text assertions cannot catch this; exercise the real function.
+        var result = await RunGatewayProbeAsync(ProcessArgumentProbe);
+        Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task GatewayUninstall_TreatsAWslLessHostAsNothingToRemove()
     {
         // Real uninstall proof on a host without WSL showed wsl.exe writing
         // UTF-16LE into an 8-bit-decoded pipe, so every output pattern matched
         // NUL-interleaved text and never fired. Exercise the real functions
         // rather than asserting on source text, which cannot catch that.
+        var result = await RunGatewayProbeAsync(GatewayOutputProbe);
+        Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+    }
+
+    private static async Task<string> RunGatewayProbeAsync(string probe)
+    {
         var root = TestRepositoryPaths.GetRepositoryRoot();
         var target = Path.Combine(root, "scripts", "Uninstall-LocalGateway.ps1");
         var probePath = Path.Combine(Path.GetTempPath(), $"openclaw-gateway-contract-{Guid.NewGuid():N}.ps1");
-        File.WriteAllText(probePath, GatewayOutputProbe.Replace("<SCRIPT_PATH>", target, StringComparison.Ordinal));
+        File.WriteAllText(probePath, probe.Replace("<SCRIPT_PATH>", target, StringComparison.Ordinal));
 
         try
         {
@@ -567,15 +585,57 @@ public sealed class InnoMigrationContractTests
             var standardOutput = process.StandardOutput.ReadToEndAsync();
             var standardError = process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
-            var result = $"{await standardOutput}{Environment.NewLine}{await standardError}";
-
-            Assert.Contains("CONTRACT-OK", result, StringComparison.Ordinal);
+            return $"{await standardOutput}{Environment.NewLine}{await standardError}";
         }
         finally
         {
             try { File.Delete(probePath); } catch (IOException) { }
         }
     }
+
+    private const string ProcessArgumentProbe = @"
+$ErrorActionPreference = 'Stop'
+$tokens = $null
+$errors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('<SCRIPT_PATH>', [ref]$tokens, [ref]$errors)
+$found = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'ConvertTo-ProcessArgument'
+}.GetNewClosure(), $true)
+if (-not $found) { throw 'Missing function ConvertTo-ProcessArgument.' }
+. ([scriptblock]::Create($found.Extent.Text))
+
+foreach ($flag in @('--list', '--quiet', '--terminate', '--unregister', '-File', '-AppRoot')) {
+    $actual = ConvertTo-ProcessArgument $flag
+    if ($actual -ne $flag) {
+        throw ""wsl.exe control flag must stay unquoted: $flag became $actual.""
+    }
+}
+
+# A bare distro name needs no quotes either, and quoting it is what wsl.exe
+# rejected in the real uninstall proof.
+if ((ConvertTo-ProcessArgument 'OpenClawGateway') -ne 'OpenClawGateway') {
+    throw 'A simple value must not be quoted.'
+}
+
+# Values that genuinely need quoting must still be protected, or a path with a
+# space would split into two arguments.
+if ((ConvertTo-ProcessArgument 'C:\Program Files\OpenClaw') -ne '""C:\Program Files\OpenClaw""') {
+    throw 'A value containing a space must be quoted.'
+}
+if ((ConvertTo-ProcessArgument 'C:\dir with space\') -ne '""C:\dir with space\\""') {
+    throw 'A trailing backslash must be doubled so it cannot escape the closing quote.'
+}
+if ((ConvertTo-ProcessArgument 'say ""hi""') -ne '""say \""hi\""""') {
+    throw 'An embedded quote must be escaped.'
+}
+if ((ConvertTo-ProcessArgument '') -ne '""""') {
+    throw 'An empty argument must survive as an empty quoted token.'
+}
+
+Write-Output 'CONTRACT-OK'
+";
+
 
     private const string GatewayOutputProbe = @"
 $ErrorActionPreference = 'Stop'
