@@ -306,6 +306,42 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         });
     }
 
+    /// <summary>
+    /// A durable startup refusal is the one finalization outcome that succeeds and still has to be
+    /// read: only Windows can re-enable the startup task. The window must say so, must not offer a
+    /// Retry that cannot work, and must still let the app launch when the user dismisses it.
+    /// </summary>
+    [Fact]
+    public Task DurableStartupRefusal_ShowsTheNoticeWithoutRetryAndStillLaunches()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.StartupPreferenceRefused,
+        };
+        return WithWindowAsync(operations, async (window, workflow, completion) =>
+        {
+            await WaitForStageAsync(workflow, StoreMigrationStage.StartupRefused);
+            await ui.RunOnUIAsync(() =>
+            {
+                var root = Root(window);
+                root.UpdateLayout();
+                Assert.True(root.ActualWidth > 0 && root.ActualHeight > 0);
+                var status = Control<TextBlock>(window, "Status");
+                Assert.Equal(Localized("Migration_StoreStartupRefused"), status.Text);
+                Assert.Equal(AutomationLiveSetting.Polite, AutomationProperties.GetLiveSetting(status));
+                Assert.Equal(Visibility.Collapsed, Control<Button>(window, "Primary").Visibility);
+                Assert.True(Control<Button>(window, "Dismiss").FocusState != FocusState.Unfocused);
+                Assert.Equal(new[] { "inspect", "finalize" }, operations.Calls);
+                Assert.False(completion.IsCompleted);
+            });
+            await CaptureAsync(window, "StartupRefused");
+            await InvokeAsync(window, "Dismiss");
+            // Finalization succeeded, so no receipt blocks launch: dismissal must resume startup.
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+        });
+    }
+
     [Theory]
     [InlineData(StoreMigrationStartupState.InspectionFailed, "InspectionFailed")]
     [InlineData(StoreMigrationStartupState.UnsupportedInstallation, "Unsupported")]
