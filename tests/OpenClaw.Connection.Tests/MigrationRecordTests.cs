@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
@@ -162,6 +163,8 @@ public sealed class MigrationRecordTests
     [InlineData("completed", 10, false)]
     [InlineData("intent", 2, false)]
     [InlineData("missing", 0, false)]
+    [InlineData("missing-readonly-foreign", 0, false)]
+    [InlineData("missing-tampered", 2, false)]
     [InlineData("corrupt", 2, false)]
     [InlineData("wrong-path", 2, false)]
     [InlineData("missing-codec", 2, false)]
@@ -184,7 +187,31 @@ public sealed class MigrationRecordTests
             record.ExpiresUtc = record.CreatedUtc.AddDays(30);
         var directory = Path.Combine(record.Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         Directory.CreateDirectory(directory);
-        if (kind != "missing")
+        if (kind == "missing-readonly-foreign")
+        {
+            // Managed profiles inherit read/list grants into %APPDATA%. A principal that
+            // cannot write or delete cannot have removed the receipt, so cleanup stays
+            // authorized; treating this as tampering would trap every ordinary uninstall.
+            var readable = new DirectoryInfo(directory);
+            var granted = readable.GetAccessControl();
+            granted.AddAccessRule(new FileSystemAccessRule(
+                new SecurityIdentifier(WellKnownSidType.BuiltinGuestsSid, null),
+                FileSystemRights.ReadAndExecute, AccessControlType.Allow));
+            readable.SetAccessControl(granted);
+        }
+        if (kind == "missing-tampered")
+        {
+            // A principal with access here could have deleted the receipt, so an absent
+            // receipt is no longer evidence that migration never happened.
+            var info = new DirectoryInfo(directory);
+            var security = info.GetAccessControl();
+            security.SetAccessRuleProtection(isProtected: true, preserveInheritance: true);
+            security.AddAccessRule(new FileSystemAccessRule(
+                new SecurityIdentifier(WellKnownSidType.BuiltinGuestsSid, null),
+                FileSystemRights.FullControl, AccessControlType.Allow));
+            info.SetAccessControl(security);
+        }
+        if (!kind.StartsWith("missing", StringComparison.Ordinal) || kind == "missing-codec")
         {
             var bytes = kind == "corrupt" ? new byte[] { 1, 2, 3 } : MigrationRecordCodec.Encode(record, record.CreatedUtc);
             File.WriteAllBytes(Path.Combine(directory, MigrationRecordCodec.CompletionFileName), bytes);
@@ -209,6 +236,138 @@ public sealed class MigrationRecordTests
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start)!;
         await AssertScriptExitAsync(process, expectedExit);
+    }
+
+    // Ownership is the P1 class: an owner keeps implicit WRITE_DAC and can delete the receipt
+    // whatever the DACL says. Creating a genuinely foreign-owned file needs privileges CI lacks,
+    // so the pure predicate is lifted out of the script by AST and driven with in-memory ACLs.
+    // Each case fails if the corresponding clause is removed, so this covers the PowerShell copy
+    // of the rule rather than only the C# mirror.
+    [Theory]
+    [InlineData("trusted-owner-clean", true)]
+    [InlineData("foreign-owner", false)]
+    [InlineData("foreign-readonly-grant", true)]
+    [InlineData("foreign-delete-grant", false)]
+    [InlineData("foreign-write-grant", false)]
+    [InlineData("foreign-full-control-grant", false)]
+    [InlineData("foreign-inherit-only-grant", true)]
+    [InlineData("foreign-generic-all-grant", false)]
+    [InlineData("foreign-generic-write-grant", false)]
+    [InlineData("foreign-generic-read-grant", true)]
+    [InlineData("foreign-deny-grant", true)]
+    public async Task PowerShellAuthorityPredicate_AcceptsOnlyNonMutatingForeignGrants(
+        string scenario, bool expectedSound)
+    {
+        using var temp = new TempDirectory();
+        var scriptPath = Path.Combine(RepositoryRoot(), "scripts", "Test-InnoMigration.ps1");
+        var probePath = Path.Combine(temp.Path, "probe.ps1");
+        File.WriteAllText(probePath, $$"""
+            $ErrorActionPreference = 'Stop'
+            $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+                '{{scriptPath.Replace("'", "''")}}', [ref]$null, [ref]$null)
+            $fn = $ast.FindAll({ $args[0] -is
+                [System.Management.Automation.Language.FunctionDefinitionAst] }, $true) |
+                Where-Object { $_.Name -eq 'Test-AclAuthority' }
+            if (-not $fn) { Write-Error 'Test-AclAuthority not found'; exit 3 }
+            Invoke-Expression $fn.Extent.Text
+
+            $me = [Security.Principal.WindowsIdentity]::GetCurrent().User
+            $trusted = @($me.Value, 'S-1-5-18', 'S-1-5-32-544')
+            $guests = New-Object Security.Principal.SecurityIdentifier(
+                [Security.Principal.WellKnownSidType]::BuiltinGuestsSid, $null)
+            $acl = New-Object Security.AccessControl.DirectorySecurity
+            $acl.SetOwner($me)
+            $scenario = '{{scenario}}'
+            switch ($scenario) {
+                'foreign-owner' { $acl.SetOwner($guests) }
+                'foreign-readonly-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'ReadAndExecute', 'Allow')))
+                }
+                'foreign-delete-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'Delete', 'Allow')))
+                }
+                'foreign-write-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'Write', 'Allow')))
+                }
+                'foreign-full-control-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'FullControl', 'Allow')))
+                }
+                'foreign-inherit-only-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'FullControl', 'ContainerInherit, ObjectInherit', 'InheritOnly',
+                        'Allow')))
+                }
+                'foreign-deny-grant' {
+                    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+                        $guests, 'FullControl', 'Deny')))
+                }
+                'foreign-generic-all-grant' {
+                    $acl.SetSecurityDescriptorSddlForm(
+                        "O:$($me.Value)G:$($me.Value)D:(A;;FA;;;$($me.Value))(A;;GA;;;BG)")
+                }
+                'foreign-generic-write-grant' {
+                    $acl.SetSecurityDescriptorSddlForm(
+                        "O:$($me.Value)G:$($me.Value)D:(A;;FA;;;$($me.Value))(A;;GW;;;BG)")
+                }
+                'foreign-generic-read-grant' {
+                    $acl.SetSecurityDescriptorSddlForm(
+                        "O:$($me.Value)G:$($me.Value)D:(A;;FA;;;$($me.Value))(A;;GR;;;BG)")
+                }
+            }
+            $actual = [bool](Test-AclAuthority -Acl $acl -Trusted $trusted)
+            $expected = [bool]::Parse('{{expectedSound}}')
+            if ($actual -ne $expected) {
+                Write-Error "scenario $scenario expected $expected but got $actual"
+                exit 1
+            }
+            exit 0
+            """);
+        var start = new ProcessStartInfo(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            "System32", "WindowsPowerShell", "v1.0", "powershell.exe"))
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        foreach (var argument in new[]
+            { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", probePath })
+            start.ArgumentList.Add(argument);
+        using var process = Process.Start(start)!;
+        await AssertScriptExitAsync(process, 0);
+    }
+
+    // The AST test proves the predicate is correct, not that the shipped decision still runs it.
+    // A refactor that stopped calling it would leave every case above green while the uninstall
+    // branch silently returned to authorizing destruction, so pin the wiring too.
+    [Fact]
+    public void PowerShellChecker_RoutesTheAbsentReceiptBranchThroughTheAuthorityPredicate()
+    {
+        var script = File.ReadAllText(
+            Path.Combine(RepositoryRoot(), "scripts", "Test-InnoMigration.ps1"));
+
+        var gathering = FunctionBody(script, "Test-MigrationStateAuthority");
+        Assert.Contains("Test-AclAuthority", gathering, StringComparison.Ordinal);
+
+        var absentBranch = script[script.IndexOf("FileNotFoundException", StringComparison.Ordinal)..];
+        var exitZero = absentBranch.IndexOf("exit 0", StringComparison.Ordinal);
+        var authorityCall = absentBranch.IndexOf("Test-MigrationStateAuthority", StringComparison.Ordinal);
+        Assert.True(authorityCall >= 0, "The absent-receipt branch must consult the authority check.");
+        Assert.True(authorityCall < exitZero,
+            "The authority check must gate exit 0 rather than follow it.");
+    }
+
+    private static string FunctionBody(string script, string name)
+    {
+        var start = script.IndexOf($"function {name} {{", StringComparison.Ordinal);
+        Assert.True(start >= 0, $"{name} was not found in the script.");
+        var next = script.IndexOf("\nfunction ", start + 1, StringComparison.Ordinal);
+        return next < 0 ? script[start..] : script[start..next];
     }
 
     [Theory]

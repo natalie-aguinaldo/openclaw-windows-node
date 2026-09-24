@@ -25,6 +25,93 @@ if ($DataDirectoryName -ne 'OpenClawTray') {
     exit 0
 }
 
+function Test-AclAuthority {
+    param(
+        [Security.AccessControl.FileSystemSecurity]$Acl,
+        [string[]]$Trusted
+    )
+
+    # Only a principal that can change or delete the receipt affects the decision. Read,
+    # list, and traverse grants are common in managed profiles and inherit into this
+    # directory harmlessly, so matching those would make every ordinary uninstall
+    # unverifiable. The mask names individual mutating bits on purpose: FullControl and
+    # Modify are composites that also carry the read bits, so testing against them would
+    # match a read-only grant.
+    $mutating = [int]([Security.AccessControl.FileSystemRights]::WriteData `
+        -bor [Security.AccessControl.FileSystemRights]::AppendData `
+        -bor [Security.AccessControl.FileSystemRights]::WriteAttributes `
+        -bor [Security.AccessControl.FileSystemRights]::WriteExtendedAttributes `
+        -bor [Security.AccessControl.FileSystemRights]::Delete `
+        -bor [Security.AccessControl.FileSystemRights]::DeleteSubdirectoriesAndFiles `
+        -bor [Security.AccessControl.FileSystemRights]::ChangePermissions `
+        -bor [Security.AccessControl.FileSystemRights]::TakeOwnership)
+
+    # An ACE may also carry the generic rights, which FileSystemRights has no names for and
+    # which intersect none of the specific bits above. The kernel maps GENERIC_ALL to
+    # FILE_ALL_ACCESS (DELETE, FILE_DELETE_CHILD, WRITE_DAC) and GENERIC_WRITE on a
+    # directory to FILE_ADD_FILE, so a grant in that form can delete or replace the receipt
+    # while every named bit reads as clear. GENERIC_READ and GENERIC_EXECUTE are harmless.
+    $genericAll = 0x10000000
+    $genericWrite = 0x40000000
+    $mutating = $mutating -bor $genericAll -bor $genericWrite
+
+    $owner = $Acl.GetOwner([Security.Principal.SecurityIdentifier])
+    if ($null -eq $owner -or $Trusted -notcontains $owner.Value) {
+        return $false
+    }
+    foreach ($rule in $Acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+        if ($rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow) {
+            continue
+        }
+        if ($Trusted -contains $rule.IdentityReference.Value) {
+            continue
+        }
+        # An inherit-only entry describes children and grants nothing on this object.
+        if ($rule.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly) {
+            continue
+        }
+        if ((([int]$rule.FileSystemRights) -band $mutating) -ne 0) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Test-MigrationStateAuthority {
+    param([string]$Directory)
+
+    # An absent receipt only means "no migration happened" when nobody outside the
+    # trusted principals could have deleted it. Ownership counts as access: an owner
+    # keeps implicit WRITE_DAC and can grant itself delete rights at any time.
+    # Uninstall creates this directory itself with a plain ForceDirectories call, so an
+    # unprotected DACL is ordinary here and is deliberately not treated as tampering.
+    # This reads ACLs through .NET types rather than Get-Acl/Get-ChildItem: the
+    # uninstaller can launch PowerShell where Microsoft.PowerShell.Security fails to
+    # autoload, and a module-load failure here would preserve every gateway.
+    try {
+        if (-not [IO.Directory]::Exists($Directory)) {
+            return $true
+        }
+        $trusted = @(
+            [Security.Principal.WindowsIdentity]::GetCurrent().User.Value,
+            'S-1-5-18',
+            'S-1-5-32-544'
+        )
+        $acls = @((New-Object IO.DirectoryInfo $Directory).GetAccessControl())
+        foreach ($file in [IO.Directory]::GetFiles($Directory)) {
+            $acls += (New-Object IO.FileInfo $file).GetAccessControl()
+        }
+        foreach ($acl in $acls) {
+            if (-not (Test-AclAuthority -Acl $acl -Trusted $trusted)) {
+                return $false
+            }
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function ConvertTo-ProcessArgument {
     param([string]$Value)
 
@@ -138,6 +225,14 @@ try {
 } catch {
     $cause = $_.Exception.GetBaseException()
     if ($cause -is [IO.FileNotFoundException] -or $cause -is [IO.DirectoryNotFoundException]) {
+        # An absent receipt only means "no migration happened" when the state directory
+        # could not have been tampered with. A foreign owner can delete completed.dpapi,
+        # and that deletion is indistinguishable from absence here, so refuse to treat
+        # unverifiable state as consent to unregister the gateway.
+        if (-not (Test-MigrationStateAuthority -Directory (Split-Path -Parent $receiptPath))) {
+            Write-Warning 'Migration state authority could not be verified. Preserving generated state and gateway.'
+            exit 2
+        }
         Write-Verbose 'No completed migration receipt.'
         exit 0
     }

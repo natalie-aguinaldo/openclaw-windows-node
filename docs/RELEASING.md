@@ -96,8 +96,12 @@ it through payload/registration removal.
 The cleanup script joins that lock (and also locks when invoked independently)
 before checking the receipt, retaining its handle until cleanup exits. These
 handles exclude Store's exclusive preparation/completion/finalization handle.
-An unavailable lock stops uninstall before effects; it never permits an unlocked
-fallback. Completion re-detects the exact source only after acquiring the lock,
+Only a lock held by an in-progress migration stops uninstall before effects. Any
+other unavailable lock means migration state is merely unreadable, so uninstall
+continues and suppresses destructive gateway cleanup rather than trapping the user
+in an app they cannot remove. Neither path permits an unlocked fallback that would
+allow destructive cleanup. Completion re-detects the exact source only after
+acquiring the lock,
 so an uninstall-first run cannot authorize a receipt from stale source evidence.
 Preparation likewise re-detects source evidence under the exclusive file lock.
 Both preparation and completion inspect the exact source image across all Windows
@@ -119,7 +123,10 @@ Passing unit or PowerShell contract tests is not signed-package migration proof.
 ### Store migration consent preview
 
 The Store-side preview adds installation detection, startup admission, and an
-explicit consent/close-Inno retry flow, not the migration journey. **Ordinary
+explicit consent/close-Inno retry flow, and it writes protected intent and
+completion records. It is not the full migration journey: runtime state adoption,
+source-version enablement, and the recovery/finalization journey remain out of
+scope. **Ordinary
 builds remain unchanged.** There is no
 production minimum source version, runtime toggle, or environment-variable
 bypass. Do not enable migration by choosing the current app version as a
