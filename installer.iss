@@ -302,7 +302,12 @@ begin
   Log('Migration preservation check returned ' + IntToStr(Result) + '.');
 end;
 
-function StoreAppRegistered: Boolean;
+// Returns 'Present', 'Absent', or 'Indeterminate', matching the vocabulary
+// Test-InnoMigration.ps1 uses for the same hive. A Boolean cannot carry this: "the Store
+// app is installed" and "this hive could not be read" both preserve the gateway, but they
+// are not the same claim and the user must not be told the first when we only know the
+// second.
+function StorePackagePresence: String;
 var
   Names: TArrayOfString;
   I: Integer;
@@ -317,8 +322,8 @@ begin
       'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages',
       Names) then
   begin
-    // Unreadable, so the Store app cannot be ruled out. Withhold the destructive advice.
-    Result := True;
+    // Unreadable, so the Store app can be neither confirmed nor ruled out.
+    Result := 'Indeterminate';
     Exit;
   end;
 
@@ -326,7 +331,7 @@ begin
   begin
     // Every real profile has hundreds of registered packages. Zero means the hive was
     // tampered with or is unreadable, which is uncertainty, not absence.
-    Result := True;
+    Result := 'Indeterminate';
     Exit;
   end;
 
@@ -334,12 +339,12 @@ begin
   begin
     if Pos(Prefix, Lowercase(Names[I])) = 1 then
     begin
-      Result := True;
+      Result := 'Present';
       Exit;
     end;
   end;
 
-  Result := False;
+  Result := 'Absent';
 end;
 
 procedure ReportStoreAppOwnsGateway;
@@ -355,15 +360,42 @@ begin
       mbInformation, MB_OK);
 end;
 
+procedure ReportStoreAppStateUnknown;
+begin
+  Log('Store app registration could not be read: preserving the local WSL gateway. ' +
+      'The {#MyDistroName} WSL distro and ' +
+      ExpandConstant('{localappdata}\{#MyInstallDir}\wsl\{#MyDistroName}') +
+      ' were left in place.');
+  if not UninstallSilent() then
+    MsgBox(
+      'Setup could not check whether OpenClaw from the Microsoft Store is installed on this PC.' + #13#10#13#10 +
+      'The local WSL gateway and its generated state were left in place, so nothing is lost.' + #13#10#13#10 +
+      'Do not remove the gateway by hand until you know the Store app is not using it. To remove it ' +
+      'safely, open OpenClaw and choose Settings > Local Gateway > Remove Local Gateway.',
+      mbInformation, MB_OK);
+end;
+
 procedure WarnMigrationCheckUnavailable;
+var
+  Presence: String;
 begin
   // Most routes here mean the check could not run, and several of them are reachable on
   // a machine that has already migrated. Telling that user to run wsl --unregister would
   // destroy the gateway the installed Store app is using, so ask the registry directly
   // before saying anything destructive.
-  if StoreAppRegistered then
+  Presence := StorePackagePresence;
+  if Presence = 'Present' then
   begin
     ReportStoreAppOwnsGateway;
+    Exit;
+  end;
+
+  if Presence <> 'Absent' then
+  begin
+    // Anything other than a positively observed absence is uncertainty. Preserve and say
+    // so, rather than handing over the command that destroys what was just preserved.
+    // Only a fully enumerated hive with no matching package may reach the advice below.
+    ReportStoreAppStateUnknown;
     Exit;
   end;
 
