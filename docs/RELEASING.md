@@ -24,8 +24,10 @@ the complete migration experience and release enablement. There is no planned
 third PR. The Store product ID is **`9NFPR3BGDRR5`**. The selected first supported
 Inno release is **`v2026.9.5`**, the planned next patch after `v2026.9.4`, provided
 both PRs ship together. The fixed source floor is pinned to **`2026.9.5.0`**.
-Production remains disabled until the actual release artifacts and migration
-acceptance are verified. A listing ID is not evidence that a Store-distributed
+`MigrationProductionEnabled` is checked in as `true` so the coordinated release
+and its CI artifacts carry migration; publication stays gated on the tag-time
+acceptance listed under [Coordinated production release](#coordinated-production-release)
+below. A listing ID is not evidence that a Store-distributed
 package has passed migration acceptance.
 
 `MigrationPreparation.Prepare` is the non-UI inventory API used after explicit
@@ -311,8 +313,9 @@ The preview:
 - Shows localized **Migrate / Not now** buttons unless valid explicit handoff
   consent already exists. An inventory intent never replaces consent.
   Keyboard focus defaults to Not now. Not now closes the Store window without
-  changing source state, and the Store app then starts normally; declining
-  migration is not a reason to withhold the app the user just launched.
+  changing source state, and leaves the Store app inactive while the source app
+  is installed, per issue #1374. The user must migrate or remove the source app
+  before the Store app starts normally.
   Unlike PR 1's native Yes/No preview, this window labels its buttons directly;
   it does not append a separate action legend or reinterpret Yes/No as Migrate.
   Before acceptance, every locale discloses protected migration records, the
