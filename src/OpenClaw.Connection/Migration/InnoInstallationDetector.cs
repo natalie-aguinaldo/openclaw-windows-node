@@ -76,7 +76,13 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
             })
             {
                 if (!_source.IsOrdinaryFile(Path.Combine(_installDirectory, name)))
-                    return Unsupported($"The required Inno payload {name} is missing or is not an ordinary file.");
+                {
+                    // An otherwise canonical installation that predates the migration payload is
+                    // simply too old. Carry the registered version so admission can ask the user
+                    // to update instead of declaring the installation unsupportable.
+                    return Unsupported(
+                        $"The required Inno payload {name} is missing or is not an ordinary file.", version);
+                }
             }
 
             if (_source.ReadIdentity(Path.Combine(_installDirectory, "app-identity.txt")) is not
@@ -123,10 +129,10 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
              string.Equals(path, _installDirectory + "\\", StringComparison.OrdinalIgnoreCase));
     }
 
-    private InnoInstallationDetection Unsupported(string reason)
+    private InnoInstallationDetection Unsupported(string reason, Version? registeredVersion = null)
     {
         _logger.Warn(reason);
-        return new(InnoInstallationStatus.Unsupported, Reason: reason);
+        return new(InnoInstallationStatus.Unsupported, Reason: reason, RegisteredVersion: registeredVersion);
     }
 }
 
