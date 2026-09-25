@@ -142,6 +142,8 @@ internal sealed class StoreMigrationWorkflow(
             return;
 
         IsBusy = true;
+        // A new pass supersedes whatever the last discard reported.
+        LastDiscard = null;
         try
         {
             SetStage(StoreMigrationStage.Inspecting);

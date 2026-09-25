@@ -448,6 +448,26 @@ public sealed class StoreMigrationWorkflowTests
     }
 
     [Fact]
+    public async Task ARetryAfterAContendedDiscard_ClearsTheReport()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired, null, true),
+            Unreadable = true,
+            Discarded = StoreMigrationDiscardState.Busy
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+        Assert.Equal(StoreMigrationDiscardState.Busy, workflow.LastDiscard);
+
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        // Otherwise the discard message outlives the screen its button belongs to.
+        Assert.Null(workflow.LastDiscard);
+    }
+
+    [Fact]
     public async Task ASuccessfulDiscard_LeavesNothingToReport()
     {
         var operations = new Operations
@@ -461,7 +481,12 @@ public sealed class StoreMigrationWorkflowTests
 
         await workflow.DiscardRecordsAsync(CancellationToken.None);
 
-        Assert.Equal(StoreMigrationDiscardState.Discarded, workflow.LastDiscard);
+        // Nothing for the window to report: the re-inspection that follows a successful discard
+        // supersedes the result, and either way it is not a failure.
+        Assert.DoesNotContain(
+            workflow.LastDiscard,
+            new StoreMigrationDiscardState?[] { StoreMigrationDiscardState.Busy, StoreMigrationDiscardState.Failed });
+        Assert.Equal(StoreMigrationStage.Ready, workflow.Stage);
     }
 
     [Fact]

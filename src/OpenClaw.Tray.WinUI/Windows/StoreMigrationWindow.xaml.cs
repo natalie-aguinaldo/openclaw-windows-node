@@ -108,7 +108,10 @@ public sealed partial class StoreMigrationWindow : Window
             FrameworkElementAutomationPeer.FromElement(Status)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
         }
         // A discard that could not run leaves the stage unchanged, so it has to report itself.
-        if (_workflow.LastDiscard is StoreMigrationDiscardState.Busy or StoreMigrationDiscardState.Failed)
+        // Only in Recovery: every other stage has its own error to show, and a stale discard
+        // message would outlive the screen the button belongs to.
+        if (_workflow.Stage == StoreMigrationStage.Recovery
+            && _workflow.LastDiscard is StoreMigrationDiscardState.Busy or StoreMigrationDiscardState.Failed)
         {
             Error.Message = LocalizationHelper.GetString("Migration2_DiscardFailed");
             Error.IsOpen = true;

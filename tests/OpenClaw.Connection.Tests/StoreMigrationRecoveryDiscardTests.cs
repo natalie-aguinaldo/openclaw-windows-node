@@ -145,6 +145,42 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
         Assert.False(System.IO.Directory.Exists(Directory));
     }
 
+    /// <summary>
+    /// A missing lease file says nothing about whether records exist. Treating it as "nothing to
+    /// do" would report success having deleted nothing, which is the dead end this class removes.
+    /// </summary>
+    [Fact]
+    public void AMissingLeaseFile_DoesNotFakeSuccess()
+    {
+        System.IO.Directory.CreateDirectory(Directory);
+        File.WriteAllBytes(Completion, [1, 2, 3]);
+        Assert.False(File.Exists(Path.Combine(Directory, "prepare.lock")));
+
+        Assert.True(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
+
+        Assert.False(File.Exists(Completion));
+    }
+
+    /// <summary>
+    /// The classifier must judge a damaged record on its contents, not on the exception type the
+    /// decoder happens to raise. Several of those arrive as IO errors, which previously read as
+    /// lock contention and withdrew the offer.
+    /// </summary>
+    [Fact]
+    public void ARecordDamagedAfterWriting_CountsAsCorrupt()
+    {
+        Seed();
+        var path = WriteRecord("completed");
+        var written = File.ReadAllBytes(path);
+        File.WriteAllBytes(path, written[..(written.Length / 2)]);
+
+        Assert.True(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
+
+        Assert.False(File.Exists(path));
+    }
+
     private void Seed()
     {
         System.IO.Directory.CreateDirectory(Directory);

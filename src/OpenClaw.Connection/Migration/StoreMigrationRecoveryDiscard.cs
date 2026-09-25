@@ -1,5 +1,7 @@
 using System.Runtime.Versioning;
 using System.Security;
+using System.Security.Cryptography;
+using System.Text;
 using OpenClaw.Shared;
 
 namespace OpenClaw.Connection.Migration;
@@ -69,11 +71,15 @@ public sealed class StoreMigrationRecoveryDiscard(
         var directory = Directory;
         try
         {
-            MigrationRecordCodec.RejectReparsePoints(directory);
+            RejectPath(directory);
             var lockPath = Path.Combine(directory, "prepare.lock");
-            MigrationRecordCodec.RejectReparsePoints(lockPath);
+            RejectPath(lockPath);
             // Exclusive: uninstall reads these same records to decide whether to preserve data.
-            using var discardLock = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            // OpenOrCreate, because a missing lease file is not evidence that there is nothing to
+            // discard. Opening it with Open would report success having deleted nothing, which is
+            // the same dead end this class exists to remove.
+            using var discardLock = new FileStream(
+                lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
             var targets = Plan();
             if (targets.Count == 0)
@@ -84,18 +90,25 @@ public sealed class StoreMigrationRecoveryDiscard(
             targets.Insert(0, Path.Combine(directory, InnoMigrationConsentStore.WriterLockFileName));
             foreach (var path in targets)
             {
-                MigrationRecordCodec.RejectReparsePoints(path);
+                RejectPath(path);
                 File.Delete(path);
             }
 
             logger.Info($"Discarded {targets.Count} store migration record file(s).");
             return StoreMigrationDiscardState.Discarded;
         }
-        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        catch (DirectoryNotFoundException exception)
         {
             // Nothing is left to discard, which is the outcome the user asked for.
             logger.Info($"No store migration records to discard ({exception.GetType().Name}).");
             return StoreMigrationDiscardState.Discarded;
+        }
+        catch (MigrationPathRejectedException exception)
+        {
+            // A rejected path shape is not lock contention. Telling the user to close the previous
+            // app would send them after something that can never help.
+            logger.Error($"Store migration record paths were rejected: {exception.Message}");
+            return StoreMigrationDiscardState.Failed;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -110,6 +123,17 @@ public sealed class StoreMigrationRecoveryDiscard(
     }
 
     private string Directory => Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
+
+    /// <summary>
+    /// A rejected path shape is an operational refusal, never evidence about a record's contents.
+    /// It is raised as <see cref="MigrationPathRejectedException"/> so it stays distinguishable
+    /// from lock contention all the way out to the caller.
+    /// </summary>
+    private static void RejectPath(string path)
+    {
+        if (MigrationRecordCodec.HasReparsePointAncestor(path))
+            throw new MigrationPathRejectedException($"Migration path {path} contains a reparse point.");
+    }
 
     /// <summary>
     /// The receipt is planned last so an interrupted discard still looks like a handoff that needs
@@ -142,27 +166,34 @@ public sealed class StoreMigrationRecoveryDiscard(
 
     private RecordState Classify(string path, string expectedKind)
     {
+        byte[] bytes;
         try
         {
-            MigrationRecordCodec.RejectReparsePoints(path);
+            // Mirrors the reader: a path shape is an operational refusal, not a corrupt record.
+            RejectPath(path);
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             if (stream.Length == 0 || stream.Length > MigrationRecordCodec.MaximumRecordBytes)
                 return RecordState.Unreadable;
             using var reader = new BinaryReader(stream);
-            var record = MigrationRecordCodec.DecodeForRenewedConsent(
-                reader.ReadBytes((int)stream.Length), binding, DateTime.UtcNow);
-            return record.Kind == expectedKind ? RecordState.Readable : RecordState.Unreadable;
+            bytes = reader.ReadBytes((int)stream.Length);
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
         {
             return RecordState.Missing;
         }
-        catch (Exception exception) when (exception is MigrationPathRejectedException or IOException
-                                              or UnauthorizedAccessException or SecurityException)
+
+        // Decoding is pure memory work, so it is judged separately. Everything outside the
+        // allowlist propagates: a record that merely could not be read is not evidence of
+        // corruption, and only corruption may nominate a file for deletion. BinaryReader in
+        // particular reports malformed string lengths as IO errors.
+        try
         {
-            throw;
+            var record = MigrationRecordCodec.DecodeForRenewedConsent(bytes, binding, DateTime.UtcNow);
+            return record.Kind == expectedKind ? RecordState.Readable : RecordState.Unreadable;
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is InvalidDataException or CryptographicException
+                                              or EndOfStreamException or ArgumentException
+                                              or FormatException or DecoderFallbackException)
         {
             logger.Warn($"Migration record {expectedKind} does not decode ({exception.GetType().Name}).");
             return RecordState.Unreadable;
