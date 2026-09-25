@@ -47,8 +47,11 @@ ownership; displaying the window does not construct `SetupWindow`, install a
 gateway, or start normal app services. Consent, retry, and uninstall verification
 are unchanged. The same visual workflow serves configured production Release
 builds and explicit Debug previews. The first supported Inno release is pinned
-to `2026.9.5.0`; production defaults remain disabled until that release's
-artifacts are verified and acceptance is complete.
+to `2026.9.5.0`, and `MigrationProductionEnabled` is checked in as `true`, so
+non-Dev Release builds for `win-x64` and `win-arm64` carry the migration
+surfaces. Enablement is gated at tag time, not by the checked-in default:
+publication is blocked until that release's artifacts and acceptance are
+verified, and the switch is set to `false` and retagged if acceptance fails.
 See [Release migration gates](RELEASING.md) for the shared build contract and
 the two-PR coordinated-release requirements.
 
