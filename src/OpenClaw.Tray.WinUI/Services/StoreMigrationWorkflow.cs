@@ -66,6 +66,30 @@ internal sealed class StoreMigrationWorkflow(
     /// because a receipt can survive a stage that later reports an inspection failure. Every
     /// other state has nothing to protect, and refusing to launch would leave the user stuck.
     /// <para>
+    /// <see cref="StoreMigrationStage.Consent"/> is the exception, and it is a product contract
+    /// rather than a data-safety rule. Issue #1374 specifies that Not now "leaves Inno unchanged
+    /// and MSIX inactive", so declining, or dismissing the window at the same stage, must not
+    /// hand the user a running Store app while the previous app is still installed. This stage is
+    /// only ever reached with a detected installation, so the block cannot strand a user whose
+    /// previous app is already gone.
+    /// </para>
+    /// <para>
+    /// The informational stages are deliberately not included. The issue does not ask for them,
+    /// and an unsupported source, a failed inspection, or an undecodable record can all occur
+    /// after the previous app has been removed, where refusing to launch would leave no working
+    /// app at all.
+    /// </para>
+    /// <para>
+    /// <c>_sourceRemoved</c> overrides the receipt hold outright. Finalization sets it once it has
+    /// verified the previous installation is gone, and from that point a failure has nothing left
+    /// to protect: the receipt would block an app that no longer exists while this window refuses
+    /// to release the one that does. The failing stage stays visible, but the user can close it
+    /// and start. This override deliberately does not reach <see cref="StoreMigrationStage.Consent"/>,
+    /// which stays blocked as a product contract; the two are ordered so the Consent block wins.
+    /// Reaching Consent again requires a fresh admission that still detects an installation, so
+    /// the two rules cannot contradict each other.
+    /// </para>
+    /// <para>
     /// Before the first admission resolves, nothing is known yet, so closing is treated as
     /// blocking. Otherwise a close raced against startup inspection would wave the user through
     /// a handoff that had already moved data.
@@ -78,14 +102,20 @@ internal sealed class StoreMigrationWorkflow(
     /// </para>
     /// </summary>
     public bool BlocksStartup =>
-        (!_admissionResolved || _holdsCompletedHandoff) &&
-        Stage is not (StoreMigrationStage.Ready or StoreMigrationStage.StartupRefused);
+        Stage is StoreMigrationStage.Consent ||
+        (!_sourceRemoved &&
+         (!_admissionResolved || _holdsCompletedHandoff) &&
+         Stage is not (StoreMigrationStage.Ready or StoreMigrationStage.StartupRefused));
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
     // Seeded from the caller's admission so a receipt observed before this workflow existed is
     // not lost when a later inspection pass fails.
     private bool _holdsCompletedHandoff = initialAdmission?.BlocksStartup ?? false;
     private bool _admissionResolved;
+
+    // Latched, never cleared: once finalization has proven the previous installation is gone, no
+    // later pass may re-impose a startup block that would leave the user with no usable app.
+    private bool _sourceRemoved;
 
     public Task StartAsync(CancellationToken cancellationToken) => RunAsync(false, cancellationToken);
     public Task ContinueAsync(CancellationToken cancellationToken) =>
@@ -162,6 +192,7 @@ internal sealed class StoreMigrationWorkflow(
             {
                 SetStage(StoreMigrationStage.Finalizing);
                 var result = await operations.FinalizeAsync();
+                _sourceRemoved |= result.SourceRemoved;
                 // A durable startup refusal still finalizes the migration, so it must not be
                 // folded into Ready: the user has to be told that only Windows can re-enable
                 // the startup task. Launch still proceeds once they close the window.

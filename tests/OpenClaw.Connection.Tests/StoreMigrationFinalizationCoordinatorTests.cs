@@ -110,6 +110,9 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         var result = await fixture.FinalizeAsync(new(status));
 
         Assert.Equal(StoreMigrationFinalizationState.InspectionFailed, result.State);
+        // Removal is unproven, so the previous app may still be usable and must stay the one the
+        // user runs.
+        Assert.False(result.SourceRemoved);
         Assert.True(File.Exists(fixture.CompletionPath));
     }
 
@@ -124,6 +127,7 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
             new SourceRemoval(InnoSourceRemovalStatus.InspectionFailed));
 
         Assert.Equal(StoreMigrationFinalizationState.InspectionFailed, result.State);
+        Assert.False(result.SourceRemoved);
         Assert.True(File.Exists(fixture.IntentPath));
         Assert.True(File.Exists(fixture.CompletionPath));
     }
@@ -144,6 +148,8 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
             new Inventory(new string('b', 64)));
 
         Assert.Equal(StoreMigrationFinalizationState.InspectionFailed, result.State);
+        // The previous app is already gone, so blocking here would leave no usable app at all.
+        Assert.True(result.SourceRemoved);
         Assert.Equal(0, autoStart.Calls);
         Assert.Equal(0, cleaner.Calls);
         Assert.True(File.Exists(fixture.IntentPath));
@@ -167,6 +173,7 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         // The receipt is kept so the preference retries next launch, but a failed
         // cosmetic preference must never block the app: Inno removal is already proven.
         Assert.True(result.AllowsNormalStartup);
+        Assert.True(result.SourceRemoved);
         Assert.Equal(0, cleaner.Calls);
         Assert.True(File.Exists(fixture.CompletionPath));
     }
@@ -187,6 +194,7 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
 
         Assert.Equal(StoreMigrationFinalizationState.StartupPreferenceRefused, result.State);
         Assert.True(result.AllowsNormalStartup);
+        Assert.True(result.SourceRemoved);
         Assert.Equal(1, cleaner.Calls);
     }
 
@@ -275,6 +283,9 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
             var result = await fixture.FinalizeAsync(new(InnoInstallationStatus.NotInstalled));
 
             Assert.Equal(StoreMigrationFinalizationState.RecordCleanupFailed, result.State);
+            // Cleanup runs only after removal is proven. The receipt survives so the retry below
+            // still happens, but it must not also withhold the only app the user has left.
+            Assert.True(result.SourceRemoved);
             Assert.False(result.AllowsNormalStartup);
             Assert.Equal(lockedKind is "consent-lock" or "consent", File.Exists(fixture.ConsentPath));
             Assert.Equal(lockedKind != "completed", File.Exists(fixture.IntentPath));

@@ -232,8 +232,84 @@ public sealed class StoreMigrationWorkflowTests
         Assert.True(workflow.BlocksStartup);
     }
 
+    /// <summary>
+    /// The previous app is uninstalled, so its receipt now blocks an app that no longer exists.
+    /// If this window also refused to hand over, the user would have no working app and no way
+    /// back. The failure stays visible, but it must not be a dead end.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationFinalizationState.RecordCleanupFailed, StoreMigrationStage.FinalizationFailed)]
+    [InlineData(StoreMigrationFinalizationState.InspectionFailed, StoreMigrationStage.InspectionFailed)]
+    public async Task FinalizationFailureAfterTheSourceIsGone_IsVisibleButNotADeadEnd(
+        StoreMigrationFinalizationState result, object stage)
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = result,
+            FinalizedSourceRemoved = true
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal((StoreMigrationStage)stage, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    /// <summary>
+    /// The mirror image: the same failures before removal is proven must keep blocking, because
+    /// the previous app may still be running against the same data.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationFinalizationState.RecordCleanupFailed)]
+    [InlineData(StoreMigrationFinalizationState.InspectionFailed)]
+    public async Task FinalizationFailureBeforeRemovalIsProven_KeepsBlocking(
+        StoreMigrationFinalizationState result)
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = result
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    /// <summary>
+    /// Removal is proven once, then a retry re-inspects and fails transiently. The release must
+    /// survive that, or the dead end simply returns one pass later.
+    /// </summary>
     [Fact]
-    public async Task AbandonedConsent_LeavesStartupUnblocked()
+    public async Task ARetryAfterAProvenRemoval_DoesNotReimposeTheBlock()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.FinalizationRequired),
+            Finalized = StoreMigrationFinalizationState.RecordCleanupFailed,
+            FinalizedSourceRemoved = true
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.False(workflow.BlocksStartup);
+
+        operations.Admission = new(StoreMigrationStartupState.InspectionFailed, null, true);
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    /// <summary>
+    /// Issue #1374 specifies that Not now leaves the previous installation unchanged and the Store
+    /// app inactive. Consent is only ever reached with a detected installation, so declining, or
+    /// dismissing the window without answering, must not hand the user a second running client.
+    /// </summary>
+    [Fact]
+    public async Task DecliningConsent_LeavesTheStoreAppInactive()
     {
         var operations = new Operations();
         var workflow = Create(operations);
@@ -241,7 +317,10 @@ public sealed class StoreMigrationWorkflowTests
         await workflow.StartAsync(CancellationToken.None);
 
         Assert.Equal(StoreMigrationStage.Consent, workflow.Stage);
-        Assert.False(workflow.BlocksStartup);
+        // No consent was granted, so nothing was prepared and no receipt exists. The block here is
+        // the product contract, not data protection.
+        Assert.Equal(new[] { "inspect", "consent?" }, operations.Calls);
+        Assert.True(workflow.BlocksStartup);
     }
 
     [Theory]
@@ -583,6 +662,7 @@ public sealed class StoreMigrationWorkflowTests
         public StoreMigrationPreparationState Prepared { get; set; } = StoreMigrationPreparationState.Prepared;
         public StoreMigrationCompletionState Completed { get; set; } = StoreMigrationCompletionState.Completed;
         public StoreMigrationFinalizationState Finalized { get; set; } = StoreMigrationFinalizationState.Finalized;
+    public bool FinalizedSourceRemoved { get; set; }
         public StoreMigrationStartupDecision Inspect()
         {
             Calls.Add("inspect");
@@ -609,7 +689,7 @@ public sealed class StoreMigrationWorkflowTests
         public Task<StoreMigrationCompletionState> CompleteAsync(InnoInstallation installation)
         { Calls.Add("complete"); return Task.FromResult(Completed); }
         public Task<StoreMigrationFinalizationDecision> FinalizeAsync()
-        { Calls.Add("finalize"); return Task.FromResult(new StoreMigrationFinalizationDecision(Finalized)); }
+        { Calls.Add("finalize"); return Task.FromResult(new StoreMigrationFinalizationDecision(Finalized, FinalizedSourceRemoved)); }
         public bool Unreadable { get; set; }
         public Exception? UnreadableError { get; set; }
         public StoreMigrationDiscardState Discarded { get; set; } = StoreMigrationDiscardState.Discarded;
