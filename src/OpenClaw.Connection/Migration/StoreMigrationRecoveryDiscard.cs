@@ -184,16 +184,19 @@ public sealed class StoreMigrationRecoveryDiscard(
 
         // Decoding is pure memory work, so it is judged separately. Everything outside the
         // allowlist propagates: a record that merely could not be read is not evidence of
-        // corruption, and only corruption may nominate a file for deletion. BinaryReader in
-        // particular reports malformed string lengths as IO errors.
+        // corruption, and only corruption may nominate a file for deletion. IOException is part
+        // of the allowlist here precisely because there is no file IO left in this block:
+        // BinaryReader reports a malformed string length that way, and treating it as an
+        // operational failure would hide the discard offer and restore the lockout.
         try
         {
             var record = MigrationRecordCodec.DecodeForRenewedConsent(bytes, binding, DateTime.UtcNow);
             return record.Kind == expectedKind ? RecordState.Readable : RecordState.Unreadable;
         }
         catch (Exception exception) when (exception is InvalidDataException or CryptographicException
-                                              or EndOfStreamException or ArgumentException
-                                              or FormatException or DecoderFallbackException)
+                                              or EndOfStreamException or IOException
+                                              or ArgumentException or FormatException
+                                              or DecoderFallbackException)
         {
             logger.Warn($"Migration record {expectedKind} does not decode ({exception.GetType().Name}).");
             return RecordState.Unreadable;

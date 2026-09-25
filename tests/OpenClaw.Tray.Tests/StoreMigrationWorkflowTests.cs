@@ -482,10 +482,8 @@ public sealed class StoreMigrationWorkflowTests
         await workflow.DiscardRecordsAsync(CancellationToken.None);
 
         // Nothing for the window to report: the re-inspection that follows a successful discard
-        // supersedes the result, and either way it is not a failure.
-        Assert.DoesNotContain(
-            workflow.LastDiscard,
-            new StoreMigrationDiscardState?[] { StoreMigrationDiscardState.Busy, StoreMigrationDiscardState.Failed });
+        // supersedes the result.
+        Assert.Null(workflow.LastDiscard);
         Assert.Equal(StoreMigrationStage.Ready, workflow.Stage);
     }
 

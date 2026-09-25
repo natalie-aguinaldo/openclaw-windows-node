@@ -1,5 +1,7 @@
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
 using System.Security.Principal;
+using System.Text;
 using OpenClaw.Connection.Migration;
 using OpenClaw.Shared;
 using OpenClaw.TestSupport;
@@ -163,9 +165,30 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
     }
 
     /// <summary>
-    /// The classifier must judge a damaged record on its contents, not on the exception type the
-    /// decoder happens to raise. Several of those arrive as IO errors, which previously read as
-    /// lock contention and withdrew the offer.
+    /// A record that decrypts but does not parse. BinaryReader reports a malformed string length
+    /// as a plain IOException, which reads like a file that was busy; judged that way the offer
+    /// disappears and the user is back in the lockout this class exists to remove.
+    /// </summary>
+    [Fact]
+    public void ARecordThatDecryptsButDoesNotParse_CountsAsCorrupt()
+    {
+        Seed();
+        // A negative 7-bit-encoded string length, which is what BinaryReader rejects.
+        var plain = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x41, 0x42 };
+        File.WriteAllBytes(Completion, ProtectedData.Protect(
+            plain,
+            Encoding.UTF8.GetBytes("OpenClaw.InnoToStore.Migration.v1"),
+            DataProtectionScope.CurrentUser));
+
+        Assert.True(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
+
+        Assert.False(File.Exists(Completion));
+    }
+
+    /// <summary>
+    /// The same judgement when the protected bytes themselves are damaged, which fails in DPAPI
+    /// rather than in the parser.
     /// </summary>
     [Fact]
     public void ARecordDamagedAfterWriting_CountsAsCorrupt()
