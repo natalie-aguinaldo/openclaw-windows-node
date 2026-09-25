@@ -201,11 +201,23 @@ for users who already have the Store build, and that Inno release still sits abo
 pinned floor. Turning the switch off only prevents *new* migration-capable Store
 builds. To stop migrations already reaching users, publish a corrected Store package.
 
-Unhappy Store-side paths inform the user and then continue to normal startup. Only a
-handoff holding a completion receipt keeps the app from starting, because only that
-state has data that must not be abandoned. The receipt decides this, not the state
-name: a receipt still protects the handoff when the source looks unsupported, when
-the recorded source version no longer matches, or when the record cannot be decoded.
+Two things keep the Store app from starting. A handoff holding a completion receipt
+keeps it from starting because that state has data that must not be abandoned, and the
+receipt decides this rather than the state name: a receipt still protects the handoff
+when the source looks unsupported, when the recorded source version no longer matches,
+or when the record cannot be decoded. Separately, a previous app that is positively
+detected as installed keeps the Store app inactive even with no receipt, because issue
+#1374 permits only one active production client. That block requires payload evidence,
+not just an uninstall registration, so an interrupted uninstall that leaves an orphan
+registry key cannot strand the user without a working client. The two blocks differ in
+how long they last, and the difference matters when supporting a user. The receipt block
+is durable: it records that data has already moved, so a later pass that fails or cannot
+read the record does not release it. The installed-source block is only ever as good as
+the pass that measured it, so it is recomputed every time and never carried forward.
+Removing the previous app is precisely how a user ends that block, and a stale copy of it
+would keep the Store app closed after the previous app was already gone. The remaining
+unhappy paths, a failed inspection or a record needing recovery, inform the user and then
+continue to normal startup, because refusing to launch cannot repair either one.
 Still confirm before the tag that the released Inno installer registers
 `DisplayVersion` `2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`:
 a prerelease suffix or a mismatched name is rejected as an unsupported installation,

@@ -126,6 +126,79 @@ public sealed class StoreMigrationWorkflowTests
         Assert.Equal(new[] { "inspect" }, operations.Calls);
     }
 
+    /// <summary>
+    /// Admission decides whether an unsupported source is really installed; the workflow must
+    /// carry that through to the startup block rather than treating the stage as informational.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(StoreMigrationStartupState.UpdateInno)]
+    public async Task AnInstalledUnsupportedSource_KeepsTheStoreAppInactive(
+        StoreMigrationStartupState admission)
+    {
+        var expected = admission == StoreMigrationStartupState.UpdateInno
+            ? StoreMigrationStage.UpdateRequired
+            : StoreMigrationStage.Unsupported;
+        var operations = new Operations
+        {
+            Admission = new(admission, null, HoldsCompletionReceipt: false, SourcePayloadPresent: true)
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(expected, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+    }
+
+    /// <summary>
+    /// The exact lockout this design exists to avoid. A source block is live evidence, so once the
+    /// user removes the source it must not survive into a later pass that can no longer measure
+    /// it. Latching it would leave a user who did what the window asked with no usable app.
+    /// </summary>
+    [Fact]
+    public async Task ASourceBlock_DoesNotSurviveARemovalFollowedByAFailedInspection()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.UnsupportedInstallation, null,
+                HoldsCompletionReceipt: false, SourcePayloadPresent: true)
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
+
+        // The user uninstalls the previous app, and the next pass cannot complete.
+        operations.InspectError = new IOException("locked");
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    /// <summary>
+    /// The receipt half of the block must keep its old durability: it records that data moved,
+    /// and failing to re-read that fact does not unmake it.
+    /// </summary>
+    [Fact]
+    public async Task AReceiptBlock_StillSurvivesAFailedInspection()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.UnsupportedInstallation, null,
+                HoldsCompletionReceipt: true)
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
+
+        operations.InspectError = new IOException("locked");
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.InspectionFailed, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+    }
+
     [Theory]
     [InlineData(StoreMigrationStartupState.UpdateInno, false)]
     [InlineData(StoreMigrationStartupState.UnsupportedInstallation, false)]
