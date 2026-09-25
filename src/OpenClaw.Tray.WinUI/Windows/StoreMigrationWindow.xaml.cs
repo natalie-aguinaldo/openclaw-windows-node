@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Media;
+using OpenClaw.Connection.Migration;
 using OpenClaw.Shared;
 using OpenClawTray.Helpers;
 using OpenClawTray.Services;
@@ -105,6 +106,12 @@ public sealed partial class StoreMigrationWindow : Window
             // An error raised in a previous stage no longer describes what the user sees.
             Error.IsOpen = false;
             FrameworkElementAutomationPeer.FromElement(Status)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+        }
+        // A discard that could not run leaves the stage unchanged, so it has to report itself.
+        if (_workflow.LastDiscard is StoreMigrationDiscardState.Busy or StoreMigrationDiscardState.Failed)
+        {
+            Error.Message = LocalizationHelper.GetString("Migration2_DiscardFailed");
+            Error.IsOpen = true;
         }
         if (!_workflow.IsBusy)
         {

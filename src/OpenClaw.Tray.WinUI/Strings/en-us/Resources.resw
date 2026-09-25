@@ -7346,6 +7346,9 @@ Your settings, gateway, files, and models stay in place.</value>
   <data name="Migration2_DiscardRecords" xml:space="preserve">
     <value>Discard unreadable migration data</value>
   </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>OpenClaw could not discard the migration data. If the previous OpenClaw app is running, close it and try again. Check the app log for details.</value>
+  </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows could not open the requested page. Try again, or open Windows Settings &gt; Apps &gt; Installed apps manually if migration is complete.</value>
   </data>

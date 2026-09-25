@@ -7283,6 +7283,9 @@ Uw instellingen, gateway, bestanden en modellen blijven op hun plaats.</value>
   <data name="Migration2_DiscardRecords" xml:space="preserve">
     <value>Onleesbare migratiegegevens verwijderen</value>
   </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>OpenClaw kon de migratiegegevens niet verwijderen. Als de vorige OpenClaw-app actief is, sluit deze dan en probeer het opnieuw. Bekijk het applogboek voor meer informatie.</value>
+  </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows kon de gevraagde pagina niet openen. Probeer het opnieuw of open Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps handmatig als de migratie is voltooid.</value>
   </data>

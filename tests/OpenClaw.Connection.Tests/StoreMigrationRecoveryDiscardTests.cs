@@ -9,10 +9,11 @@ namespace OpenClaw.Connection.Tests;
 [SupportedOSPlatform("windows")]
 public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
 {
-    // The reader under test uses the system clock, so records must be dated against it.
+    // The classifier uses the system clock, so records must be dated against it.
     private static readonly DateTime Now = DateTime.UtcNow;
     private readonly TempDirectory _temp = new();
     private readonly MigrationBinding _binding;
+    private readonly Detector _detector = new();
 
     public StoreMigrationRecoveryDiscardTests()
     {
@@ -27,68 +28,120 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
     }
 
     private string Directory => Path.Combine(_binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
+    private string Completion => Path.Combine(Directory, MigrationRecordCodec.CompletionFileName);
+    private string Intent => Path.Combine(Directory, MigrationRecordCodec.IntentFileName);
+    private string Consent => Path.Combine(Directory, MigrationRecordCodec.ConsentFileName);
 
     [Fact]
     public void UnreadableRecords_AreRemovedSoRecoveryCanBeCleared()
     {
         Seed();
-        File.WriteAllBytes(Path.Combine(Directory, MigrationRecordCodec.CompletionFileName), [1, 2, 3]);
-        File.WriteAllBytes(Path.Combine(Directory, MigrationRecordCodec.IntentFileName), [4, 5, 6]);
-        File.WriteAllBytes(Path.Combine(Directory, MigrationRecordCodec.ConsentFileName), [7, 8, 9]);
+        File.WriteAllBytes(Completion, [1, 2, 3]);
+        File.WriteAllBytes(Intent, [4, 5, 6]);
+        File.WriteAllBytes(Consent, [7, 8, 9]);
         File.WriteAllBytes(Path.Combine(Directory, InnoMigrationConsentStore.WriterLockFileName), []);
 
-        Assert.Equal(StoreMigrationDiscardState.Discarded, Discard());
+        Assert.True(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
 
-        Assert.False(File.Exists(Path.Combine(Directory, MigrationRecordCodec.CompletionFileName)));
-        Assert.False(File.Exists(Path.Combine(Directory, MigrationRecordCodec.IntentFileName)));
-        Assert.False(File.Exists(Path.Combine(Directory, MigrationRecordCodec.ConsentFileName)));
+        Assert.False(File.Exists(Completion));
+        Assert.False(File.Exists(Intent));
+        Assert.False(File.Exists(Consent));
         Assert.False(File.Exists(Path.Combine(Directory, InnoMigrationConsentStore.WriterLockFileName)));
         Assert.Equal(MigrationStartupRecordStatus.None, Read().Status);
     }
 
+    /// <summary>
+    /// The aggregate startup status stops at the first unreadable file, so a corrupt receipt hides
+    /// a perfectly good intent behind <see cref="MigrationStartupRecordStatus.Invalid"/>. Planning
+    /// per file is what keeps the intent.
+    /// </summary>
     [Fact]
-    public void ADecodableReceipt_IsRefusedAndLeftIntact()
+    public void ACorruptReceiptBesideAValidIntent_CostsOnlyTheReceipt()
     {
         Seed();
-        var path = WriteRecord("completed");
-        var before = File.ReadAllBytes(path);
+        File.WriteAllBytes(Completion, [1, 2, 3]);
+        var intent = WriteRecord("intent");
+        var before = File.ReadAllBytes(intent);
+        Assert.Equal(MigrationStartupRecordStatus.Invalid, Read().Status);
 
-        Assert.Equal(StoreMigrationDiscardState.RecordsAreReadable, Discard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
 
-        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.False(File.Exists(Completion));
+        Assert.Equal(before, File.ReadAllBytes(intent));
+        Assert.Equal(MigrationStartupRecordStatus.Intent, Read().Status);
+    }
+
+    /// <summary>
+    /// Recovery after the source app is gone: an intent that still decodes can never be acted on,
+    /// because there is nothing left to migrate from. Retry cannot clear it, so discard must.
+    /// </summary>
+    [Fact]
+    public void AnAbandonedIntent_IsDiscardableOnceTheSourceIsGone()
+    {
+        Seed();
+        WriteRecord("intent");
+        _detector.Status = InnoInstallationStatus.NotInstalled;
+
+        Assert.True(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
+
+        Assert.False(File.Exists(Intent));
+        Assert.Equal(MigrationStartupRecordStatus.None, Read().Status);
+    }
+
+    [Fact]
+    public void AValidIntent_IsKeptWhileTheSourceIsStillInstalled()
+    {
+        Seed();
+        var intent = WriteRecord("intent");
+        var before = File.ReadAllBytes(intent);
+
+        Assert.False(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.RecordsAreReadable, Discarder().Discard());
+
+        Assert.Equal(before, File.ReadAllBytes(intent));
+    }
+
+    [Theory]
+    [InlineData(InnoInstallationStatus.Detected)]
+    [InlineData(InnoInstallationStatus.NotInstalled)]
+    public void ADecodableReceipt_IsNeverDiscarded(InnoInstallationStatus source)
+    {
+        Seed();
+        var completion = WriteRecord("completed");
+        var before = File.ReadAllBytes(completion);
+        _detector.Status = source;
+
+        Assert.False(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.RecordsAreReadable, Discarder().Discard());
+
+        Assert.Equal(before, File.ReadAllBytes(completion));
         Assert.Equal(MigrationStartupRecordStatus.Completed, Read().Status);
     }
 
-    [Fact]
-    public void ADecodableIntent_IsRefusedAndLeftIntact()
-    {
-        Seed();
-        var path = WriteRecord("intent");
-        var before = File.ReadAllBytes(path);
-
-        Assert.Equal(StoreMigrationDiscardState.RecordsAreReadable, Discard());
-
-        Assert.Equal(before, File.ReadAllBytes(path));
-    }
-
+    /// <summary>
+    /// The previous app holds the migration lease for its whole lifetime, so this is the expected
+    /// answer whenever it is still running. It must report Busy rather than deleting anything.
+    /// </summary>
     [Fact]
     public void RecordsHeldByAnotherOperation_AreNotDiscarded()
     {
         Seed();
-        var completion = Path.Combine(Directory, MigrationRecordCodec.CompletionFileName);
-        File.WriteAllBytes(completion, [1, 2, 3]);
+        File.WriteAllBytes(Completion, [1, 2, 3]);
         using var held = new FileStream(
-            Path.Combine(Directory, "prepare.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            Path.Combine(Directory, "prepare.lock"), FileMode.Open, FileAccess.Read, FileShare.Read);
 
-        Assert.Equal(StoreMigrationDiscardState.Busy, Discard());
+        Assert.Equal(StoreMigrationDiscardState.Busy, Discarder().Discard());
 
-        Assert.True(File.Exists(completion));
+        Assert.True(File.Exists(Completion));
     }
 
     [Fact]
     public void NoRecordDirectory_ReportsTheOutcomeTheUserAskedFor()
     {
-        Assert.Equal(StoreMigrationDiscardState.Discarded, Discard());
+        Assert.False(Discarder().CanDiscard());
+        Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
         Assert.False(System.IO.Directory.Exists(Directory));
     }
 
@@ -115,8 +168,7 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
             InventoryJson = kind == "intent" ? "{}" : "",
             Binding = _binding
         };
-        var path = Path.Combine(Directory, kind == "intent"
-            ? MigrationRecordCodec.IntentFileName : MigrationRecordCodec.CompletionFileName);
+        var path = kind == "intent" ? Intent : Completion;
         File.WriteAllBytes(path, MigrationRecordCodec.Encode(record, created));
         return path;
     }
@@ -124,9 +176,18 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
     private MigrationStartupRecord Read() =>
         new MigrationStartupRecordReader(_binding, NullLogger.Instance).Read();
 
-    private StoreMigrationDiscardState Discard() =>
-        new StoreMigrationRecoveryDiscard(
-            _binding, new MigrationStartupRecordReader(_binding, NullLogger.Instance), NullLogger.Instance).Discard();
+    private StoreMigrationRecoveryDiscard Discarder() =>
+        new(_binding, _detector, NullLogger.Instance);
+
+    private sealed class Detector : IInnoInstallationDetector
+    {
+        public InnoInstallationStatus Status { get; set; } = InnoInstallationStatus.Detected;
+
+        public InnoInstallationDetection Detect() => new(Status, Status == InnoInstallationStatus.Detected
+            ? new InnoInstallation(@"C:\fixture", @"C:\fixture\app.exe", @"C:\fixture\unins000.exe",
+                "x64", new Version(2026, 9, 1))
+            : null);
+    }
 
     public void Dispose() => _temp.Dispose();
 }

@@ -418,6 +418,43 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         });
     }
 
+    /// <summary>
+    /// The previous app holds the migration lease for its whole lifetime, so a contended discard
+    /// is the most likely first outcome. The window has to say so, or the button reads as dead.
+    /// </summary>
+    [Fact]
+    public Task Recovery_ReportsADiscardThatCouldNotRun()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired),
+            Unreadable = true,
+            Discarded = StoreMigrationDiscardState.Busy
+        };
+        return WithWindowAsync(operations, async (window, workflow, completion) =>
+        {
+            await WaitForStageAsync(workflow, StoreMigrationStage.Recovery);
+
+            await InvokeAsync(window, "DiscardRecords");
+            for (var attempt = 0; attempt < 100 && workflow.LastDiscard is null; attempt++)
+                await Task.Delay(50);
+            Assert.Equal(StoreMigrationDiscardState.Busy, workflow.LastDiscard);
+            Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+
+            await ui.RunOnUIAsync(() =>
+            {
+                var root = Root(window);
+                var safety = Control<InfoBar>(window, "Safety");
+                var error = Assert.Single(TestSupport.FindLogical<InfoBar>(root), bar => bar != safety);
+                Assert.True(error.IsOpen);
+                Assert.Equal(Localized("Migration2_DiscardFailed"), error.Message);
+                // The offer stays, because a contended discard is worth retrying.
+                Assert.Equal(Visibility.Visible, Control<Button>(window, "DiscardRecords").Visibility);
+            });
+            await CaptureAsync(window, "RecoveryDiscardBusy");
+        });
+    }
+
     private async Task WithWindowAsync(
         Operations operations,
         Func<StoreMigrationWindow, StoreMigrationWorkflow, Task<bool>, Task> test)
@@ -662,11 +699,15 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
 
         public bool Unreadable { get; set; }
 
-        public bool RecordsAreUnreadable() => Unreadable;
+        public StoreMigrationDiscardState Discarded { get; set; } = StoreMigrationDiscardState.Discarded;
+
+        public bool CanDiscardRecords() => Unreadable;
 
         public StoreMigrationDiscardState DiscardUnreadableRecords()
         {
             Calls.Add("discard");
+            if (Discarded != StoreMigrationDiscardState.Discarded)
+                return Discarded;
             Unreadable = false;
             Admission = new(StoreMigrationStartupState.NotRequired);
             return StoreMigrationDiscardState.Discarded;

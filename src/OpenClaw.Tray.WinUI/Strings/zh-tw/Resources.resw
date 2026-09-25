@@ -7282,6 +7282,9 @@
   <data name="Migration2_DiscardRecords" xml:space="preserve">
     <value>捨棄無法讀取的移轉資料</value>
   </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>OpenClaw 無法捨棄移轉資料。如果舊版 OpenClaw 應用程式正在執行，請關閉它並重試。詳情請查看應用程式記錄。</value>
+  </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 無法開啟要求的頁面。請再試一次，或在移轉完成後手動開啟 Windows 設定 &gt; 應用程式 &gt; 已安裝的應用程式。</value>
   </data>

@@ -22,12 +22,12 @@ internal interface IStoreMigrationOperations
     Task<StoreMigrationFinalizationDecision> FinalizeAsync();
 
     /// <summary>
-    /// Whether the records are present but undecodable, which is the only recovery cause the user
-    /// can clear from inside the app. Must not throw: it runs while recovery is already showing.
+    /// Whether recovery can be cleared from inside the app. Must not throw: it runs while recovery
+    /// is already showing. See <see cref="StoreMigrationRecoveryDiscard.CanDiscard"/>.
     /// </summary>
-    bool RecordsAreUnreadable();
+    bool CanDiscardRecords();
 
-    /// <summary>Removes undecodable records. See <see cref="StoreMigrationRecoveryDiscard"/>.</summary>
+    /// <summary>Removes discardable records. See <see cref="StoreMigrationRecoveryDiscard"/>.</summary>
     StoreMigrationDiscardState DiscardUnreadableRecords();
 
     /// <summary>
@@ -51,6 +51,13 @@ internal sealed class StoreMigrationWorkflow(
     /// every other recovery cause is repaired outside the window, by removing the previous app.
     /// </summary>
     public bool CanDiscardRecords { get; private set; }
+
+    /// <summary>
+    /// The last discard outcome, so the window can say that nothing happened. A running previous
+    /// app holds the migration lease for its whole lifetime, so <see cref="StoreMigrationDiscardState.Busy"/>
+    /// is the expected answer there and silence would look like a dead button.
+    /// </summary>
+    public StoreMigrationDiscardState? LastDiscard { get; private set; }
 
     /// <summary>
     /// Closing the window abandons migration, so only a handoff whose completion receipt already
@@ -98,6 +105,7 @@ internal sealed class StoreMigrationWorkflow(
         var result = StoreMigrationDiscardState.Failed;
         try
         {
+            LastDiscard = null;
             Changed?.Invoke();
             result = await Task.Run(operations.DiscardUnreadableRecords, cancellationToken);
             if (result != StoreMigrationDiscardState.Discarded)
@@ -110,6 +118,7 @@ internal sealed class StoreMigrationWorkflow(
         finally
         {
             IsBusy = false;
+            LastDiscard = result;
             // A contended or failing discard stays offered so the user can retry. Readable
             // records mean the offer was wrong, and repeating it would only mislead.
             if (result == StoreMigrationDiscardState.RecordsAreReadable)
@@ -281,7 +290,7 @@ internal sealed class StoreMigrationWorkflow(
     {
         Stage = stage;
         if (stage == StoreMigrationStage.Recovery)
-            CanDiscardRecords = RecordsAreUnreadable();
+            CanDiscardRecords = ProbeDiscardOffer();
         Changed?.Invoke();
     }
 
@@ -290,11 +299,11 @@ internal sealed class StoreMigrationWorkflow(
     /// error. An unanswerable probe hides the offer rather than promising an escape that is not
     /// there; the guidance text still names the remedies that work from outside the app.
     /// </summary>
-    private bool RecordsAreUnreadable()
+    private bool ProbeDiscardOffer()
     {
         try
         {
-            return operations.RecordsAreUnreadable();
+            return operations.CanDiscardRecords();
         }
         catch (Exception exception)
         {

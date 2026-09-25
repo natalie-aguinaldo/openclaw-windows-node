@@ -7282,6 +7282,9 @@
   <data name="Migration2_DiscardRecords" xml:space="preserve">
     <value>放弃无法读取的迁移数据</value>
   </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>OpenClaw 无法放弃迁移数据。如果旧版 OpenClaw 应用正在运行，请关闭它并重试。详情请查看应用日志。</value>
+  </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 无法打开请求的页面。请重试，或在迁移完成后手动打开 Windows 设置 &gt; 应用 &gt; 已安装的应用。</value>
   </data>

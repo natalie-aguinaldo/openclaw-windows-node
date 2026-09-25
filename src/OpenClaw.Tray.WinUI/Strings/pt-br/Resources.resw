@@ -7336,6 +7336,9 @@ Suas configurações, gateway, arquivos e modelos permanecem no mesmo local.</va
   <data name="Migration2_DiscardRecords" xml:space="preserve">
     <value>Descartar dados de migração ilegíveis</value>
   </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>O OpenClaw não conseguiu descartar os dados de migração. Se o aplicativo OpenClaw anterior estiver em execução, feche-o e tente novamente. Consulte o log do aplicativo para obter detalhes.</value>
+  </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>O Windows não conseguiu abrir a página solicitada. Tente novamente ou abra Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados manualmente se a migração estiver concluída.</value>
   </data>

@@ -7280,7 +7280,10 @@ Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place
     <value>Ouvrir Applications installées</value>
   </data>
   <data name="Migration2_DiscardRecords" xml:space="preserve">
-    <value>Ignorer les données de migration illisibles</value>
+    <value>Supprimer les données de migration illisibles</value>
+  </data>
+  <data name="Migration2_DiscardFailed" xml:space="preserve">
+    <value>OpenClaw n'a pas pu supprimer les données de migration. Si l'application OpenClaw précédente est en cours d'exécution, fermez-la et réessayez. Consultez le journal de l'application pour plus de détails.</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows n'a pas pu ouvrir la page demandée. Réessayez ou ouvrez manuellement Paramètres Windows &gt; Applications &gt; Applications installées si la migration est terminée.</value>

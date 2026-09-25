@@ -281,9 +281,15 @@ remain independent: consent never authorizes destructive uninstall.
 Explicit confirmation does not overwrite corrupt consent. A rejected grant
 enters recovery, which stays retryable: the window keeps Retry and the
 Installed apps shortcut so a user who removes the previous app is noticed by
-the next pass, and it offers to discard migration records when, and only when,
-those records cannot be decoded at all. Nothing that still decodes is deleted,
-and a retry never treats an earlier confirmation as still standing.
+the next pass, and it offers to discard migration records that can no longer
+carry the handoff. Records are judged one file at a time, so a corrupt receipt
+beside a good intent costs only the receipt. Two things are discardable: a
+record that does not decode, and a leftover consent or intent once the previous
+app is gone and no readable receipt remains, because there is then nothing left
+to migrate from. A receipt that still decodes is never deleted, and a retry
+never treats an earlier confirmation as still standing. A discard that cannot
+run, usually because the previous app is running and holds the migration lease,
+is reported in the window rather than passing silently.
 
 The preview:
 

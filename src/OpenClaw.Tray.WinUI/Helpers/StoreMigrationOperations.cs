@@ -96,21 +96,21 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
     }
 
     /// <summary>
-    /// Like <see cref="HoldsCompletionReceipt"/>, independent of detection and policy: recovery
-    /// may be showing because inspection itself could not run.
+    /// Like <see cref="HoldsCompletionReceipt"/>, independent of policy and package identity:
+    /// recovery may be showing because inspection itself could not run.
     /// </summary>
-    public bool RecordsAreUnreadable()
+    public bool CanDiscardRecords()
     {
         _binding ??= MigrationEnvironment.CreateBinding();
-        return new MigrationStartupRecordReader(_binding, _logger).Read().Status
-            == MigrationStartupRecordStatus.Invalid;
+        _detector ??= MigrationEnvironment.CreateDetector();
+        return new StoreMigrationRecoveryDiscard(_binding, _detector, _logger).CanDiscard();
     }
 
     public StoreMigrationDiscardState DiscardUnreadableRecords()
     {
         _binding ??= MigrationEnvironment.CreateBinding();
-        return new StoreMigrationRecoveryDiscard(
-            _binding, new MigrationStartupRecordReader(_binding, _logger), _logger).Discard();
+        _detector ??= MigrationEnvironment.CreateDetector();
+        return new StoreMigrationRecoveryDiscard(_binding, _detector, _logger).Discard();
     }
 
     private sealed class StoreMigrationAutoStartApplier : IStoreMigrationAutoStartApplier

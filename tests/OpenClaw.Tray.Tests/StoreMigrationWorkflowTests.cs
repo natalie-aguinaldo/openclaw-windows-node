@@ -442,6 +442,26 @@ public sealed class StoreMigrationWorkflowTests
         Assert.True(workflow.BlocksStartup);
         // A contended discard is worth retrying, so the offer stays.
         Assert.True(workflow.CanDiscardRecords);
+        // The usual cause is the previous app still holding the lease, which the user can act on
+        // only if the window says so. A silent no-op makes the button look dead.
+        Assert.Equal(StoreMigrationDiscardState.Busy, workflow.LastDiscard);
+    }
+
+    [Fact]
+    public async Task ASuccessfulDiscard_LeavesNothingToReport()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired, null, true),
+            Unreadable = true
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.Null(workflow.LastDiscard);
+
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationDiscardState.Discarded, workflow.LastDiscard);
     }
 
     [Fact]
@@ -570,7 +590,7 @@ public sealed class StoreMigrationWorkflowTests
         public bool Unreadable { get; set; }
         public Exception? UnreadableError { get; set; }
         public StoreMigrationDiscardState Discarded { get; set; } = StoreMigrationDiscardState.Discarded;
-        public bool RecordsAreUnreadable()
+        public bool CanDiscardRecords()
         {
             if (UnreadableError is not null) throw UnreadableError;
             return Unreadable;
