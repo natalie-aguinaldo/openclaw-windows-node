@@ -171,6 +171,41 @@ public sealed class StoreMigrationStartupCoordinatorTests
         Assert.Equal(expected, result.State);
     }
 
+    /// <summary>
+    /// End to end through admission rather than on a hand-built decision: an installed source that
+    /// is too old to migrate keeps the Store app inactive, and the same state without a payload
+    /// does not.
+    /// </summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void AnInstalledSourceNeedingAnUpdate_BlocksOnlyWhenItsPayloadExists(
+        bool payloadPresent, bool blocks)
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported, Reason: "payload missing",
+            RegisteredVersion: Version.Parse("2026.9.0.0"), SourcePayloadPresent: payloadPresent);
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.None));
+
+        Assert.Equal(StoreMigrationStartupState.UpdateInno, result.State);
+        Assert.Equal(blocks, result.BlocksStartup);
+        Assert.False(result.AllowsNormalStartup);
+    }
+
+    /// <summary>
+    /// An architecture mismatch reaches admission through a fully verified detection, so the
+    /// payload evidence has to survive that path too.
+    /// </summary>
+    [Fact]
+    public void AnArchitectureMismatchOnAVerifiedInstall_BlocksStartup()
+    {
+        var result = Evaluate(Detected(architecture: "arm64"), new(MigrationStartupRecordStatus.None));
+
+        Assert.Equal(StoreMigrationStartupState.UnsupportedInstallation, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
     [Theory]
     [InlineData(StoreMigrationStartupState.FinalizationRequired, true)]
     [InlineData(StoreMigrationStartupState.AwaitingInnoRemoval, true)]
@@ -181,9 +216,47 @@ public sealed class StoreMigrationStartupCoordinatorTests
     [InlineData(StoreMigrationStartupState.ConsentRequired, false)]
     [InlineData(StoreMigrationStartupState.Disabled, false)]
     [InlineData(StoreMigrationStartupState.NotRequired, false)]
-    public void OnlyAHandoffHoldingDataBlocksStartup(StoreMigrationStartupState state, bool blocks)
+    public void WithoutAnInstalledSourceOrReceipt_OnlyAHandoffHoldingDataBlocksStartup(
+        StoreMigrationStartupState state, bool blocks)
     {
         Assert.Equal(blocks, new StoreMigrationStartupDecision(state).BlocksStartup);
+    }
+
+    /// <summary>
+    /// Issue #1374 permits one active production client. An unsupported or out-of-date source is
+    /// still an installed client, so the Store app must not start beside it.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(StoreMigrationStartupState.UpdateInno)]
+    public void AnInstalledUnsupportedSource_BlocksStartupWithoutAReceipt(StoreMigrationStartupState state)
+    {
+        Assert.True(new StoreMigrationStartupDecision(state, SourcePayloadPresent: true).BlocksStartup);
+    }
+
+    /// <summary>
+    /// The mirror image, and the reason the payload check exists: an interrupted uninstall can
+    /// leave a registration with no app behind it. Blocking on the leftover key alone would leave
+    /// the user with no working app and no in-app escape.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(StoreMigrationStartupState.UpdateInno)]
+    public void AnOrphanRegistrationWithNoPayload_DoesNotBlockStartup(StoreMigrationStartupState state)
+    {
+        Assert.False(new StoreMigrationStartupDecision(state, SourcePayloadPresent: false).BlocksStartup);
+    }
+
+    /// <summary>
+    /// Payload presence must not widen the block to states that can legitimately occur with no
+    /// usable source, where refusing to launch would strand the user.
+    /// </summary>
+    [Theory]
+    [InlineData(StoreMigrationStartupState.InspectionFailed)]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired)]
+    public void PayloadPresenceDoesNotBlockTheRecoverableStates(StoreMigrationStartupState state)
+    {
+        Assert.False(new StoreMigrationStartupDecision(state, SourcePayloadPresent: true).BlocksStartup);
     }
 
     [Theory]
@@ -261,7 +334,8 @@ public sealed class StoreMigrationStartupCoordinatorTests
     private static InnoInstallationDetection Detected(string version = "2026.9.1.0", string architecture = "x64") =>
         new(InnoInstallationStatus.Detected, new InnoInstallation(
             @"C:\fixture\OpenClawTray", @"C:\fixture\OpenClawTray\OpenClaw.Tray.WinUI.exe",
-            @"C:\fixture\OpenClawTray\unins000.exe", architecture, Version.Parse(version)));
+            @"C:\fixture\OpenClawTray\unins000.exe", architecture, Version.Parse(version)),
+            SourcePayloadPresent: true);
 
     private static StoreMigrationStartupDecision Evaluate(
         InnoInstallationDetection installation, MigrationStartupRecord record, string architecture = "x64") =>

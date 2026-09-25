@@ -18,27 +18,53 @@ public enum StoreMigrationStartupState
 public sealed record StoreMigrationStartupDecision(
     StoreMigrationStartupState State,
     InnoInstallation? Installation = null,
-    bool HoldsCompletionReceipt = false)
+    bool HoldsCompletionReceipt = false,
+    bool SourcePayloadPresent = false)
 {
     public bool AllowsNormalStartup =>
         State is StoreMigrationStartupState.Disabled or StoreMigrationStartupState.NotRequired;
 
     /// <summary>
-    /// Only a handoff that has already moved data may refuse launch. Every other state informs
-    /// the user and then gets out of the way: refusing to start cannot repair an unsupported
-    /// installation, a failed inspection, or a corrupt record, and the records stay on disk
-    /// either way. Blocking there would only deny the user the app.
+    /// A handoff that has already moved data, or an installed source the Store app must not run
+    /// beside, refuses launch. The remaining states inform the user and then get out of the way:
+    /// refusing to start cannot repair a failed inspection or a corrupt record, and the records
+    /// stay on disk either way. Blocking there would only deny the user the app.
     /// <para>
     /// This is driven by receipt presence rather than by the state name. A receipt can coexist
     /// with a state that reads as informational (an unsupported source, a version mismatch, an
     /// undecodable record), and starting normally in those cases would leave both installations
     /// live against the same data.
     /// </para>
+    /// <para>
+    /// An unsupported or out-of-date source blocks only when <paramref name="SourcePayloadPresent"/>
+    /// confirms the app is really installed. Issue #1374 permits one active production client, and
+    /// an installed source the user must update or replace is still a client. The presence check is
+    /// what keeps that from becoming a lockout: an interrupted uninstall can leave a registration
+    /// with no payload, and blocking on that alone would leave no working app at all.
+    /// </para>
     /// </summary>
-    public bool BlocksStartup =>
+    public bool BlocksStartup => HoldsDurableBlock || SourceBlocksStartup;
+
+    /// <summary>
+    /// The half of <see cref="BlocksStartup"/> that outlives the pass that observed it. Data has
+    /// moved, or is about to, so a later inspection that fails or throws must not drop the block:
+    /// the evidence is a record on disk, and not being able to re-read it does not unmake it.
+    /// </summary>
+    public bool HoldsDurableBlock =>
         HoldsCompletionReceipt ||
         State is StoreMigrationStartupState.FinalizationRequired or
                  StoreMigrationStartupState.AwaitingInnoRemoval;
+
+    /// <summary>
+    /// The half of <see cref="BlocksStartup"/> that is only ever as good as the pass that measured
+    /// it. It asserts a source is installed right now, so it must be recomputed every pass and
+    /// never latched: the user removing the source is exactly how this block is meant to end, and
+    /// a stale copy would keep the Store app closed after the previous app was already gone.
+    /// </summary>
+    public bool SourceBlocksStartup =>
+        SourcePayloadPresent &&
+        State is StoreMigrationStartupState.UnsupportedInstallation or
+                 StoreMigrationStartupState.UpdateInno;
 }
 
 /// <summary>
@@ -76,6 +102,7 @@ public sealed class StoreMigrationStartupCoordinator(
             return Decide(StoreMigrationStartupState.RecoveryRequired, receipt);
 
         var detected = detector.Detect();
+        var sourcePayloadPresent = detected.SourcePayloadPresent;
         if (detected.Status == InnoInstallationStatus.InspectionFailed)
             return Decide(StoreMigrationStartupState.InspectionFailed, receipt);
         if (detected.Status == InnoInstallationStatus.Unsupported)
@@ -84,7 +111,8 @@ public sealed class StoreMigrationStartupCoordinator(
             // needs the update that ships migration. Asking for that is actionable guidance.
             return Decide(detected.RegisteredVersion is { } registered && registered < minimum
                 ? StoreMigrationStartupState.UpdateInno
-                : StoreMigrationStartupState.UnsupportedInstallation, receipt);
+                : StoreMigrationStartupState.UnsupportedInstallation, receipt,
+                sourcePayloadPresent: sourcePayloadPresent);
         }
 
         if (detected.Status == InnoInstallationStatus.NotInstalled)
@@ -100,7 +128,8 @@ public sealed class StoreMigrationStartupCoordinator(
         var installation = detected.Installation
             ?? throw new InvalidOperationException("Detected Inno installation has no installation evidence.");
         if (installation.Architecture != architecture)
-            return Decide(StoreMigrationStartupState.UnsupportedInstallation, receipt, installation);
+            return Decide(StoreMigrationStartupState.UnsupportedInstallation, receipt, installation,
+                sourcePayloadPresent);
 
         if (pending.Status == MigrationStartupRecordStatus.Completed)
         {
@@ -119,16 +148,19 @@ public sealed class StoreMigrationStartupCoordinator(
         }
 
         if (installation.Version < minimum)
-            return Decide(StoreMigrationStartupState.UpdateInno, receipt, installation);
+            return Decide(StoreMigrationStartupState.UpdateInno, receipt, installation, sourcePayloadPresent);
 
         // Even a valid, unexpired Inno intent does not replace Store-side consent.
         return Decide(StoreMigrationStartupState.ConsentRequired, receipt, installation);
     }
 
     private StoreMigrationStartupDecision Decide(
-        StoreMigrationStartupState state, bool holdsCompletionReceipt, InnoInstallation? installation = null)
+        StoreMigrationStartupState state, bool holdsCompletionReceipt,
+        InnoInstallation? installation = null, bool sourcePayloadPresent = false)
     {
-        logger.Info($"Store migration startup admission: {state} (receipt: {holdsCompletionReceipt}).");
-        return new(state, installation, holdsCompletionReceipt);
+        logger.Info(
+            $"Store migration startup admission: {state} (receipt: {holdsCompletionReceipt}, " +
+            $"source payload: {sourcePayloadPresent}).");
+        return new(state, installation, holdsCompletionReceipt, sourcePayloadPresent);
     }
 }

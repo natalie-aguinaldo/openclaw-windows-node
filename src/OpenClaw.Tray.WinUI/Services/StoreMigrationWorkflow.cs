@@ -61,7 +61,8 @@ internal sealed class StoreMigrationWorkflow(
 
     /// <summary>
     /// Closing the window abandons migration, so only a handoff whose completion receipt already
-    /// exists may keep the app from starting. This tracks
+    /// exists, or an installed source the Store app must not run beside, may keep the app from
+    /// starting. This tracks
     /// <see cref="StoreMigrationStartupDecision.BlocksStartup"/> rather than the visible stage,
     /// because a receipt can survive a stage that later reports an inspection failure. Every
     /// other state has nothing to protect, and refusing to launch would leave the user stuck.
@@ -74,10 +75,11 @@ internal sealed class StoreMigrationWorkflow(
     /// previous app is already gone.
     /// </para>
     /// <para>
-    /// The informational stages are deliberately not included. The issue does not ask for them,
-    /// and an unsupported source, a failed inspection, or an undecodable record can all occur
-    /// after the previous app has been removed, where refusing to launch would leave no working
-    /// app at all.
+    /// The remaining informational stages are deliberately not included. An unsupported source
+    /// without its payload, a failed inspection, or an undecodable record can all occur after the
+    /// previous app has been removed, where refusing to launch would leave no working app at all.
+    /// An unsupported source that is genuinely installed does block, decided at admission where
+    /// the payload evidence lives.
     /// </para>
     /// <para>
     /// <c>_sourceRemoved</c> overrides the receipt hold outright. Finalization sets it once it has
@@ -104,14 +106,20 @@ internal sealed class StoreMigrationWorkflow(
     public bool BlocksStartup =>
         Stage is StoreMigrationStage.Consent ||
         (!_sourceRemoved &&
-         (!_admissionResolved || _holdsCompletedHandoff) &&
+         (!_admissionResolved || _holdsStartupBlock || _sourceBlocksStartup) &&
          Stage is not (StoreMigrationStage.Ready or StoreMigrationStage.StartupRefused));
     public event Action? Changed;
     private InnoInstallation? _promptInstallation;
     // Seeded from the caller's admission so a receipt observed before this workflow existed is
-    // not lost when a later inspection pass fails.
-    private bool _holdsCompletedHandoff = initialAdmission?.BlocksStartup ?? false;
+    // not lost when a later inspection pass fails. Latches only durable reasons startup must not
+    // resume: data that has moved, or is about to.
+    private bool _holdsStartupBlock = initialAdmission?.HoldsDurableBlock ?? false;
     private bool _admissionResolved;
+
+    // Deliberately not latched. This asserts a source is installed right now, and removing that
+    // source is how the user is meant to end the block. Latching it would keep the Store app
+    // closed after the previous app was gone, which is the lockout this whole path avoids.
+    private bool _sourceBlocksStartup = initialAdmission?.SourceBlocksStartup ?? false;
 
     // Latched, never cleared: once finalization has proven the previous installation is gone, no
     // later pass may re-impose a startup block that would leave the user with no usable app.
@@ -159,7 +167,7 @@ internal sealed class StoreMigrationWorkflow(
         if (result != StoreMigrationDiscardState.Discarded)
             return;
 
-        _holdsCompletedHandoff = false;
+        _holdsStartupBlock = false;
         await RunAsync(false, cancellationToken);
     }
 
@@ -181,7 +189,9 @@ internal sealed class StoreMigrationWorkflow(
             var admission = operations.Inspect();
             // Never cleared by a later pass: Retry re-inspects, and a transient failure there
             // must not drop a receipt this session already observed or wrote.
-            _holdsCompletedHandoff |= admission.BlocksStartup;
+            _holdsStartupBlock |= admission.HoldsDurableBlock;
+            // Replaced, never latched: this pass just measured whether the source is installed.
+            _sourceBlocksStartup = admission.SourceBlocksStartup;
             if (admission.AllowsNormalStartup)
             {
                 SetStage(StoreMigrationStage.Ready);
@@ -270,7 +280,7 @@ internal sealed class StoreMigrationWorkflow(
             var completed = await operations.CompleteAsync(admission.Installation);
             // A written receipt means data has moved; the window may no longer be dismissed
             // into normal startup until finalization succeeds.
-            _holdsCompletedHandoff |= completed == StoreMigrationCompletionState.Completed;
+            _holdsStartupBlock |= completed == StoreMigrationCompletionState.Completed;
             SetStage(completed switch
             {
                 StoreMigrationCompletionState.Completed => StoreMigrationStage.AwaitingRemoval,
@@ -290,7 +300,11 @@ internal sealed class StoreMigrationWorkflow(
             // receipt is probed directly because a throwing inspection never observed one, and
             // leaving the flag clear would let a close resume startup against moved data.
             logger.Error($"Migration workflow failed: {exception}");
-            _holdsCompletedHandoff |= HoldsReceiptWithoutInspection();
+            _holdsStartupBlock |= HoldsReceiptWithoutInspection();
+            // This pass detected no source at all, so it cannot assert one is installed. Keeping
+            // a previous pass's answer would block a user who has since removed the source and
+            // now only has a failing inspection standing between them and a usable app.
+            _sourceBlocksStartup = false;
             SetStage(StoreMigrationStage.InspectionFailed);
         }
         finally
