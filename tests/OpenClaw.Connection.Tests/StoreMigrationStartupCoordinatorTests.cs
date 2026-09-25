@@ -24,17 +24,36 @@ public sealed class StoreMigrationStartupCoordinatorTests
     [InlineData("", "x64")]
     [InlineData("2026.9.1-beta.1", "x64")]
     [InlineData("2026.9.1", "x86")]
-    public void InvalidPolicy_BlocksBeforeInspection(string? minimum, string architecture)
+    public void InvalidPolicy_StopsBeforeDetection(string? minimum, string architecture)
     {
         var coordinator = new StoreMigrationStartupCoordinator(
             new Detector(() => throw new InvalidOperationException("Must not read registry.")),
-            new Records(() => throw new InvalidOperationException("Must not read state.")),
+            new Records(() => new(MigrationStartupRecordStatus.None)),
             NullLogger.Instance);
 
         var result = coordinator.Evaluate(true, minimum, architecture);
 
         Assert.Equal(StoreMigrationStartupState.InspectionFailed, result.State);
         Assert.False(result.AllowsNormalStartup);
+        Assert.False(result.BlocksStartup);
+    }
+
+    [Theory]
+    [InlineData("", "x64")]
+    [InlineData("2026.9.1", "x86")]
+    public void InvalidPolicy_StillBlocksWhenAReceiptExists(string? minimum, string architecture)
+    {
+        // Records are read before the policy check precisely so a misconfigured build cannot
+        // wave through a launch that would run against data the handoff already moved.
+        var coordinator = new StoreMigrationStartupCoordinator(
+            new Detector(() => throw new InvalidOperationException("Must not read registry.")),
+            new Records(() => new(MigrationStartupRecordStatus.Unavailable, null, CompletionPresent: true)),
+            NullLogger.Instance);
+
+        var result = coordinator.Evaluate(true, minimum, architecture);
+
+        Assert.Equal(StoreMigrationStartupState.InspectionFailed, result.State);
+        Assert.True(result.BlocksStartup);
     }
 
     [Theory]
@@ -134,6 +153,109 @@ public sealed class StoreMigrationStartupCoordinatorTests
         installation = new(InnoInstallationStatus.InspectionFailed);
 
         Assert.Equal(StoreMigrationStartupState.InspectionFailed, coordinator.Evaluate(true, "2026.9.1", "x64").State);
+    }
+
+    [Theory]
+    [InlineData("2026.9.0.0", StoreMigrationStartupState.UpdateInno)]
+    [InlineData("2026.9.1.0", StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(null, StoreMigrationStartupState.UnsupportedInstallation)]
+    public void UnsupportedInstallationBelowMinimum_AsksForAnUpdateInstead(
+        string? registeredVersion, StoreMigrationStartupState expected)
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported, Reason: "payload missing",
+            RegisteredVersion: registeredVersion is null ? null : Version.Parse(registeredVersion));
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.None));
+
+        Assert.Equal(expected, result.State);
+    }
+
+    [Theory]
+    [InlineData(StoreMigrationStartupState.FinalizationRequired, true)]
+    [InlineData(StoreMigrationStartupState.AwaitingInnoRemoval, true)]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired, false)]
+    [InlineData(StoreMigrationStartupState.InspectionFailed, false)]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation, false)]
+    [InlineData(StoreMigrationStartupState.UpdateInno, false)]
+    [InlineData(StoreMigrationStartupState.ConsentRequired, false)]
+    [InlineData(StoreMigrationStartupState.Disabled, false)]
+    [InlineData(StoreMigrationStartupState.NotRequired, false)]
+    public void OnlyAHandoffHoldingDataBlocksStartup(StoreMigrationStartupState state, bool blocks)
+    {
+        Assert.Equal(blocks, new StoreMigrationStartupDecision(state).BlocksStartup);
+    }
+
+    [Theory]
+    [InlineData(StoreMigrationStartupState.RecoveryRequired)]
+    [InlineData(StoreMigrationStartupState.InspectionFailed)]
+    [InlineData(StoreMigrationStartupState.UnsupportedInstallation)]
+    [InlineData(StoreMigrationStartupState.UpdateInno)]
+    public void AReceiptBlocksStartupEvenUnderAnInformationalState(StoreMigrationStartupState state)
+    {
+        Assert.True(new StoreMigrationStartupDecision(state, null, true).BlocksStartup);
+    }
+
+    [Fact]
+    public void CompletionForDifferentSourceVersion_StillProtectsTheHandoff()
+    {
+        // The source can change under a finished handoff when the Inno app updates itself
+        // before the user removes it. The receipt still means data moved.
+        var result = Evaluate(Detected(), new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.8.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.RecoveryRequired, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Fact]
+    public void UnsupportedSourceWithAReceipt_DoesNotDowngradeToInformational()
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported, Reason: "payload missing",
+            RegisteredVersion: Version.Parse("2026.9.0.0"));
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.9.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.UpdateInno, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Theory]
+    [InlineData(MigrationStartupRecordStatus.Invalid, true, true)]
+    [InlineData(MigrationStartupRecordStatus.Invalid, false, false)]
+    [InlineData(MigrationStartupRecordStatus.Unavailable, true, true)]
+    [InlineData(MigrationStartupRecordStatus.Unavailable, false, false)]
+    public void AnUndecodableReceiptStillBlocks(
+        MigrationStartupRecordStatus status, bool completionPresent, bool blocks)
+    {
+        var coordinator = new StoreMigrationStartupCoordinator(
+            new Detector(() => throw new InvalidOperationException("Must not inspect installation.")),
+            new Records(() => new(status, null, completionPresent)), NullLogger.Instance);
+
+        Assert.Equal(blocks, coordinator.Evaluate(true, "2026.9.1", "x64").BlocksStartup);
+    }
+
+    [Fact]
+    public void ArchitectureMismatchWithAReceipt_StillProtectsTheHandoff()
+    {
+        var result = Evaluate(Detected(architecture: "arm64"), new(MigrationStartupRecordStatus.Completed,
+            new MigrationRecord { Kind = "completed", SourceVersion = "2026.9.1" }, true));
+
+        Assert.Equal(StoreMigrationStartupState.UnsupportedInstallation, result.State);
+        Assert.True(result.BlocksStartup);
+    }
+
+    [Fact]
+    public void CompletedStatusWithoutADecodedRecord_RecoversInsteadOfThrowing()
+    {
+        // Throwing here would escape into the UI error boundary and be reported as a plain
+        // inspection failure, dropping the receipt this status proves exists.
+        var result = Evaluate(Detected(), new(MigrationStartupRecordStatus.Completed, null, true));
+
+        Assert.Equal(StoreMigrationStartupState.RecoveryRequired, result.State);
+        Assert.True(result.BlocksStartup);
     }
 
     private static InnoInstallationDetection Detected(string version = "2026.9.1.0", string architecture = "x64") =>
