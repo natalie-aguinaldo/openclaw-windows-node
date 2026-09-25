@@ -7272,7 +7272,7 @@ Choose {1} to exit this preview without starting migration and continue using th
     <value>We verify removal before starting the Store version.</value>
   </data>
   <data name="Migration2_ConsentHint" xml:space="preserve">
-    <value>Choose Not now to leave without starting migration.</value>
+    <value>Choose Not now to leave without starting migration. The Store version stays closed while the previous app is installed.</value>
   </data>
   <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
     <value>Before you continue</value>

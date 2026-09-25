@@ -7208,7 +7208,7 @@
     <value>我们会验证移除状态后再启动 Store 版本。</value>
   </data>
   <data name="Migration2_ConsentHint" xml:space="preserve">
-    <value>选择“暂不”即可退出，不会开始迁移。</value>
+    <value>选择“暂不”即可退出，不会开始迁移。旧版应用仍安装时，商店版本不会启动。</value>
   </data>
   <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
     <value>继续之前</value>

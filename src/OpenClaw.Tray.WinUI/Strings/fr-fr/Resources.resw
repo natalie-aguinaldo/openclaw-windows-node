@@ -7208,7 +7208,7 @@ Choisissez {1} pour quitter cet aperçu sans démarrer la migration et continuer
     <value>Nous vérifions la désinstallation avant de démarrer la version du Store.</value>
   </data>
   <data name="Migration2_ConsentHint" xml:space="preserve">
-    <value>Choisissez Pas maintenant pour quitter sans démarrer la migration.</value>
+    <value>Choisissez Pas maintenant pour quitter sans démarrer la migration. La version Store reste fermée tant que l'application précédente est installée.</value>
   </data>
   <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
     <value>Avant de continuer</value>

@@ -7262,7 +7262,7 @@ Escolha {1} para sair desta prévia sem iniciar a migração e continuar usando 
     <value>Verificamos a remoção antes de iniciar a versão da Store.</value>
   </data>
   <data name="Migration2_ConsentHint" xml:space="preserve">
-    <value>Selecione Agora não para sair sem iniciar a migração.</value>
+    <value>Selecione Agora não para sair sem iniciar a migração. A versão da Store permanece fechada enquanto o aplicativo anterior estiver instalado.</value>
   </data>
   <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
     <value>Antes de continuar</value>

@@ -7209,7 +7209,7 @@ Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige 
     <value>We verifiëren de verwijdering voordat we de Store-versie starten.</value>
   </data>
   <data name="Migration2_ConsentHint" xml:space="preserve">
-    <value>Kies Nu niet om af te sluiten zonder de migratie te starten.</value>
+    <value>Kies Nu niet om af te sluiten zonder de migratie te starten. De Store-versie blijft gesloten zolang de vorige app is geïnstalleerd.</value>
   </data>
   <data name="Migration2_ConsentWarningTitle" xml:space="preserve">
     <value>Voordat u doorgaat</value>
