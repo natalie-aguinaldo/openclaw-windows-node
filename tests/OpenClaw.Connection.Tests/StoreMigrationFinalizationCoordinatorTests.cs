@@ -214,6 +214,8 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
     {
         using var fixture = new Fixture();
         fixture.WriteRecords(autoStart: true);
+        var consentLockPath = Path.Combine(fixture.Directory, InnoMigrationConsentStore.WriterLockFileName);
+        File.WriteAllBytes(consentLockPath, []);
         var autoStart = new AutoStart();
 
         var result = await fixture.FinalizeAsync(
@@ -226,6 +228,8 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         Assert.Equal(1, autoStart.Calls);
         Assert.True(autoStart.LastEnabled);
         Assert.False(File.Exists(fixture.IntentPath));
+        Assert.False(File.Exists(fixture.ConsentPath));
+        Assert.False(File.Exists(consentLockPath));
         Assert.False(File.Exists(fixture.CompletionPath));
         Assert.Equal(MigrationStartupRecordStatus.None, fixture.ReadRecords().Status);
     }
@@ -242,7 +246,62 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
             new MigrationFinalizationRecordCleaner(fixture.Binding).ClearCompleted(changed));
 
         Assert.True(File.Exists(fixture.IntentPath));
+        Assert.True(File.Exists(fixture.ConsentPath));
         Assert.True(File.Exists(fixture.CompletionPath));
+    }
+
+    [Theory]
+    [InlineData("consent-lock")]
+    [InlineData("consent")]
+    [InlineData("intent")]
+    [InlineData("completed")]
+    public async Task CleanupFailure_PreservesCompletionAndDeletesOnlyEarlierRecords(string lockedKind)
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords();
+        var consent = File.ReadAllBytes(fixture.ConsentPath);
+        var completion = File.ReadAllBytes(fixture.CompletionPath);
+        var consentLockPath = Path.Combine(fixture.Directory, InnoMigrationConsentStore.WriterLockFileName);
+        File.WriteAllBytes(consentLockPath, []);
+        var lockedPath = lockedKind switch
+        {
+            "consent-lock" => consentLockPath,
+            "consent" => fixture.ConsentPath,
+            "intent" => fixture.IntentPath,
+            _ => fixture.CompletionPath
+        };
+        using (var locked = new FileStream(lockedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            var result = await fixture.FinalizeAsync(new(InnoInstallationStatus.NotInstalled));
+
+            Assert.Equal(StoreMigrationFinalizationState.RecordCleanupFailed, result.State);
+            Assert.False(result.AllowsNormalStartup);
+            Assert.Equal(lockedKind is "consent-lock" or "consent", File.Exists(fixture.ConsentPath));
+            Assert.Equal(lockedKind != "completed", File.Exists(fixture.IntentPath));
+            Assert.Equal(completion, File.ReadAllBytes(fixture.CompletionPath));
+            if (lockedKind is "consent-lock" or "consent")
+                Assert.Equal(consent, File.ReadAllBytes(fixture.ConsentPath));
+        }
+
+        var retry = await fixture.FinalizeAsync(new(InnoInstallationStatus.NotInstalled));
+        Assert.Equal(StoreMigrationFinalizationState.Finalized, retry.State);
+        Assert.False(File.Exists(fixture.ConsentPath));
+        Assert.False(File.Exists(fixture.IntentPath));
+        Assert.False(File.Exists(fixture.CompletionPath));
+    }
+
+    [Fact]
+    public async Task MissingConsent_DoesNotPreventLegacyReceiptFinalization()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords();
+        File.Delete(fixture.ConsentPath);
+
+        var result = await fixture.FinalizeAsync(new(InnoInstallationStatus.NotInstalled));
+
+        Assert.Equal(StoreMigrationFinalizationState.Finalized, result.State);
+        Assert.False(File.Exists(fixture.IntentPath));
+        Assert.False(File.Exists(fixture.CompletionPath));
     }
 
     [Fact]
@@ -326,12 +385,16 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         public MigrationRecord Receipt { get; private set; } = null!;
         public string Directory => Path.Combine(Binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
         public string IntentPath => Path.Combine(Directory, MigrationRecordCodec.IntentFileName);
+        public string ConsentPath => Path.Combine(Directory, MigrationRecordCodec.ConsentFileName);
         public string CompletionPath => Path.Combine(Directory, MigrationRecordCodec.CompletionFileName);
 
         public void WriteRecords(bool autoStart = false)
         {
             System.IO.Directory.CreateDirectory(Directory);
             File.WriteAllBytes(Path.Combine(Directory, "prepare.lock"), []);
+            var consent = Record("consent", autoStart: false);
+            consent.Fingerprint = MigrationRecordCodec.ConsentFingerprint;
+            File.WriteAllBytes(ConsentPath, MigrationRecordCodec.Encode(consent, Now));
             File.WriteAllBytes(IntentPath, MigrationRecordCodec.Encode(Record("intent", autoStart), Now));
             Receipt = Record("completed", autoStart);
             File.WriteAllBytes(CompletionPath, MigrationRecordCodec.Encode(Receipt, Now));
