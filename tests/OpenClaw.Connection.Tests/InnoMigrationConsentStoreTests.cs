@@ -49,6 +49,70 @@ public sealed class InnoMigrationConsentStoreTests
     }
 
     [Fact]
+    public void Grant_LeavesAnAlreadyHardenedDirectoryAlone()
+    {
+        using var fixture = new Fixture();
+        fixture.Store.Grant(SourceVersion);
+        var security = new DirectoryInfo(fixture.Directory).GetAccessControl()
+            .GetSecurityDescriptorBinaryForm();
+
+        Assert.False(MigrationOperationLock.RequiresDirectoryHardening(
+            new DirectoryInfo(fixture.Directory),
+            new SecurityIdentifier(fixture.Binding.UserSid)));
+
+        fixture.Store.Grant(SourceVersion);
+
+        Assert.True(fixture.Store.HasValidConsent(SourceVersion));
+        Assert.Equal(security,
+            new DirectoryInfo(fixture.Directory).GetAccessControl().GetSecurityDescriptorBinaryForm());
+    }
+
+    [Fact]
+    public void Grant_StillCorrectsADirectoryThatLostItsProtection()
+    {
+        using var fixture = new Fixture();
+        fixture.Store.Grant(SourceVersion);
+        var directory = new DirectoryInfo(fixture.Directory);
+        var drifted = directory.GetAccessControl();
+        drifted.SetAccessRuleProtection(isProtected: false, preserveInheritance: true);
+        directory.SetAccessControl(drifted);
+        Assert.False(directory.GetAccessControl().AreAccessRulesProtected);
+
+        Assert.True(MigrationOperationLock.RequiresDirectoryHardening(
+            new DirectoryInfo(fixture.Directory),
+            new SecurityIdentifier(fixture.Binding.UserSid)));
+
+        fixture.Store.Grant(SourceVersion);
+
+        Assert.True(new DirectoryInfo(fixture.Directory).GetAccessControl().AreAccessRulesProtected);
+    }
+
+    [Fact]
+    public void Grant_RemovesAForeignGrantFromAnOtherwiseProtectedDirectory()
+    {
+        using var fixture = new Fixture();
+        fixture.Store.Grant(SourceVersion);
+        var directory = new DirectoryInfo(fixture.Directory);
+
+        // A protected DACL owned by this user can still let an unrelated principal delete
+        // completed.dpapi, which the uninstall checker reads as "no migration happened".
+        var users = new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null);
+        var security = directory.GetAccessControl();
+        security.AddAccessRule(new FileSystemAccessRule(users, FileSystemRights.FullControl,
+            InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+            PropagationFlags.None, AccessControlType.Allow));
+        directory.SetAccessControl(security);
+        Assert.True(directory.GetAccessControl().AreAccessRulesProtected);
+
+        fixture.Store.Grant(SourceVersion);
+
+        Assert.DoesNotContain(
+            new DirectoryInfo(fixture.Directory).GetAccessControl()
+                .GetAccessRules(true, true, typeof(SecurityIdentifier)).Cast<FileSystemAccessRule>(),
+            rule => Equals(rule.IdentityReference, users));
+    }
+
+    [Fact]
     public void Grant_DoesNotReadOrChangeLiveSettingsAndIdentity()
     {
         using var fixture = new Fixture();
