@@ -129,9 +129,24 @@ public sealed class MigrationStartupRecordReader(
             if (stream.Length == 0 || stream.Length > MigrationRecordCodec.MaximumRecordBytes)
                 throw new InvalidDataException("Invalid migration startup record size.");
             using var reader = new BinaryReader(stream);
-            var record = MigrationRecordCodec.DecodeForRenewedConsent(
-                reader.ReadBytes((int)stream.Length), binding,
-                (timeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime);
+            var bytes = reader.ReadBytes((int)stream.Length);
+            MigrationRecord record;
+            try
+            {
+                record = MigrationRecordCodec.DecodeForRenewedConsent(
+                    bytes, binding, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime);
+            }
+            // Defensive only: nothing in the decode raises this today, but the type derives from
+            // IOException and would otherwise be silently reclassified as a corrupt record.
+            catch (MigrationPathRejectedException) { throw; }
+            catch (IOException exception)
+            {
+                // Decode uses only memory, so this is corruption rather than an IO failure.
+                // BinaryReader reports a malformed string length that way, and reporting it as an
+                // inspection failure would route the record to InspectionFailed instead of
+                // Recovery, which is the only screen that offers a way out.
+                throw new InvalidDataException("Invalid migration startup record encoding.", exception);
+            }
             if (record.Kind != expectedKind)
                 throw new InvalidDataException("Unexpected migration startup record kind.");
             return record;

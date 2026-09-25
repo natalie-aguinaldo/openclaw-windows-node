@@ -175,10 +175,14 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
         Seed();
         // A negative 7-bit-encoded string length, which is what BinaryReader rejects.
         var plain = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x41, 0x42 };
-        File.WriteAllBytes(Completion, ProtectedData.Protect(
+        var protectedBytes = ProtectedData.Protect(
             plain,
             Encoding.UTF8.GetBytes("OpenClaw.InnoToStore.Migration.v1"),
-            DataProtectionScope.CurrentUser));
+            DataProtectionScope.CurrentUser);
+        // The record must genuinely reach the parser, or this proves nothing.
+        Assert.Throws<IOException>(
+            () => MigrationRecordCodec.DecodeForRenewedConsent(protectedBytes, _binding, Now));
+        File.WriteAllBytes(Completion, protectedBytes);
 
         Assert.True(Discarder().CanDiscard());
         Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());

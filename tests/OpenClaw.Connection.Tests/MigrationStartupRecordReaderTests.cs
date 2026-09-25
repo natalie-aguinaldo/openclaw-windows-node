@@ -1,5 +1,7 @@
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
 using System.Security.Principal;
+using System.Text;
 using OpenClaw.Connection.Migration;
 using OpenClaw.Shared;
 using OpenClaw.TestSupport;
@@ -141,6 +143,34 @@ public sealed class MigrationStartupRecordReaderTests
 
         Assert.Equal(MigrationStartupRecordStatus.Unavailable, result.Status);
         // A lock hides the contents, not the fact that a receipt exists.
+        Assert.True(result.CompletionPresent);
+    }
+
+    /// <summary>
+    /// BinaryReader reports a malformed string length as a plain IOException. Reporting that as
+    /// an inspection failure sends the record to InspectionFailed, and a receipt there blocks
+    /// startup from a screen that offers no way out. Recovery is the only screen with a discard.
+    /// </summary>
+    [Fact]
+    public void ARecordThatDecryptsButDoesNotParse_RequiresRecovery()
+    {
+        using var fixture = new Fixture();
+        System.IO.Directory.CreateDirectory(fixture.Directory);
+        // A negative 7-bit-encoded string length, which is what BinaryReader rejects.
+        var plain = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x41, 0x42 };
+        var protectedBytes = ProtectedData.Protect(
+            plain,
+            Encoding.UTF8.GetBytes("OpenClaw.InnoToStore.Migration.v1"),
+            DataProtectionScope.CurrentUser);
+        // The record must genuinely reach the parser, or this proves nothing.
+        Assert.Throws<IOException>(
+            () => MigrationRecordCodec.DecodeForRenewedConsent(protectedBytes, fixture.Binding, Now));
+        File.WriteAllBytes(
+            Path.Combine(fixture.Directory, MigrationRecordCodec.CompletionFileName), protectedBytes);
+
+        var result = fixture.Read();
+
+        Assert.Equal(MigrationStartupRecordStatus.Invalid, result.Status);
         Assert.True(result.CompletionPresent);
     }
 
