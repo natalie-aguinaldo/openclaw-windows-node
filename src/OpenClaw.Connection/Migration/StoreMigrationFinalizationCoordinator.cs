@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
+using System.Security.Cryptography;
 using OpenClaw.Shared;
 
 namespace OpenClaw.Connection.Migration;
@@ -311,6 +312,7 @@ public sealed class MigrationInventoryCapture(MigrationBinding binding) : IMigra
 
 /// <summary>
 /// Reparse-safe final cleanup that keeps the completion receipt until all earlier cleanup succeeds.
+/// The caller must hold prepare.lock while consent, intent, then completion are removed.
 /// </summary>
 [SupportedOSPlatform("windows")]
 public sealed class MigrationFinalizationRecordCleaner(MigrationBinding binding) : IStoreMigrationRecordCleaner
@@ -319,10 +321,14 @@ public sealed class MigrationFinalizationRecordCleaner(MigrationBinding binding)
     {
         ArgumentNullException.ThrowIfNull(receipt);
         var directory = Path.Combine(binding.RoamingDirectory, MigrationRecordCodec.DirectoryName);
+        var consentLockPath = Path.Combine(directory, InnoMigrationConsentStore.WriterLockFileName);
+        var consentPath = Path.Combine(directory, MigrationRecordCodec.ConsentFileName);
         var intentPath = Path.Combine(directory, MigrationRecordCodec.IntentFileName);
         var completionPath = Path.Combine(directory, MigrationRecordCodec.CompletionFileName);
 
         MigrationRecordCodec.RejectReparsePoints(directory);
+        MigrationRecordCodec.RejectReparsePoints(consentLockPath);
+        MigrationRecordCodec.RejectReparsePoints(consentPath);
         MigrationRecordCodec.RejectReparsePoints(intentPath);
         MigrationRecordCodec.RejectReparsePoints(completionPath);
         var durable = MigrationRecordCodec.ReadCompletion(
@@ -331,6 +337,8 @@ public sealed class MigrationFinalizationRecordCleaner(MigrationBinding binding)
             throw new InvalidDataException("Completion receipt changed before cleanup.");
 
         // The receipt is the recovery anchor, so it is always deleted last.
+        File.Delete(consentLockPath);
+        File.Delete(consentPath);
         File.Delete(intentPath);
         File.Delete(completionPath);
     }
@@ -436,7 +444,8 @@ public sealed class StoreMigrationFinalizationCoordinator(
                 cleaner.ClearCompleted(durable.Record);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-                                             InvalidDataException)
+                                             InvalidDataException or FormatException or
+                                             CryptographicException)
             {
                 logger.Error($"Store migration record cleanup failed: {exception.Message}");
                 return new(StoreMigrationFinalizationState.RecordCleanupFailed);

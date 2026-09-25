@@ -21,7 +21,8 @@ public sealed record InnoInstallation(
 public sealed record InnoInstallationDetection(
     InnoInstallationStatus Status,
     InnoInstallation? Installation = null,
-    string? Reason = null);
+    string? Reason = null,
+    Version? RegisteredVersion = null);
 
 public interface IInnoInstallationDetector
 {
