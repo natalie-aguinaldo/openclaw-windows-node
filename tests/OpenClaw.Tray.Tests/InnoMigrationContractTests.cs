@@ -200,6 +200,7 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("AutomationProperties.AutomationId=\"MigrationPrimary\"", xaml);
         Assert.Contains("AutomationProperties.AutomationId=\"MigrationDismiss\"", xaml);
         Assert.Contains("AutomationProperties.AutomationId=\"MigrationInstalledApps\"", xaml);
+        Assert.Contains("AutomationProperties.AutomationId=\"MigrationDiscardRecords\"", xaml);
         Assert.Contains("AutomationProperties.LiveSetting=\"Polite\"", xaml);
         Assert.Contains("TextWrapping=\"Wrap\"", xaml);
         Assert.DoesNotContain("ProgressBar", xaml);
@@ -208,6 +209,11 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("StoreMigrationStage.AwaitingRemoval", code);
         Assert.Contains("StoreMigrationStage.Consent or StoreMigrationStage.Recovery", code);
         Assert.Contains("or StoreMigrationStage.StartupRefused ? Dismiss : Primary", code);
+        // Recovery must keep a way forward: retry, the Installed apps shortcut, and the discard
+        // offer. Collapsing Primary there stranded the user with no in-app escape.
+        Assert.Contains("_workflow.CanDiscardRecords", code);
+        var workflow = Read("src", "OpenClaw.Tray.WinUI", "Services", "StoreMigrationWorkflow.cs");
+        Assert.DoesNotContain("StoreMigrationStage.Ready or StoreMigrationStage.Recovery", workflow);
         Assert.Contains("args.Cancel = true", code);
     }
 
@@ -248,7 +254,10 @@ public sealed class InnoMigrationContractTests
 
         var window = Read("src", "OpenClaw.Tray.WinUI", "Windows", "StoreMigrationWindow.xaml.cs");
         Assert.Contains(@"LocalizationHelper.GetString(""Migration_StoreStartupRefused"")", window);
-        Assert.Contains("StoreMigrationStage.Recovery or StoreMigrationStage.StartupRefused", window);
+        // A refused startup preference is the one state with nothing to retry, so it is now the
+        // only state that collapses the primary action.
+        Assert.Contains("_workflow.Stage is StoreMigrationStage.StartupRefused", window);
+        Assert.Contains("or StoreMigrationStage.StartupRefused ? Dismiss : Primary", window);
     }
 
     [Theory]
@@ -822,6 +831,7 @@ public sealed class InnoMigrationContractTests
     [Theory]
     [InlineData("gateways")]
     [InlineData("identity")]
+    [InlineData("child")]
     public void CleanupScript_DoesNotDeleteThroughAJunction(string junctionAt)
     {
         // The shipped guard text is executed against a real junction. The source-order assertions
@@ -839,6 +849,15 @@ public sealed class InnoMigrationContractTests
                 Directory.CreateDirectory(Path.Combine(sentinel, "victim"));
                 File.WriteAllText(Path.Combine(sentinel, "victim", "keep.txt"), "keep");
                 Junction(gateways, sentinel);
+            }
+            else if (junctionAt == "child")
+            {
+                // A junction planted inside the identity directory. The ancestor walk cannot see
+                // it, and Remove-Item -Recurse on 5.1 deletes straight through it.
+                Directory.CreateDirectory(sentinel);
+                File.WriteAllText(Path.Combine(sentinel, "keep.txt"), "keep");
+                Directory.CreateDirectory(identity);
+                Junction(Path.Combine(identity, "link"), sentinel);
             }
             else
             {

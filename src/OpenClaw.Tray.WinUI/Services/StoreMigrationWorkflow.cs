@@ -22,6 +22,15 @@ internal interface IStoreMigrationOperations
     Task<StoreMigrationFinalizationDecision> FinalizeAsync();
 
     /// <summary>
+    /// Whether the records are present but undecodable, which is the only recovery cause the user
+    /// can clear from inside the app. Must not throw: it runs while recovery is already showing.
+    /// </summary>
+    bool RecordsAreUnreadable();
+
+    /// <summary>Removes undecodable records. See <see cref="StoreMigrationRecoveryDiscard"/>.</summary>
+    StoreMigrationDiscardState DiscardUnreadableRecords();
+
+    /// <summary>
     /// Receipt presence only, for when <see cref="Inspect"/> itself fails and never produces a
     /// decision. Must answer without requiring a successful inspection.
     /// </summary>
@@ -36,6 +45,12 @@ internal sealed class StoreMigrationWorkflow(
 {
     public StoreMigrationStage Stage { get; private set; } = StoreMigrationStage.Inspecting;
     public bool IsBusy { get; private set; }
+
+    /// <summary>
+    /// Whether recovery can be cleared from inside the app. Only undecodable records qualify:
+    /// every other recovery cause is repaired outside the window, by removing the previous app.
+    /// </summary>
+    public bool CanDiscardRecords { get; private set; }
 
     /// <summary>
     /// Closing the window abandons migration, so only a handoff whose completion receipt already
@@ -69,9 +84,52 @@ internal sealed class StoreMigrationWorkflow(
     public Task ContinueAsync(CancellationToken cancellationToken) =>
         RunAsync(Stage == StoreMigrationStage.Consent, cancellationToken);
 
+    /// <summary>
+    /// Deletes records that cannot be decoded, then re-inspects. The receipt hold is released only
+    /// on success: the hold exists because an undecodable receipt might mean data moved, and after
+    /// the records are gone there is nothing left for a later pass to read it from.
+    /// </summary>
+    public async Task DiscardRecordsAsync(CancellationToken cancellationToken)
+    {
+        if (IsBusy || Stage != StoreMigrationStage.Recovery)
+            return;
+
+        IsBusy = true;
+        var result = StoreMigrationDiscardState.Failed;
+        try
+        {
+            Changed?.Invoke();
+            result = await Task.Run(operations.DiscardUnreadableRecords, cancellationToken);
+            if (result != StoreMigrationDiscardState.Discarded)
+                logger.Error($"Could not discard the migration records ({result}).");
+        }
+        catch (Exception exception)
+        {
+            logger.Error($"Discarding the migration records failed: {exception}");
+        }
+        finally
+        {
+            IsBusy = false;
+            // A contended or failing discard stays offered so the user can retry. Readable
+            // records mean the offer was wrong, and repeating it would only mislead.
+            if (result == StoreMigrationDiscardState.RecordsAreReadable)
+                CanDiscardRecords = false;
+            Changed?.Invoke();
+        }
+
+        if (result != StoreMigrationDiscardState.Discarded)
+            return;
+
+        _holdsCompletedHandoff = false;
+        await RunAsync(false, cancellationToken);
+    }
+
     private async Task RunAsync(bool confirmed, CancellationToken cancellationToken)
     {
-        if (IsBusy || Stage is StoreMigrationStage.Ready or StoreMigrationStage.Recovery)
+        // Recovery is deliberately retryable. Its usual cause, a receipt whose source version no
+        // longer matches the installed Inno, clears once the user removes that app, and a pass
+        // that refused to re-inspect would leave them looking at advice they had already followed.
+        if (IsBusy || Stage is StoreMigrationStage.Ready)
             return;
 
         IsBusy = true;
@@ -222,6 +280,26 @@ internal sealed class StoreMigrationWorkflow(
     private void SetStage(StoreMigrationStage stage)
     {
         Stage = stage;
+        if (stage == StoreMigrationStage.Recovery)
+            CanDiscardRecords = RecordsAreUnreadable();
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Recovery is already showing when this runs, so a failure here must not replace it with an
+    /// error. An unanswerable probe hides the offer rather than promising an escape that is not
+    /// there; the guidance text still names the remedies that work from outside the app.
+    /// </summary>
+    private bool RecordsAreUnreadable()
+    {
+        try
+        {
+            return operations.RecordsAreUnreadable();
+        }
+        catch (Exception exception)
+        {
+            logger.Error($"Could not classify the migration records during recovery: {exception}");
+            return false;
+        }
     }
 }

@@ -7193,7 +7193,7 @@
     <value>我們將準備您的設定</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>我們將安全關閉舊版應用程式，驗證您的設定和閘道認證，並儲存受保護的移轉記錄。</value>
+    <value>我們將安全關閉舊版應用程式，檢查您的安裝和設定，並儲存受保護的移轉記錄。</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>您將解除安裝舊版應用程式</value>
@@ -7268,16 +7268,19 @@
     <value>無法安全移轉此安裝。僅支援相同 Windows 使用者且架構相符的預設安裝。您的設定未被變更。</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>OpenClaw 無法安全檢查安裝或移轉記錄。正常啟動已暫停。請先查看應用程式記錄再重試。請勿刪除移轉資料或執行閘道清理。</value>
+    <value>OpenClaw 無法安全檢查安裝或移轉記錄。請先查看應用程式記錄再重試。請勿刪除移轉資料或執行閘道清理。</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>此移轉需要復原。正常啟動已暫停。請查看應用程式記錄。請勿解除安裝舊版應用程式、刪除移轉資料或執行閘道清理。</value>
+    <value>此移轉需要復原。請查看應用程式記錄。如果舊版應用程式仍已安裝，請在「已安裝的應用程式」中將其解除安裝，然後選擇「重試」。請勿手動刪除移轉資料或執行閘道清理。</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>OpenClaw 無法完成移轉。完成收據已保留以供復原。請查看應用程式記錄並重試。請勿刪除移轉資料或執行閘道清理。</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>開啟「已安裝的應用程式」</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>捨棄無法讀取的移轉資料</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 無法開啟要求的頁面。請再試一次，或在移轉完成後手動開啟 Windows 設定 &gt; 應用程式 &gt; 已安裝的應用程式。</value>

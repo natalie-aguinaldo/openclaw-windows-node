@@ -279,8 +279,11 @@ invalid or source-mismatched consent requires Store confirmation. Operational
 read failures block instead of silently consenting. Consent and completion
 remain independent: consent never authorizes destructive uninstall.
 Explicit confirmation does not overwrite corrupt consent. A rejected grant
-enters recovery with Close only; reopen after external recovery rather than
-cycling through a confirmation that cannot succeed.
+enters recovery, which stays retryable: the window keeps Retry and the
+Installed apps shortcut so a user who removes the previous app is noticed by
+the next pass, and it offers to discard migration records when, and only when,
+those records cannot be decoded at all. Nothing that still decodes is deleted,
+and a retry never treats an earlier confirmation as still standing.
 
 The preview:
 

@@ -7193,7 +7193,7 @@
     <value>我们将准备您的配置</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>我们将安全关闭旧版应用，验证您的设置和网关凭据，并保存受保护的迁移记录。</value>
+    <value>我们将安全关闭旧版应用，检查您的安装和设置，并保存受保护的迁移记录。</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>您将卸载旧版应用</value>
@@ -7268,16 +7268,19 @@
     <value>无法安全迁移此安装。仅支持同一 Windows 用户且体系结构匹配的默认安装。您的配置未被更改。</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>OpenClaw 无法安全检查安装或迁移记录。正常启动已暂停。请先查看应用日志再重试。请勿删除迁移数据或运行网关清理。</value>
+    <value>OpenClaw 无法安全检查安装或迁移记录。请先查看应用日志再重试。请勿删除迁移数据或运行网关清理。</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>此迁移需要恢复。正常启动已暂停。请查看应用日志。请勿卸载旧版应用、删除迁移数据或运行网关清理。</value>
+    <value>此迁移需要恢复。请查看应用日志。如果旧版应用仍已安装，请在“已安装的应用”中将其卸载，然后选择“重试”。请勿手动删除迁移数据或运行网关清理。</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>OpenClaw 无法完成迁移。完成收据已保留以供恢复。请查看应用日志并重试。请勿删除迁移数据或运行网关清理。</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>打开“已安装的应用”</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>放弃无法读取的迁移数据</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows 无法打开请求的页面。请重试，或在迁移完成后手动打开 Windows 设置 &gt; 应用 &gt; 已安装的应用。</value>

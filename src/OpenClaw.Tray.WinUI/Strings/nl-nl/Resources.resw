@@ -7194,7 +7194,7 @@ Kies {1} om dit voorbeeld te sluiten zonder de migratie te starten en de vorige 
     <value>We bereiden uw configuratie voor</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>We sluiten de vorige app veilig af, valideren uw instellingen en gatewayreferenties en slaan beveiligde migratiegegevens op.</value>
+    <value>We sluiten de vorige app veilig af, controleren uw installatie en instellingen en slaan beveiligde migratiegegevens op.</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>U verwijdert de vorige app</value>
@@ -7269,16 +7269,19 @@ Uw instellingen, gateway, bestanden en modellen blijven op hun plaats.</value>
     <value>Deze installatie kan niet veilig worden gemigreerd. Alleen de standaardinstallatie voor dezelfde Windows-gebruiker met een overeenkomende architectuur wordt ondersteund. Uw configuratie is niet gewijzigd.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>OpenClaw kon de installatie of migratierecords niet veilig controleren. Normaal opstarten is gepauzeerd. Bekijk het applogboek voordat u het opnieuw probeert. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
+    <value>OpenClaw kon de installatie of migratierecords niet veilig controleren. Bekijk het applogboek voordat u het opnieuw probeert. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>Deze migratie moet worden hersteld. Normaal opstarten is gepauzeerd. Bekijk het applogboek. Verwijder de vorige app of migratiegegevens niet en voer geen gatewayopruiming uit.</value>
+    <value>Deze migratie moet worden hersteld. Bekijk het applogboek. Als de vorige app nog is geïnstalleerd, verwijder deze via Geïnstalleerde apps en kies Opnieuw proberen. Verwijder migratiegegevens niet handmatig en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>OpenClaw kon de migratie niet afronden. Het voltooiingsbewijs is bewaard voor herstel. Bekijk het applogboek en probeer het opnieuw. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>Geïnstalleerde apps openen</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>Onleesbare migratiegegevens verwijderen</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows kon de gevraagde pagina niet openen. Probeer het opnieuw of open Windows-instellingen &gt; Apps &gt; Geïnstalleerde apps handmatig als de migratie is voltooid.</value>

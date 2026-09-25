@@ -62,6 +62,10 @@ public sealed partial class StoreMigrationWindow : Window
     private void OnPrimary(object sender, RoutedEventArgs args) =>
         AsyncEventHandlerGuard.Run(() => _workflow.ContinueAsync(_lifetime.Token), new AppLogger(), nameof(OnPrimary));
 
+    private void OnDiscardRecords(object sender, RoutedEventArgs args) =>
+        AsyncEventHandlerGuard.Run(
+            () => _workflow.DiscardRecordsAsync(_lifetime.Token), new AppLogger(), nameof(OnDiscardRecords));
+
     private void Render()
     {
         if (_workflow.Stage == StoreMigrationStage.Ready && !_workflow.IsBusy)
@@ -76,16 +80,24 @@ public sealed partial class StoreMigrationWindow : Window
         Progress.IsActive = _workflow.IsBusy;
         Progress.Visibility = _workflow.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         Primary.IsEnabled = Dismiss.IsEnabled = !_workflow.IsBusy;
-        // Recovery has nothing to retry; a refused startup task can only be changed in Windows.
-        Primary.Visibility = _workflow.Stage is StoreMigrationStage.Recovery or StoreMigrationStage.StartupRefused
+        // A refused startup task can only be changed in Windows, so there is nothing to retry.
+        // Recovery is retried deliberately: the user is told to remove the previous app, and the
+        // next pass is what notices they did.
+        Primary.Visibility = _workflow.Stage is StoreMigrationStage.StartupRefused
             ? Visibility.Collapsed : Visibility.Visible;
         Primary.Content = LocalizationHelper.GetString(_workflow.Stage == StoreMigrationStage.Consent
             ? "Migration_StoreMigrate" : "Migration_StoreRetry");
         Dismiss.Content = LocalizationHelper.GetString(_workflow.Stage == StoreMigrationStage.Consent
             ? "Migration_StoreNotNow" : "Migration2_Close");
-        InstalledApps.Visibility = _workflow.Stage == StoreMigrationStage.AwaitingRemoval
-            ? Visibility.Visible : Visibility.Collapsed;
+        // Removing the previous app is the remedy for a receipt that no longer matches it, so the
+        // same shortcut is offered in recovery.
+        InstalledApps.Visibility = _workflow.Stage is StoreMigrationStage.AwaitingRemoval
+            or StoreMigrationStage.Recovery ? Visibility.Visible : Visibility.Collapsed;
         InstalledApps.IsEnabled = !_workflow.IsBusy;
+        DiscardRecords.Content = LocalizationHelper.GetString("Migration2_DiscardRecords");
+        DiscardRecords.Visibility = _workflow.Stage == StoreMigrationStage.Recovery && _workflow.CanDiscardRecords
+            ? Visibility.Visible : Visibility.Collapsed;
+        DiscardRecords.IsEnabled = !_workflow.IsBusy;
         AutomationProperties.SetName(Progress, LocalizationHelper.GetString("Migration2_Busy"));
         if (_renderedStage != _workflow.Stage)
         {

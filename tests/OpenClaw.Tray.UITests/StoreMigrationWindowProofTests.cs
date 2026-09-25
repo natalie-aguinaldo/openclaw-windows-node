@@ -373,7 +373,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
     }
 
     [Fact]
-    public Task Recovery_OffersOnlyClose_WithoutRetryRemovalOrMutation()
+    public Task Recovery_OffersRetryAndRemovalWithoutMutatingRecords()
     {
         var operations = new Operations { Admission = new(StoreMigrationStartupState.RecoveryRequired) };
         return WithWindowAsync(operations, async (window, workflow, completion) =>
@@ -381,7 +381,9 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             await WaitForStageAsync(workflow, StoreMigrationStage.Recovery);
             await ui.RunOnUIAsync(() =>
             {
-                AssertState(window, "Recovery", retry: false);
+                // The remedy is removing the previous app, so recovery shows that shortcut and a
+                // retry that notices it. Discard is withheld: these records still decode.
+                AssertState(window, "Recovery", removal: true);
                 Assert.Same(Control<Button>(window, "Dismiss"),
                     FocusManager.GetFocusedElement(Root(window).XamlRoot));
                 Assert.Equal(new[] { "inspect" }, operations.Calls);
@@ -392,6 +394,27 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             // Recovery holds no completion receipt, so dismissal returns the user to the app.
             Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
             await ui.RunOnUIAsync(() => Assert.Equal(new[] { "inspect" }, operations.Calls));
+        });
+    }
+
+    [Fact]
+    public Task Recovery_DiscardsUnreadableRecordsAndReleasesTheApp()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired),
+            Unreadable = true
+        };
+        return WithWindowAsync(operations, async (window, workflow, completion) =>
+        {
+            await WaitForStageAsync(workflow, StoreMigrationStage.Recovery);
+            await ui.RunOnUIAsync(() => AssertState(window, "Recovery", removal: true, discard: true));
+            await CaptureAsync(window, "RecoveryDiscard");
+
+            await InvokeAsync(window, "DiscardRecords");
+
+            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            await ui.RunOnUIAsync(() => Assert.Equal(new[] { "inspect", "discard", "inspect" }, operations.Calls));
         });
     }
 
@@ -462,7 +485,7 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
 
     private static void AssertState(
         StoreMigrationWindow window, string status, bool consent = false, bool busy = false,
-        bool removal = false, bool retry = true)
+        bool removal = false, bool retry = true, bool discard = false)
     {
         var root = Root(window);
         root.UpdateLayout();
@@ -518,6 +541,8 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             consent ? "Migration_StoreNotNow" : "Migration2_Close", enabled: !busy);
         AssertButton(window, "InstalledApps", "MigrationInstalledApps", "Migration2_InstalledApps",
             enabled: !busy, visible: removal);
+        AssertButton(window, "DiscardRecords", "MigrationDiscardRecords", "Migration2_DiscardRecords",
+            enabled: !busy, visible: discard);
         var progress = Control<ProgressRing>(window, "Progress");
         Assert.Equal(busy, progress.IsActive);
         Assert.Equal(busy ? Visibility.Visible : Visibility.Collapsed, progress.Visibility);
@@ -633,6 +658,18 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
         {
             Calls.Add("receipt?");
             return false;
+        }
+
+        public bool Unreadable { get; set; }
+
+        public bool RecordsAreUnreadable() => Unreadable;
+
+        public StoreMigrationDiscardState DiscardUnreadableRecords()
+        {
+            Calls.Add("discard");
+            Unreadable = false;
+            Admission = new(StoreMigrationStartupState.NotRequired);
+            return StoreMigrationDiscardState.Discarded;
         }
 
         public void GrantConsent(InnoInstallation installation)

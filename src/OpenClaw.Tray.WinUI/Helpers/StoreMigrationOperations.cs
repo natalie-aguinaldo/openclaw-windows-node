@@ -95,6 +95,24 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
             new MigrationFinalizationRecordCleaner(_binding!), _logger).FinalizeAsync();
     }
 
+    /// <summary>
+    /// Like <see cref="HoldsCompletionReceipt"/>, independent of detection and policy: recovery
+    /// may be showing because inspection itself could not run.
+    /// </summary>
+    public bool RecordsAreUnreadable()
+    {
+        _binding ??= MigrationEnvironment.CreateBinding();
+        return new MigrationStartupRecordReader(_binding, _logger).Read().Status
+            == MigrationStartupRecordStatus.Invalid;
+    }
+
+    public StoreMigrationDiscardState DiscardUnreadableRecords()
+    {
+        _binding ??= MigrationEnvironment.CreateBinding();
+        return new StoreMigrationRecoveryDiscard(
+            _binding, new MigrationStartupRecordReader(_binding, _logger), _logger).Discard();
+    }
+
     private sealed class StoreMigrationAutoStartApplier : IStoreMigrationAutoStartApplier
     {
         public async Task ApplyAsync(bool enabled)

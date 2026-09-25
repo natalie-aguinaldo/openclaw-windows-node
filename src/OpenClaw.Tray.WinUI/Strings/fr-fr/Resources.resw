@@ -7193,7 +7193,7 @@ Choisissez {1} pour quitter cet aperçu sans démarrer la migration et continuer
     <value>Nous préparerons votre configuration</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>Nous fermerons l'application précédente en toute sécurité, validerons vos paramètres et les informations d'identification de votre passerelle, puis enregistrerons des données de migration protégées.</value>
+    <value>Nous fermerons l'application précédente en toute sécurité, vérifierons votre installation et vos paramètres, puis enregistrerons des données de migration protégées.</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>Vous désinstallerez l'application précédente</value>
@@ -7268,16 +7268,19 @@ Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place
     <value>Cette installation ne peut pas être migrée en toute sécurité. Seule l'installation par défaut pour le même utilisateur Windows et avec une architecture correspondante est prise en charge. Votre configuration n'a pas été modifiée.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>OpenClaw n'a pas pu vérifier en toute sécurité l'installation ou les enregistrements de migration. Le démarrage normal est suspendu. Consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+    <value>OpenClaw n'a pas pu vérifier en toute sécurité l'installation ou les enregistrements de migration. Consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>Cette migration nécessite une récupération. Le démarrage normal est suspendu. Consultez le journal de l'application. Ne désinstallez pas l'application précédente, ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
+    <value>Cette migration nécessite une récupération. Consultez le journal de l'application. Si l'application précédente est toujours installée, supprimez-la dans Applications installées, puis sélectionnez Réessayer. Ne supprimez pas les données de migration manuellement et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu terminer la migration. Le reçu de fin de migration a été conservé pour permettre une récupération. Consultez le journal de l'application et réessayez. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>Ouvrir Applications installées</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>Ignorer les données de migration illisibles</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows n'a pas pu ouvrir la page demandée. Réessayez ou ouvrez manuellement Paramètres Windows &gt; Applications &gt; Applications installées si la migration est terminée.</value>

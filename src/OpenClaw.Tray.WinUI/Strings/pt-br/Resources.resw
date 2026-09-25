@@ -7247,7 +7247,7 @@ Escolha {1} para sair desta prévia sem iniciar a migração e continuar usando 
     <value>Vamos preparar sua configuração</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>Vamos fechar o aplicativo anterior com segurança, validar suas configurações e credenciais do gateway e salvar registros protegidos de migração.</value>
+    <value>Vamos fechar o aplicativo anterior com segurança, verificar sua instalação e configurações e salvar registros protegidos de migração.</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>Você removerá o aplicativo anterior</value>
@@ -7322,16 +7322,19 @@ Suas configurações, gateway, arquivos e modelos permanecem no mesmo local.</va
     <value>Esta instalação não pode ser migrada com segurança. Apenas a instalação padrão para o mesmo usuário do Windows e com arquitetura correspondente é compatível. Sua configuração não foi alterada.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>O OpenClaw não conseguiu verificar com segurança a instalação ou os registros de migração. A inicialização normal está pausada. Consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
+    <value>O OpenClaw não conseguiu verificar com segurança a instalação ou os registros de migração. Consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>Esta migração precisa de recuperação. A inicialização normal está pausada. Consulte o log do aplicativo. Não desinstale o aplicativo anterior, não exclua os dados de migração nem execute a limpeza do gateway.</value>
+    <value>Esta migração precisa de recuperação. Consulte o log do aplicativo. Se o aplicativo anterior ainda estiver instalado, remova-o em Aplicativos instalados e selecione Tentar novamente. Não exclua os dados de migração manualmente nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>O OpenClaw não conseguiu finalizar a migração. O recibo de conclusão foi preservado para recuperação. Consulte o log do aplicativo e tente novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>Abrir Aplicativos instalados</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>Descartar dados de migração ilegíveis</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>O Windows não conseguiu abrir a página solicitada. Tente novamente ou abra Configurações do Windows &gt; Aplicativos &gt; Aplicativos instalados manualmente se a migração estiver concluída.</value>

@@ -70,30 +70,30 @@ public sealed class Migration2LocalizationTests
 
     [Theory]
     [InlineData("en-us", "settings, gateway, files, and models where they are",
-        "safely close the previous app", "validate your settings and gateway credentials",
+        "safely close the previous app", "check your installation and settings",
         "protected migration records", "When prompted, uninstall it manually",
         "Nothing is uninstalled automatically", "verify removal before starting the Store version",
         "without starting migration", "If validation succeeds", "can no longer start normally")]
     [InlineData("fr-fr", "paramètres, votre passerelle, vos fichiers et vos modèles en place",
         "fermerons l'application précédente en toute sécurité",
-        "validerons vos paramètres et les informations d'identification de votre passerelle",
+        "vérifierons votre installation et vos paramètres",
         "données de migration protégées", "Lorsque vous y serez invité, désinstallez-la manuellement",
         "Rien ne sera désinstallé automatiquement", "vérifions la désinstallation avant de démarrer la version du Store",
         "sans démarrer la migration", "Si la validation réussit", "ne pourra plus démarrer normalement")]
     [InlineData("nl-nl", "instellingen, gateway, bestanden en modellen op hun huidige plek",
-        "sluiten de vorige app veilig af", "valideren uw instellingen en gatewayreferenties",
+        "sluiten de vorige app veilig af", "controleren uw installatie en instellingen",
         "beveiligde migratiegegevens", "Verwijder de app handmatig wanneer daarom wordt gevraagd",
         "Er wordt niets automatisch verwijderd", "verifiëren de verwijdering voordat we de Store-versie starten",
         "zonder de migratie te starten", "Als de validatie slaagt", "niet meer normaal starten")]
     [InlineData("pt-br", "configurações, gateway, arquivos e modelos onde estão",
-        "fechar o aplicativo anterior com segurança", "validar suas configurações e credenciais do gateway",
+        "fechar o aplicativo anterior com segurança", "verificar sua instalação e configurações",
         "registros protegidos de migração", "Quando solicitado, desinstale-o manualmente",
         "Nada será desinstalado automaticamente", "Verificamos a remoção antes de iniciar a versão da Store",
         "sem iniciar a migração", "Se a validação for bem-sucedida", "não poderá mais iniciar normalmente")]
-    [InlineData("zh-cn", "设置、网关、文件和模型保留在原处", "安全关闭旧版应用", "验证您的设置和网关凭据",
+    [InlineData("zh-cn", "设置、网关、文件和模型保留在原处", "安全关闭旧版应用", "检查您的安装和设置",
         "受保护的迁移记录", "收到提示后，请手动卸载", "不会自动卸载任何应用",
         "验证移除状态后再启动 Store 版本", "不会开始迁移", "如果验证成功", "将无法正常启动")]
-    [InlineData("zh-tw", "設定、閘道、檔案和模型保留在原處", "安全關閉舊版應用程式", "驗證您的設定和閘道認證",
+    [InlineData("zh-tw", "設定、閘道、檔案和模型保留在原處", "安全關閉舊版應用程式", "檢查您的安裝和設定",
         "受保護的移轉記錄", "收到提示後，請手動解除安裝", "不會自動解除安裝任何應用程式",
         "驗證移除狀態後再啟動 Store 版本", "不會開始移轉", "如果驗證成功", "將無法正常啟動")]
     public void StoreComposedConsent_DisclosesSafetyAtTheRelevantStep(
@@ -279,8 +279,27 @@ public sealed class Migration2LocalizationTests
         }
     }
 
-    private static Dictionary<string, string> ReadResources(string locale) =>
-        XDocument.Load(Path.Combine(TestRepositoryPaths.GetRepositoryRoot(),
+    [Fact]
+    public void RecoveryGuidance_NamesTheRemedyInsteadOfForbiddingIt()
+    {
+        var recovery = ReadResources("en-us")["Migration2_Recovery"];
+        // The previous copy forbade the only remedy that works, which left recovery a dead end.
+        Assert.DoesNotContain("Do not uninstall the previous app", recovery);
+        Assert.Contains("Installed apps", recovery);
+        Assert.Contains("Retry", recovery);
+    }
+
+    [Theory]
+    [InlineData("en-us")]
+    [InlineData("fr-fr")]
+    [InlineData("nl-nl")]
+    [InlineData("pt-br")]
+    [InlineData("zh-cn")]
+    [InlineData("zh-tw")]
+    public void DiscardAction_IsNamedInEveryLocale(string locale) =>
+        Assert.False(string.IsNullOrWhiteSpace(ReadResources(locale)["Migration2_DiscardRecords"]));
+
+    private static Dictionary<string, string> ReadResources(string locale) =>        XDocument.Load(Path.Combine(TestRepositoryPaths.GetRepositoryRoot(),
             "src", "OpenClaw.Tray.WinUI", "Strings", locale, "Resources.resw"))
             .Root!.Elements("data").ToDictionary(
                 element => element.Attribute("name")!.Value,

@@ -7257,7 +7257,7 @@ Choose {1} to exit this preview without starting migration and continue using th
     <value>We'll prepare your setup</value>
   </data>
   <data name="Migration2_PrepareStepBody" xml:space="preserve">
-    <value>We'll safely close the previous app, validate your settings and gateway credentials, and save protected migration records.</value>
+    <value>We'll safely close the previous app, check your installation and settings, and save protected migration records.</value>
   </data>
   <data name="Migration2_RemoveStepTitle" xml:space="preserve">
     <value>You'll remove the previous app</value>
@@ -7332,16 +7332,19 @@ Your settings, gateway, files, and models stay in place.</value>
     <value>This installation cannot be migrated safely. Only the default installation for the same Windows user and matching architecture is supported. Your setup has not been changed.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
-    <value>OpenClaw could not safely inspect the installation or migration records. Normal startup is paused. Check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
+    <value>OpenClaw could not safely inspect the installation or migration records. Check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
   </data>
   <data name="Migration2_Recovery" xml:space="preserve">
-    <value>This migration needs recovery. Normal startup is paused. Check the app log. Do not uninstall the previous app, delete migration data, or run gateway cleanup.</value>
+    <value>This migration needs recovery. Check the app log. If the previous app is still installed, remove it from Installed apps and select Retry. Do not delete migration data by hand or run gateway cleanup.</value>
   </data>
   <data name="Migration2_FinalizationFailed" xml:space="preserve">
     <value>OpenClaw could not finish migration. The completion receipt was kept for recovery. Check the app log and retry. Do not delete migration data or run gateway cleanup.</value>
   </data>
   <data name="Migration2_InstalledApps" xml:space="preserve">
     <value>Open Installed apps</value>
+  </data>
+  <data name="Migration2_DiscardRecords" xml:space="preserve">
+    <value>Discard unreadable migration data</value>
   </data>
   <data name="Migration2_LaunchFailed" xml:space="preserve">
     <value>Windows could not open the requested page. Try again, or open Windows Settings &gt; Apps &gt; Installed apps manually if migration is complete.</value>

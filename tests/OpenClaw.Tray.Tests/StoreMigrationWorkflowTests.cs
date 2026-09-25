@@ -342,9 +342,140 @@ public sealed class StoreMigrationWorkflowTests
         await workflow.ContinueAsync(CancellationToken.None);
         Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
         operations.Calls.Clear();
+
+        // Recovery is retryable, so a retry re-inspects. What it must never do is treat the
+        // earlier confirmation as still standing and grant again over the preserved record.
         await workflow.ContinueAsync(CancellationToken.None);
-        Assert.Empty(operations.Calls);
+
+        Assert.DoesNotContain("grant", operations.Calls);
+        Assert.Equal(StoreMigrationStage.Consent, workflow.Stage);
+    }
+
+    [Fact]
+    public async Task Recovery_RetriesInsteadOfStranding()
+    {
+        var operations = new Operations { Admission = new(StoreMigrationStartupState.RecoveryRequired) };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
         Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+        // The remedy for the usual cause is removing the previous app, which only a fresh pass sees.
+        operations.Admission = new(StoreMigrationStartupState.NotRequired);
+        operations.Calls.Clear();
+
+        await workflow.ContinueAsync(CancellationToken.None);
+
+        Assert.Contains("inspect", operations.Calls);
+        Assert.Equal(StoreMigrationStage.Ready, workflow.Stage);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DiscardIsOfferedOnlyForRecordsThatCannotBeRead(bool unreadable)
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired),
+            Unreadable = unreadable
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+        Assert.Equal(unreadable, workflow.CanDiscardRecords);
+    }
+
+    [Fact]
+    public async Task FailingToClassifyRecords_HidesTheDiscardOfferInsteadOfFailing()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired),
+            UnreadableError = new UnauthorizedAccessException("denied")
+        };
+        var workflow = Create(operations);
+
+        await workflow.StartAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+        Assert.False(workflow.CanDiscardRecords);
+    }
+
+    [Fact]
+    public async Task DiscardingUnreadableRecords_ReleasesTheStartupBlockAndReinspects()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired, null, true),
+            Unreadable = true
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.True(workflow.BlocksStartup);
+        operations.Calls.Clear();
+
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+
+        Assert.Equal(new[] { "discard", "inspect" }, operations.Calls);
+        Assert.Equal(StoreMigrationStage.Ready, workflow.Stage);
+        Assert.False(workflow.BlocksStartup);
+    }
+
+    [Fact]
+    public async Task AFailedDiscard_KeepsTheReceiptHoldAndStaysInRecovery()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired, null, true),
+            Unreadable = true,
+            Discarded = StoreMigrationDiscardState.Busy
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        operations.Calls.Clear();
+
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+
+        Assert.Equal(new[] { "discard" }, operations.Calls);
+        Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+        // A contended discard is worth retrying, so the offer stays.
+        Assert.True(workflow.CanDiscardRecords);
+    }
+
+    [Fact]
+    public async Task DiscardingReadableRecords_IsRefusedAndWithdrawsTheOffer()
+    {
+        var operations = new Operations
+        {
+            Admission = new(StoreMigrationStartupState.RecoveryRequired, null, true),
+            Unreadable = true,
+            Discarded = StoreMigrationDiscardState.RecordsAreReadable
+        };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+
+        Assert.Equal(StoreMigrationStage.Recovery, workflow.Stage);
+        Assert.True(workflow.BlocksStartup);
+        Assert.False(workflow.CanDiscardRecords);
+    }
+
+    [Fact]
+    public async Task DiscardIsRefusedOutsideRecovery()
+    {
+        var operations = new Operations { Unreadable = true };
+        var workflow = Create(operations);
+        await workflow.StartAsync(CancellationToken.None);
+        Assert.Equal(StoreMigrationStage.Consent, workflow.Stage);
+        operations.Calls.Clear();
+
+        await workflow.DiscardRecordsAsync(CancellationToken.None);
+
+        Assert.Empty(operations.Calls);
+        Assert.Equal(StoreMigrationStage.Consent, workflow.Stage);
     }
 
     [Fact]
@@ -436,5 +567,23 @@ public sealed class StoreMigrationWorkflowTests
         { Calls.Add("complete"); return Task.FromResult(Completed); }
         public Task<StoreMigrationFinalizationDecision> FinalizeAsync()
         { Calls.Add("finalize"); return Task.FromResult(new StoreMigrationFinalizationDecision(Finalized)); }
+        public bool Unreadable { get; set; }
+        public Exception? UnreadableError { get; set; }
+        public StoreMigrationDiscardState Discarded { get; set; } = StoreMigrationDiscardState.Discarded;
+        public bool RecordsAreUnreadable()
+        {
+            if (UnreadableError is not null) throw UnreadableError;
+            return Unreadable;
+        }
+        public StoreMigrationDiscardState DiscardUnreadableRecords()
+        {
+            Calls.Add("discard");
+            if (Discarded == StoreMigrationDiscardState.Discarded)
+            {
+                Unreadable = false;
+                Admission = new(StoreMigrationStartupState.NotRequired);
+            }
+            return Discarded;
+        }
     }
 }
