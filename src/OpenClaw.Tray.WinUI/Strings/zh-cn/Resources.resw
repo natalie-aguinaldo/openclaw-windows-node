@@ -7262,10 +7262,10 @@
     <value>OpenClaw 无法安全完成迁移。请勿卸载旧版应用或运行网关清理。请查看应用日志，解决问题后重试。</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>请先将旧版应用更新到受支持且具备迁移功能的版本。您的配置未被更改。</value>
+    <value>请先将旧版应用更新到受支持且具备迁移功能的版本。您的配置未被更改。在旧版应用仍安装的情况下，此应用将保持未激活状态。</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>无法安全迁移此安装。仅支持同一 Windows 用户且体系结构匹配的默认安装。您的配置未被更改。</value>
+    <value>无法安全迁移此安装。仅支持同一 Windows 用户且体系结构匹配的默认安装。您的配置未被更改。在旧版应用仍安装的情况下，此应用将保持未激活状态。</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>OpenClaw 无法安全检查安装或迁移记录。请先查看应用日志再重试。请勿删除迁移数据或运行网关清理。</value>

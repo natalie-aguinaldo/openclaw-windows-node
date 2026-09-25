@@ -7262,10 +7262,10 @@ Vos paramètres, votre passerelle, vos fichiers et vos modèles restent en place
     <value>OpenClaw n'a pas pu terminer la migration en toute sécurité. Ne désinstallez pas l'application précédente et ne lancez pas le nettoyage de la passerelle. Consultez le journal de l'application, résolvez le problème et réessayez.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>Mettez d'abord l'application précédente à jour vers une version compatible prenant en charge la migration. Votre configuration n'a pas été modifiée.</value>
+    <value>Mettez d'abord l'application précédente à jour vers une version compatible prenant en charge la migration. Votre configuration n'a pas été modifiée. Cette application reste inactive tant que l'application précédente est installée.</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>Cette installation ne peut pas être migrée en toute sécurité. Seule l'installation par défaut pour le même utilisateur Windows et avec une architecture correspondante est prise en charge. Votre configuration n'a pas été modifiée.</value>
+    <value>Cette installation ne peut pas être migrée en toute sécurité. Seule l'installation par défaut pour le même utilisateur Windows et avec une architecture correspondante est prise en charge. Votre configuration n'a pas été modifiée. Cette application reste inactive tant que l'application précédente est installée.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>OpenClaw n'a pas pu vérifier en toute sécurité l'installation ou les enregistrements de migration. Consultez le journal de l'application avant de réessayer. Ne supprimez pas les données de migration et ne lancez pas le nettoyage de la passerelle.</value>

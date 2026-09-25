@@ -7262,10 +7262,10 @@
     <value>OpenClaw 無法安全完成移轉。請勿解除安裝舊版應用程式或執行閘道清理。請查看應用程式記錄，解決問題後重試。</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>請先將舊版應用程式更新至受支援且具備移轉功能的版本。您的設定未被變更。</value>
+    <value>請先將舊版應用程式更新至受支援且具備移轉功能的版本。您的設定未被變更。在舊版應用程式仍安裝的情況下，此應用程式將保持未啟用狀態。</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>無法安全移轉此安裝。僅支援相同 Windows 使用者且架構相符的預設安裝。您的設定未被變更。</value>
+    <value>無法安全移轉此安裝。僅支援相同 Windows 使用者且架構相符的預設安裝。您的設定未被變更。在舊版應用程式仍安裝的情況下，此應用程式將保持未啟用狀態。</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>OpenClaw 無法安全檢查安裝或移轉記錄。請先查看應用程式記錄再重試。請勿刪除移轉資料或執行閘道清理。</value>

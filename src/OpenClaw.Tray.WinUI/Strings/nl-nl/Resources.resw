@@ -7263,10 +7263,10 @@ Uw instellingen, gateway, bestanden en modellen blijven op hun plaats.</value>
     <value>OpenClaw kon de migratie niet veilig voltooien. Verwijder de vorige app niet en voer geen gatewayopruiming uit. Bekijk het applogboek, los het probleem op en probeer het opnieuw.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>Werk de vorige app eerst bij naar een ondersteunde versie met migratieondersteuning. Uw configuratie is niet gewijzigd.</value>
+    <value>Werk de vorige app eerst bij naar een ondersteunde versie met migratieondersteuning. Uw configuratie is niet gewijzigd. Deze app blijft inactief zolang de vorige app is geïnstalleerd.</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>Deze installatie kan niet veilig worden gemigreerd. Alleen de standaardinstallatie voor dezelfde Windows-gebruiker met een overeenkomende architectuur wordt ondersteund. Uw configuratie is niet gewijzigd.</value>
+    <value>Deze installatie kan niet veilig worden gemigreerd. Alleen de standaardinstallatie voor dezelfde Windows-gebruiker met een overeenkomende architectuur wordt ondersteund. Uw configuratie is niet gewijzigd. Deze app blijft inactief zolang de vorige app is geïnstalleerd.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>OpenClaw kon de installatie of migratierecords niet veilig controleren. Bekijk het applogboek voordat u het opnieuw probeert. Verwijder geen migratiegegevens en voer geen gatewayopruiming uit.</value>

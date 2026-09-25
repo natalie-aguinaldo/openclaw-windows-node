@@ -7316,10 +7316,10 @@ Suas configurações, gateway, arquivos e modelos permanecem no mesmo local.</va
     <value>O OpenClaw não conseguiu concluir a migração com segurança. Não desinstale o aplicativo anterior nem execute a limpeza do gateway. Consulte o log do aplicativo, resolva o problema e tente novamente.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>Primeiro, atualize o aplicativo anterior para uma versão compatível com suporte à migração. Sua configuração não foi alterada.</value>
+    <value>Primeiro, atualize o aplicativo anterior para uma versão compatível com suporte à migração. Sua configuração não foi alterada. Este aplicativo permanece inativo enquanto o aplicativo anterior estiver instalado.</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>Esta instalação não pode ser migrada com segurança. Apenas a instalação padrão para o mesmo usuário do Windows e com arquitetura correspondente é compatível. Sua configuração não foi alterada.</value>
+    <value>Esta instalação não pode ser migrada com segurança. Apenas a instalação padrão para o mesmo usuário do Windows e com arquitetura correspondente é compatível. Sua configuração não foi alterada. Este aplicativo permanece inativo enquanto o aplicativo anterior estiver instalado.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>O OpenClaw não conseguiu verificar com segurança a instalação ou os registros de migração. Consulte o log do aplicativo antes de tentar novamente. Não exclua os dados de migração nem execute a limpeza do gateway.</value>

@@ -7326,10 +7326,10 @@ Your settings, gateway, files, and models stay in place.</value>
     <value>OpenClaw could not safely complete migration. Do not uninstall the previous app or run gateway cleanup. Check the app log, resolve the problem, and retry.</value>
   </data>
   <data name="Migration2_UpdateRequired" xml:space="preserve">
-    <value>Update the previous app to a supported migration-capable version first. Your setup has not been changed.</value>
+    <value>Update the previous app to a supported migration-capable version first. Your setup has not been changed. This app stays inactive while the previous app is installed.</value>
   </data>
   <data name="Migration2_Unsupported" xml:space="preserve">
-    <value>This installation cannot be migrated safely. Only the default installation for the same Windows user and matching architecture is supported. Your setup has not been changed.</value>
+    <value>This installation cannot be migrated safely. Only the default installation for the same Windows user and matching architecture is supported. Your setup has not been changed. This app stays inactive while the previous app is installed.</value>
   </data>
   <data name="Migration2_InspectionFailed" xml:space="preserve">
     <value>OpenClaw could not safely inspect the installation or migration records. Check the app log before retrying. Do not delete migration data or run gateway cleanup.</value>
