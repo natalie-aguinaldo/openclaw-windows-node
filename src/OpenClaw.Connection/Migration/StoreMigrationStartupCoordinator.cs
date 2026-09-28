@@ -109,7 +109,12 @@ public sealed class StoreMigrationStartupCoordinator(
         {
             // An installation that predates the migration payload is not unsupportable; it just
             // needs the update that ships migration. Asking for that is actionable guidance.
-            return Decide(detected.RegisteredVersion is { } registered && registered < minimum
+            // A prerelease source lands here as well: its version never parses, so it arrives
+            // with no version to compare, and reporting it as an unsupported location, user, or
+            // architecture would send the user to verify things that are already correct.
+            var needsSourceUpdate = detected.RegisteredVersionUnsupported ||
+                (detected.RegisteredVersion is { } registered && registered < minimum);
+            return Decide(needsSourceUpdate
                 ? StoreMigrationStartupState.UpdateInno
                 : StoreMigrationStartupState.UnsupportedInstallation, receipt,
                 sourcePayloadPresent: sourcePayloadPresent);

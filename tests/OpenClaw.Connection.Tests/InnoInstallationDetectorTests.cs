@@ -366,6 +366,46 @@ public sealed class InnoInstallationDetectorTests
         fixture.AssertUnsupported();
     }
 
+    /// <summary>
+    /// A prerelease source is refused for its version, not for its location, Windows user, or
+    /// architecture. Startup policy needs that distinction to ask for an update instead of
+    /// sending the user to verify settings that are already correct. Prerelease Inno installers
+    /// are published on the releases page, so this is a shipped path, not a theoretical one.
+    /// </summary>
+    [Theory]
+    [InlineData("2026.9.5-alpha.19")]
+    [InlineData("2026.9.4-alpha.1")]
+    [InlineData("1.2.3-beta")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void AnUnreadableRegisteredVersion_IsReportedAsAVersionRefusal(string? version)
+    {
+        using var fixture = new Fixture();
+        fixture.Registration = fixture.Registration with { DisplayVersion = version };
+
+        var result = fixture.Detect();
+
+        Assert.Equal(InnoInstallationStatus.Unsupported, result.Status);
+        Assert.True(result.RegisteredVersionUnsupported);
+        Assert.Null(result.RegisteredVersion);
+    }
+
+    /// <summary>
+    /// The counterpart: a refusal that has nothing to do with the version must not borrow the
+    /// update guidance, or every unsupported installation would be told to update.
+    /// </summary>
+    [Fact]
+    public void ARefusalUnrelatedToTheVersion_IsNotReportedAsAVersionRefusal()
+    {
+        using var fixture = new Fixture();
+        fixture.Source.Binary = fixture.Source.Binary with { Version = "2026.9.18" };
+
+        var result = fixture.Detect();
+
+        Assert.Equal(InnoInstallationStatus.Unsupported, result.Status);
+        Assert.False(result.RegisteredVersionUnsupported);
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("2026.9.18")]

@@ -77,7 +77,7 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
             sourcePayloadPresent = HasTrayExecutable(registration);
             if (!MigrationVersionPolicy.TryParseReleaseVersion(registration.DisplayVersion, out var version))
                 return Unsupported("The Inno DisplayVersion is not a stable numeric release version.",
-                    sourcePayloadPresent: sourcePayloadPresent);
+                    sourcePayloadPresent: sourcePayloadPresent, registeredVersionUnsupported: true);
             // Inno's default UninstallDisplayName includes the unnormalized AppVersion.
             if (registration.DisplayName != $"OpenClaw Companion version {registration.DisplayVersion}" ||
                 registration.Publisher != "OpenClaw Foundation")
@@ -199,11 +199,13 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
     }
 
     private InnoInstallationDetection Unsupported(
-        string reason, Version? registeredVersion = null, bool sourcePayloadPresent = false)
+        string reason, Version? registeredVersion = null, bool sourcePayloadPresent = false,
+        bool registeredVersionUnsupported = false)
     {
         _logger.Warn(reason);
         return new(InnoInstallationStatus.Unsupported, Reason: reason,
-            RegisteredVersion: registeredVersion, SourcePayloadPresent: sourcePayloadPresent);
+            RegisteredVersion: registeredVersion, SourcePayloadPresent: sourcePayloadPresent,
+            RegisteredVersionUnsupported: registeredVersionUnsupported);
     }
 }
 

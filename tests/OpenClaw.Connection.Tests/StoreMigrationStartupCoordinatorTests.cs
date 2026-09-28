@@ -172,6 +172,31 @@ public sealed class StoreMigrationStartupCoordinatorTests
     }
 
     /// <summary>
+    /// A prerelease source never parses, so it reaches admission with no version to compare
+    /// against the minimum. Before the explicit version refusal it fell through to
+    /// UnsupportedInstallation, which tells the user to check the install location, Windows
+    /// user, and architecture. None of those is the problem, and the only obvious way out is
+    /// removing the source app, which forfeits the migration.
+    /// </summary>
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void AnUnreadableSourceVersion_AsksForAnUpdateWithoutWideningTheBlock(
+        bool payloadPresent, bool blocks)
+    {
+        var detection = new InnoInstallationDetection(
+            InnoInstallationStatus.Unsupported,
+            Reason: "The Inno DisplayVersion is not a stable numeric release version.",
+            SourcePayloadPresent: payloadPresent, RegisteredVersionUnsupported: true);
+
+        var result = Evaluate(detection, new(MigrationStartupRecordStatus.None));
+
+        Assert.Equal(StoreMigrationStartupState.UpdateInno, result.State);
+        Assert.Equal(blocks, result.BlocksStartup);
+        Assert.False(result.AllowsNormalStartup);
+    }
+
+    /// <summary>
     /// End to end through admission rather than on a hand-built decision: an installed source that
     /// is too old to migrate keeps the Store app inactive, and the same state without a payload
     /// does not.

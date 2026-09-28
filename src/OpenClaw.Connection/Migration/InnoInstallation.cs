@@ -22,6 +22,13 @@ public sealed record InnoInstallation(
 /// <param name="Installation">Verified installation evidence, present only for <see cref="InnoInstallationStatus.Detected"/>.</param>
 /// <param name="Reason">Why an unsupported or failed inspection reached that conclusion.</param>
 /// <param name="RegisteredVersion">The registered release version, when one could be parsed.</param>
+/// <param name="RegisteredVersionUnsupported">
+/// Whether the registration was refused because its version is not a stable numeric release,
+/// which is the case for a prerelease build. Such a version never parses, so it reaches startup
+/// policy with no <see cref="RegisteredVersion"/> to compare against the minimum. Without this
+/// flag the refusal is indistinguishable from a bad location, user, or architecture, and the
+/// user is told to check things that are already correct.
+/// </param>
 /// <param name="SourcePayloadPresent">
 /// Whether the source tray executable is actually on disk. A registration alone does not prove an
 /// installed app: a botched or interrupted uninstall can leave the registry entry behind with the
@@ -33,7 +40,8 @@ public sealed record InnoInstallationDetection(
     InnoInstallation? Installation = null,
     string? Reason = null,
     Version? RegisteredVersion = null,
-    bool SourcePayloadPresent = false);
+    bool SourcePayloadPresent = false,
+    bool RegisteredVersionUnsupported = false);
 
 public interface IInnoInstallationDetector
 {
