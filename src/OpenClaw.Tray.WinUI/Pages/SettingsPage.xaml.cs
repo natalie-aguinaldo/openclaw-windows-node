@@ -1,5 +1,6 @@
 using Microsoft.Toolkit.Uwp.Notifications;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using OpenClaw.Connection;
 using OpenClaw.Shared;
@@ -98,8 +99,21 @@ public sealed partial class SettingsPage : Page
     {
         StoreMigrationStatus.Message = LocalizationHelper.GetString(messageKey);
         StoreMigrationStatus.Severity = severity;
+        // Re-open a bar the user never dismissed so a second result is announced
+        // rather than silently swapping the text of the first one.
+        StoreMigrationStatus.IsOpen = false;
         StoreMigrationStatus.Visibility = Visibility.Visible;
+        // The bar is collapsed while idle so it does not consume layout spacing, but a
+        // collapsed element has no automation peer, and InfoBar announces through the
+        // existing peer only. Realize it before opening or the announcement is dropped.
+        FrameworkElementAutomationPeer.CreatePeerForElement(StoreMigrationStatus);
         StoreMigrationStatus.IsOpen = true;
+    }
+
+    private void OnStoreMigrationStatusClosed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        if (!sender.IsOpen)
+            sender.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>

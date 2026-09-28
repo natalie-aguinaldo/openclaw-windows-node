@@ -97,7 +97,7 @@
                     bottom settings row past the scroll viewport clip.
                 -->
                 <InfoBar x:Name="StoreMigrationStatus" Visibility="Collapsed"
-                         IsOpen="False" IsClosable="True"/>
+                         IsOpen="False" IsClosable="True" Closed="OnStoreMigrationStatusClosed"/>
 
                 <TextBlock x:Uid="SettingsPage_General" Text="General" Style="{StaticResource BodyStrongTextBlockStyle}"
                            Margin="{StaticResource SectionHeaderMargin}"/>
