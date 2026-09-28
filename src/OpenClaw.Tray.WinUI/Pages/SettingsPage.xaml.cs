@@ -80,22 +80,26 @@ public sealed partial class SettingsPage : Page
             if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
                 return;
             var messageKey = await InnoMigrationHandoff.GrantAndLaunchAsync();
-            StoreMigrationStatus.Message = LocalizationHelper.GetString(messageKey);
-            StoreMigrationStatus.Severity = messageKey == "Migration2_InnoGranted"
-                ? InfoBarSeverity.Success : InfoBarSeverity.Error;
-            StoreMigrationStatus.IsOpen = true;
+            ShowStoreMigrationStatus(messageKey, messageKey == "Migration2_InnoGranted"
+                ? InfoBarSeverity.Success : InfoBarSeverity.Error);
         }
         catch (Exception exception)
         {
             Logger.Error($"Could not show migration consent: {exception.Message}");
-            StoreMigrationStatus.Message = LocalizationHelper.GetString("Migration2_InnoFailed");
-            StoreMigrationStatus.Severity = InfoBarSeverity.Error;
-            StoreMigrationStatus.IsOpen = true;
+            ShowStoreMigrationStatus("Migration2_InnoFailed", InfoBarSeverity.Error);
         }
         finally
         {
             StoreMigrationAction.IsEnabled = true;
         }
+    }
+
+    private void ShowStoreMigrationStatus(string messageKey, InfoBarSeverity severity)
+    {
+        StoreMigrationStatus.Message = LocalizationHelper.GetString(messageKey);
+        StoreMigrationStatus.Severity = severity;
+        StoreMigrationStatus.Visibility = Visibility.Visible;
+        StoreMigrationStatus.IsOpen = true;
     }
 
     /// <summary>

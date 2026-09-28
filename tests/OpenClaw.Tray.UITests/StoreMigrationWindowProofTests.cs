@@ -44,7 +44,8 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 }
             });
             await InvokeAsync(window, "Dismiss");
-            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            // Not now leaves the previous app installed, so the Store app must stay inactive.
+            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
     }
 
@@ -67,7 +68,8 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
             });
             await CaptureAsync(window, "Consent");
             await InvokeAsync(window, "Dismiss");
-            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            // Not now leaves the previous app installed, so the Store app must stay inactive.
+            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
             await ui.RunOnUIAsync(() =>
                 Assert.Equal(new[] { "inspect", "consent?" }, operations.Calls));
         });
@@ -151,7 +153,8 @@ public sealed class StoreMigrationWindowProofTests(UIThreadFixture ui, ITestOutp
                 await CaptureAsync(window, "Consent-520x520-WarningScrolled");
             }
             await InvokeAsync(window, "Dismiss");
-            Assert.True(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
+            // Not now leaves the previous app installed, so the Store app must stay inactive.
+            Assert.False(await completion.WaitAsync(TimeSpan.FromSeconds(10)));
         });
     }
 

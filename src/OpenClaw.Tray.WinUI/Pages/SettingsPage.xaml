@@ -91,7 +91,13 @@
                         </Button>
                     </Grid>
                 </Border>
-                <InfoBar x:Name="StoreMigrationStatus" IsOpen="False" IsClosable="True"/>
+                <!--
+                    Collapsed, not just closed: a closed InfoBar is still a visible
+                    StackPanel child, so it consumes layout spacing and pushes the
+                    bottom settings row past the scroll viewport clip.
+                -->
+                <InfoBar x:Name="StoreMigrationStatus" Visibility="Collapsed"
+                         IsOpen="False" IsClosable="True"/>
 
                 <TextBlock x:Uid="SettingsPage_General" Text="General" Style="{StaticResource BodyStrongTextBlockStyle}"
                            Margin="{StaticResource SectionHeaderMargin}"/>
