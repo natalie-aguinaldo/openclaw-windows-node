@@ -219,9 +219,12 @@ would keep the Store app closed after the previous app was already gone. The rem
 unhappy paths, a failed inspection or a record needing recovery, inform the user and then
 continue to normal startup, because refusing to launch cannot repair either one.
 Still confirm before the tag that the released Inno installer registers
-`DisplayVersion` `2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`:
-a prerelease suffix or a mismatched name is rejected as an unsupported installation,
-so that user is told migration is unavailable instead of being offered it.
+`DisplayVersion` `2026.9.5` and `DisplayName` `OpenClaw Companion version 2026.9.5`.
+Both are refused, and each produces a different message, so check for the right one.
+A prerelease suffix is a version refusal: that user is told to update the previous app
+to a supported version first. A mismatched name is an unsupported installation: that
+user is told migration is unavailable. Neither is offered migration, so the registered
+values still have to be exact.
 
 ### Developer migration test package
 
