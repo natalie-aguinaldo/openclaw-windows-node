@@ -119,7 +119,13 @@ internal sealed class StoreMigrationOperations(string pipeName) : IStoreMigratio
         {
             try
             {
-                await AutoStartManager.SetAutoStartAsync(enabled);
+                // Finalization can run during OnLaunched, before the app's XAML content is
+                // composed. Calling StartupTask.GetAsync on the UI thread there fails fast
+                // through Microsoft.UI.Xaml (STATUS_STOWED_EXCEPTION 0xc000027b), which kills
+                // the process past every managed catch and leaves the receipt behind, so the
+                // next launch crashes the same way. Marshalling the WinRT call off the UI
+                // thread keeps the failure catchable.
+                await Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false);
             }
             catch (AutoStartRefusedException exception) when (exception.IsDurable)
             {

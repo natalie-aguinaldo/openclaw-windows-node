@@ -46,6 +46,13 @@ public sealed class InnoMigrationContractTests
         Assert.Contains("new InnoSourceRemovalVerifier(_binding!, AppIdentity.MutexBaseName)", helper);
         Assert.Contains("new MigrationInventoryCapture(_binding!)", helper);
         Assert.Contains("AutoStartManager.SetAutoStartAsync(enabled)", helper);
+        // Finalization can run inside OnLaunched, before XAML content exists. StartupTask.GetAsync
+        // on the UI thread there fail-fasts through Microsoft.UI.Xaml (0xc000027b), bypassing every
+        // managed catch and stranding the receipt so every later launch dies the same way. The call
+        // must stay marshalled off the UI thread.
+        Assert.Contains(
+            "await Task.Run(() => AutoStartManager.SetAutoStartAsync(enabled)).ConfigureAwait(false)",
+            helper);
         Assert.DoesNotContain(".GetAwaiter().GetResult()", helper);
         // A Windows startup refusal is a durable answer, not a transient failure. The applier must
         // translate it so finalization clears the receipt instead of blocking every future launch.
