@@ -739,6 +739,113 @@ public sealed class InnoInstallationDetectorTests
         }
     }
 
+    /// <summary>
+    /// An uninstall that removed the payload but left its registration behind. The registration
+    /// is otherwise canonical, so the only thing separating it from an absent source is a stale
+    /// registry key, and refusing on that alone leaves the user with no app at all.
+    /// </summary>
+    [Fact]
+    public void ACanonicalRegistrationWithNoPayloadAtAll_IsOrphanedRatherThanUnsupported()
+    {
+        using var fixture = new Fixture();
+        File.Delete(fixture.Payload("OpenClaw.Tray.WinUI.exe"));
+        File.Delete(fixture.Payload("unins000.exe"));
+
+        var result = fixture.Detect();
+
+        Assert.Equal(InnoInstallationStatus.OrphanedRegistration, result.Status);
+        Assert.Null(result.Installation);
+        Assert.False(result.SourcePayloadPresent);
+        Assert.Equal(new Version(2026, 9, 17, 0), result.RegisteredVersion);
+    }
+
+    /// <summary>
+    /// Half a payload is not a removed source. Either remnant can still be executed or resumed,
+    /// so both must be gone before the registration can be treated as an orphan.
+    /// </summary>
+    [Theory]
+    [InlineData("OpenClaw.Tray.WinUI.exe")]
+    [InlineData("unins000.exe")]
+    public void ARegistrationWithASurvivingRemnant_IsNotOrphaned(string survivor)
+    {
+        using var fixture = new Fixture();
+        foreach (var name in new[] { "OpenClaw.Tray.WinUI.exe", "unins000.exe" })
+        {
+            if (!string.Equals(name, survivor, StringComparison.Ordinal))
+                File.Delete(fixture.Payload(name));
+        }
+
+        Assert.Equal(InnoInstallationStatus.Unsupported, fixture.Detect().Status);
+    }
+
+    /// <summary>
+    /// Absence has to be proved. A probe that could not answer is unknown, and treating unknown
+    /// as removed is what would let the Store app start beside a source that is really there.
+    /// </summary>
+    [Fact]
+    public void APayloadProbeThatCannotAnswer_DoesNotQualifyAsOrphaned()
+    {
+        using var fixture = new Fixture();
+        File.Delete(fixture.Payload("OpenClaw.Tray.WinUI.exe"));
+        File.Delete(fixture.Payload("unins000.exe"));
+        fixture.Source.FileError = new UnauthorizedAccessException("Access is denied.");
+        fixture.Source.FileErrorPath = fixture.InstallDirectory;
+
+        Assert.Equal(InnoInstallationStatus.InspectionFailed, fixture.Detect().Status);
+    }
+
+    /// <summary>
+    /// The second probe is reached only because the first proved absence, so it is the one that
+    /// can still be answered wrongly. A refusal there must fail the whole inspection rather than
+    /// letting a half-proved payload qualify as removed.
+    /// </summary>
+    [Fact]
+    public void AnUninstallerProbeThatCannotAnswer_DoesNotQualifyAsOrphaned()
+    {
+        using var fixture = new Fixture();
+        File.Delete(fixture.Payload("OpenClaw.Tray.WinUI.exe"));
+        File.Delete(fixture.Payload("unins000.exe"));
+        fixture.Source.FileError = new UnauthorizedAccessException("Access is denied.");
+        fixture.Source.FileErrorPath = fixture.Payload("unins000.exe");
+
+        Assert.Equal(InnoInstallationStatus.InspectionFailed, fixture.Detect().Status);
+    }
+
+    /// <summary>
+    /// The orphan outcome is admitted only after the registration itself is established as the
+    /// canonical current-user source. A registration that fails those checks stays unsupported
+    /// however little payload it has, so an empty directory cannot launder a bad registration.
+    /// </summary>
+    [Theory]
+    [InlineData("publisher")]
+    [InlineData("location")]
+    [InlineData("uninstall")]
+    [InlineData("machine")]
+    public void ANonCanonicalRegistrationWithNoPayload_StaysUnsupported(string defect)
+    {
+        using var fixture = new Fixture();
+        File.Delete(fixture.Payload("OpenClaw.Tray.WinUI.exe"));
+        File.Delete(fixture.Payload("unins000.exe"));
+        var registration = fixture.Registration;
+        switch (defect)
+        {
+            case "publisher":
+                fixture.Registration = registration with { Publisher = "Someone Else" };
+                break;
+            case "location":
+                fixture.Registration = registration with { InstallLocation = fixture.Temp.Combine("Elsewhere") };
+                break;
+            case "uninstall":
+                fixture.Registration = registration with { UninstallString = "cmd.exe /c whatever" };
+                break;
+            case "machine":
+                fixture.Source.Registrations[(RegistryHive.LocalMachine, RegistryView.Registry64)] = registration;
+                break;
+        }
+
+        Assert.Equal(InnoInstallationStatus.Unsupported, fixture.Detect().Status);
+    }
+
     private sealed class Fixture : IDisposable
     {
         public TempDirectory Temp { get; } = new();
@@ -805,6 +912,15 @@ public sealed class InnoInstallationDetectorTests
                 (FileErrorPath is null || path.StartsWith(FileErrorPath, StringComparison.OrdinalIgnoreCase)))
                 throw FileError;
             return _files.IsOrdinaryFile(path);
+        }
+
+        public bool IsDefinitelyAbsent(string path)
+        {
+            FileReads.Add(path);
+            if (FileError is not null &&
+                (FileErrorPath is null || path.StartsWith(FileErrorPath, StringComparison.OrdinalIgnoreCase)))
+                throw FileError;
+            return _files.IsDefinitelyAbsent(path);
         }
 
         public string ReadIdentity(string path)

@@ -148,8 +148,16 @@ public sealed class InnoSourceRemovalVerifier : IInnoSourceRemovalVerifier
             var uninstaller = Path.Combine(_sourceDirectory, "unins000.exe");
             MigrationRecordCodec.RejectReparsePoints(executable);
             MigrationRecordCodec.RejectReparsePoints(uninstaller);
-            if (File.Exists(executable) || File.Exists(uninstaller))
+            // This is the last gate before records are cleaned and the handoff is declared
+            // finished, so absence has to be proved rather than assumed. File.Exists answers
+            // false for a denied probe, an invalid path, and a directory of the same name alike,
+            // which would report a source that is merely unreadable as removed.
+            var executableState = ProbeSourceObject(executable);
+            var uninstallerState = ProbeSourceObject(uninstaller);
+            if (executableState == SourceObjectState.Present || uninstallerState == SourceObjectState.Present)
                 return InnoSourceRemovalStatus.SourcePresent;
+            if (executableState == SourceObjectState.Unknown || uninstallerState == SourceObjectState.Unknown)
+                return InnoSourceRemovalStatus.InspectionFailed;
 
             var activity = new InnoSourceActivityVerifier(executable, _processes).VerifyStopped();
             if (activity == InnoSourceActivityStatus.Running)
@@ -161,8 +169,8 @@ public sealed class InnoSourceRemovalVerifier : IInnoSourceRemovalVerifier
             return createdNew ? InnoSourceRemovalStatus.Removed : InnoSourceRemovalStatus.SourcePresent;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
-                                         SecurityException or Win32Exception or
-                                         InvalidOperationException or ArgumentException)
+                                         SecurityException or Win32Exception or InvalidDataException or
+                                         InvalidOperationException or ArgumentException or NotSupportedException)
         {
             return InnoSourceRemovalStatus.InspectionFailed;
         }
@@ -173,6 +181,32 @@ public sealed class InnoSourceRemovalVerifier : IInnoSourceRemovalVerifier
         if (string.IsNullOrWhiteSpace(directory) || !Path.IsPathFullyQualified(directory))
             throw new ArgumentException("Source installation directory must be absolute.", nameof(directory));
         return Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+    }
+
+    private enum SourceObjectState { Absent, Present, Unknown }
+
+    /// <summary>
+    /// Any object at the path counts as present, whatever its shape: the question here is whether
+    /// the source is gone, and something occupying the executable's name is not gone. Only a
+    /// not-found result proves absence; anything that merely could not be probed is unknown and
+    /// must leave the caller blocking.
+    /// </summary>
+    private static SourceObjectState ProbeSourceObject(string path)
+    {
+        try
+        {
+            _ = File.GetAttributes(path);
+            return SourceObjectState.Present;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return SourceObjectState.Absent;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or
+                                          SecurityException or ArgumentException or NotSupportedException)
+        {
+            return SourceObjectState.Unknown;
+        }
     }
 }
 
@@ -392,7 +426,12 @@ public sealed class StoreMigrationFinalizationCoordinator(
             return new(StoreMigrationFinalizationState.AwaitingInnoRemoval);
         if (detected.Status is InnoInstallationStatus.Unsupported or InnoInstallationStatus.InspectionFailed)
             return new(StoreMigrationFinalizationState.InspectionFailed);
-        if (detected.Status != InnoInstallationStatus.NotInstalled)
+        // An orphaned registration is admitted here for the same reason admission allows it: the
+        // payload is proved gone and only the registry key remains. It is not taken as permission
+        // to finalize. The removal verifier below still has to return Removed on its own probes,
+        // so a surviving executable, uninstaller, process, or mutex continues to block.
+        if (detected.Status is not (InnoInstallationStatus.NotInstalled or
+                                    InnoInstallationStatus.OrphanedRegistration))
             throw new InvalidOperationException("Unknown Inno installation detection result.");
 
         var sourceRemovalStatus = sourceRemoval.VerifyRemoved();

@@ -4,6 +4,20 @@ public enum InnoInstallationStatus
 {
     NotInstalled,
     Detected,
+
+    /// <summary>
+    /// A canonical current-user registration whose payload is positively gone: the registration
+    /// passed every identity, location, and uninstall-command check, and both the tray executable
+    /// and the uninstaller are definitely absent rather than merely unreadable.
+    /// <para>
+    /// This is deliberately not <see cref="Unsupported"/>. An uninstall that removes the payload
+    /// but leaves the registration behind would otherwise be refused forever: the receipt holds a
+    /// durable startup block, the source can never come back, and the user is left with neither
+    /// the previous app nor the Store app. Absence proved here still authorizes nothing on its
+    /// own; finalization re-verifies removal independently before acting.
+    /// </para>
+    /// </summary>
+    OrphanedRegistration,
     Unsupported,
     InspectionFailed
 }

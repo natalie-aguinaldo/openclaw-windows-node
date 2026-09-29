@@ -76,14 +76,18 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
 
     /// <summary>
     /// Recovery after the source app is gone: an intent that still decodes can never be acted on,
-    /// because there is nothing left to migrate from. Retry cannot clear it, so discard must.
+    /// because there is nothing left to migrate from. Retry cannot clear it, so discard must. An
+    /// orphaned registration qualifies for the same reason: its payload is positively absent, and
+    /// without it recovery would offer a discard button that clears nothing.
     /// </summary>
-    [Fact]
-    public void AnAbandonedIntent_IsDiscardableOnceTheSourceIsGone()
+    [Theory]
+    [InlineData(InnoInstallationStatus.NotInstalled)]
+    [InlineData(InnoInstallationStatus.OrphanedRegistration)]
+    public void AnAbandonedIntent_IsDiscardableOnceTheSourceIsGone(InnoInstallationStatus source)
     {
         Seed();
         WriteRecord("intent");
-        _detector.Status = InnoInstallationStatus.NotInstalled;
+        _detector.Status = source;
 
         Assert.True(Discarder().CanDiscard());
         Assert.Equal(StoreMigrationDiscardState.Discarded, Discarder().Discard());
@@ -92,10 +96,18 @@ public sealed class StoreMigrationRecoveryDiscardTests : IDisposable
         Assert.Equal(MigrationStartupRecordStatus.None, Read().Status);
     }
 
-    [Fact]
-    public void AValidIntent_IsKeptWhileTheSourceIsStillInstalled()
+    /// <summary>
+    /// An unsupported install is not a removed one. Nothing was proved about its payload, so a
+    /// decodable intent still belongs to a source that may yet be there.
+    /// </summary>
+    [Theory]
+    [InlineData(InnoInstallationStatus.Detected)]
+    [InlineData(InnoInstallationStatus.Unsupported)]
+    [InlineData(InnoInstallationStatus.InspectionFailed)]
+    public void AValidIntent_IsKeptWhileTheSourceIsStillInstalled(InnoInstallationStatus source)
     {
         Seed();
+        _detector.Status = source;
         var intent = WriteRecord("intent");
         var before = File.ReadAllBytes(intent);
 

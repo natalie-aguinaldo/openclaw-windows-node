@@ -71,6 +71,41 @@ public sealed class StoreMigrationStartupCoordinatorTests
         Assert.Equal(allowsNormal, result.AllowsNormalStartup);
     }
 
+    /// <summary>
+    /// A registration left behind by an uninstall that already removed the payload. The source is
+    /// gone, so the surviving registry key must route exactly like an absent install: a completed
+    /// handoff finalizes, and a later launch with no records left starts normally instead of
+    /// showing the migration window forever.
+    /// </summary>
+    [Theory]
+    [InlineData(MigrationStartupRecordStatus.None, StoreMigrationStartupState.NotRequired, true)]
+    [InlineData(MigrationStartupRecordStatus.Intent, StoreMigrationStartupState.RecoveryRequired, false)]
+    [InlineData(MigrationStartupRecordStatus.Completed, StoreMigrationStartupState.FinalizationRequired, false)]
+    [InlineData(MigrationStartupRecordStatus.Invalid, StoreMigrationStartupState.RecoveryRequired, false)]
+    [InlineData(MigrationStartupRecordStatus.Unavailable, StoreMigrationStartupState.InspectionFailed, false)]
+    public void OrphanedRegistration_RoutesLikeAnAbsentInstall(
+        MigrationStartupRecordStatus pending, StoreMigrationStartupState expected, bool allowsNormal)
+    {
+        var result = Evaluate(new(InnoInstallationStatus.OrphanedRegistration), new(pending));
+
+        Assert.Equal(expected, result.State);
+        Assert.Equal(allowsNormal, result.AllowsNormalStartup);
+    }
+
+    /// <summary>
+    /// An orphan of an old version must not be told to update. The payload is gone, so "install a
+    /// newer version of the app you no longer have" is advice the user cannot act on.
+    /// </summary>
+    [Fact]
+    public void AnOrphanedRegistrationOfAnOldVersion_IsNotAskedToUpdate()
+    {
+        var result = Evaluate(
+            new(InnoInstallationStatus.OrphanedRegistration, RegisteredVersion: new Version(2026, 8, 31, 0)),
+            new(MigrationStartupRecordStatus.Completed));
+
+        Assert.Equal(StoreMigrationStartupState.FinalizationRequired, result.State);
+    }
+
     [Theory]
     [InlineData(InnoInstallationStatus.Unsupported, StoreMigrationStartupState.UnsupportedInstallation)]
     [InlineData(InnoInstallationStatus.InspectionFailed, StoreMigrationStartupState.InspectionFailed)]

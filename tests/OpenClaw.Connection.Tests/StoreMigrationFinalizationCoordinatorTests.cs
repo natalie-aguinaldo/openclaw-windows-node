@@ -116,6 +116,89 @@ public sealed class StoreMigrationFinalizationCoordinatorTests
         Assert.True(File.Exists(fixture.CompletionPath));
     }
 
+    /// <summary>
+    /// The last gate before the handoff is declared finished, so absence must be proved rather
+    /// than assumed. A directory occupying the executable's name is not a removed source, but an
+    /// existence check answers false for it exactly as it does for a path that is truly gone.
+    /// </summary>
+    [Theory]
+    [InlineData("OpenClaw.Tray.WinUI.exe")]
+    [InlineData("unins000.exe")]
+    public void ADirectoryOccupyingASourceName_BlocksRemoval(string name)
+    {
+        using var fixture = new Fixture();
+        Directory.CreateDirectory(Path.Combine(fixture.Binding.InstallDirectory, name));
+
+        var result = new InnoSourceRemovalVerifier(
+            fixture.Binding, $"OpenClawMigrationTest-{Guid.NewGuid():N}").VerifyRemoved();
+
+        Assert.Equal(InnoSourceRemovalStatus.SourcePresent, result);
+    }
+
+    /// <summary>
+    /// The recovery this whole outcome exists for: an uninstall removed the payload but left the
+    /// registration behind. Finalization must complete rather than refuse forever, which would
+    /// leave the user with neither the previous app nor the Store app.
+    /// </summary>
+    [Fact]
+    public async Task OrphanedRegistrationWithTheSourceGone_Finalizes()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords();
+        var autoStart = new AutoStart();
+
+        var result = await fixture.FinalizeAsync(
+            new(InnoInstallationStatus.OrphanedRegistration),
+            new InnoSourceRemovalVerifier(fixture.Binding, $"OpenClawMigrationTest-{Guid.NewGuid():N}"),
+            autoStart);
+
+        Assert.Equal(StoreMigrationFinalizationState.Finalized, result.State);
+        Assert.True(result.SourceRemoved);
+        Assert.False(File.Exists(fixture.CompletionPath));
+    }
+
+    /// <summary>
+    /// Admitting the orphan outcome grants nothing on its own. Detection said the payload was
+    /// gone, but the verifier answers again here, and its answer is the one that decides.
+    /// </summary>
+    [Fact]
+    public async Task OrphanedRegistrationWhoseSourceReappears_WaitsWithoutMutation()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords();
+        File.WriteAllText(Path.Combine(fixture.Binding.InstallDirectory, "OpenClaw.Tray.WinUI.exe"), "source");
+        var autoStart = new AutoStart();
+
+        var result = await fixture.FinalizeAsync(
+            new(InnoInstallationStatus.OrphanedRegistration),
+            new InnoSourceRemovalVerifier(fixture.Binding, $"OpenClawMigrationTest-{Guid.NewGuid():N}"),
+            autoStart);
+
+        Assert.Equal(StoreMigrationFinalizationState.AwaitingInnoRemoval, result.State);
+        Assert.False(result.SourceRemoved);
+        Assert.Equal(0, autoStart.Calls);
+        Assert.True(File.Exists(fixture.CompletionPath));
+    }
+
+    /// <summary>
+    /// An access failure that arises only after admission still fails closed: the orphan outcome
+    /// moves where the check happens, never whether removal has to be proved.
+    /// </summary>
+    [Fact]
+    public async Task OrphanedRegistrationWithAnUnprovableSource_FailsClosedAndKeepsReceipt()
+    {
+        using var fixture = new Fixture();
+        fixture.WriteRecords();
+
+        var result = await fixture.FinalizeAsync(
+            new(InnoInstallationStatus.OrphanedRegistration),
+            new SourceRemoval(InnoSourceRemovalStatus.InspectionFailed));
+
+        Assert.Equal(StoreMigrationFinalizationState.InspectionFailed, result.State);
+        Assert.False(result.SourceRemoved);
+        Assert.True(File.Exists(fixture.CompletionPath));
+    }
+
     [Fact]
     public async Task UncertainSourceRemoval_FailsClosedAndKeepsReceipt()
     {

@@ -148,7 +148,11 @@ public sealed class StoreMigrationRecoveryDiscard(
         if (completion == RecordState.Readable)
             return [];
 
-        var sourceGone = detector.Detect().Status == InnoInstallationStatus.NotInstalled;
+        // An orphaned registration counts as gone for the same reason admission does: the payload
+        // is proved absent. Without this a readable consent or intent left beside an orphan would
+        // be undiscardable, and recovery would offer a button that clears nothing.
+        var sourceGone = detector.Detect().Status is InnoInstallationStatus.NotInstalled or
+                                                     InnoInstallationStatus.OrphanedRegistration;
         var targets = new List<string>();
         Consider(Path.Combine(directory, MigrationRecordCodec.ConsentFileName), "consent");
         Consider(Path.Combine(directory, MigrationRecordCodec.IntentFileName), "intent");

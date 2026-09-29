@@ -120,7 +120,13 @@ public sealed class StoreMigrationStartupCoordinator(
                 sourcePayloadPresent: sourcePayloadPresent);
         }
 
-        if (detected.Status == InnoInstallationStatus.NotInstalled)
+        // An orphaned canonical registration is treated exactly as an absent source. Its payload
+        // has been positively proved gone, so the leftover registry key is the only thing that
+        // separates it from NotInstalled, and refusing on a registry key alone is what would
+        // leave the user with no app at all. This grants nothing: a completed handoff still goes
+        // to finalization, which independently re-verifies removal before it acts.
+        if (detected.Status is InnoInstallationStatus.NotInstalled or
+                               InnoInstallationStatus.OrphanedRegistration)
         {
             return Decide(pending.Status switch
             {

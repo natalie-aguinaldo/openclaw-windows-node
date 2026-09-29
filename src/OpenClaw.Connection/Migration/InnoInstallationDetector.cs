@@ -93,6 +93,21 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
                 return Unsupported("The Inno uninstall command must contain only the quoted canonical unins000.exe path.",
                     sourcePayloadPresent: sourcePayloadPresent);
 
+            // Decided ahead of the payload sweep below. That sweep reports a missing tray
+            // executable as an installation too old to migrate and carries a version for admission
+            // to offer as an update, which for a registration with no payload at all would send the
+            // user to update an app that is no longer installed. Both the executable and the
+            // uninstaller must be positively absent: an unreadable path, an unexpected object
+            // shape, or a denied probe is unknown, and unknown must never qualify as removed.
+            if (_source.IsDefinitelyAbsent(executable) && _source.IsDefinitelyAbsent(uninstaller))
+            {
+                const string orphanReason =
+                    "The canonical Inno registration has neither an executable nor an uninstaller payload.";
+                _logger.Warn(orphanReason);
+                return new(InnoInstallationStatus.OrphanedRegistration, Reason: orphanReason,
+                    RegisteredVersion: version);
+            }
+
             foreach (var name in new[]
             {
                 TrayExecutableName, "unins000.exe", "app-identity.txt",
@@ -142,7 +157,8 @@ public sealed class InnoInstallationDetector : IInnoInstallationDetector
             return Unsupported("The installed executable is not a valid native PE executable.",
                 sourcePayloadPresent: sourcePayloadPresent);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException or
+                                   InvalidDataException or ArgumentException or NotSupportedException)
         {
             const string reason = "The Inno installation could not be inspected.";
             _logger.Error(reason, ex);
@@ -219,6 +235,14 @@ internal interface IInnoInstallationReadSource
 {
     InnoInstallationRegistration? ReadRegistration(RegistryHive hive, RegistryView view);
     bool IsOrdinaryFile(string path);
+
+    /// <summary>
+    /// Whether the path is proved to hold nothing. Distinct from <see cref="IsOrdinaryFile"/>,
+    /// which answers <c>false</c> for a directory or device of the same name and so cannot be
+    /// read as absence. Only a not-found result proves absence here; every other failure throws
+    /// so the inspection fails closed rather than reporting a payload as removed.
+    /// </summary>
+    bool IsDefinitelyAbsent(string path);
     string ReadIdentity(string path);
     InnoInstallationExecutable ReadExecutable(string path);
 }
@@ -251,6 +275,20 @@ internal sealed class InnoInstallationReadSource : IInnoInstallationReadSource
         }
         catch (FileNotFoundException) { return false; }
         catch (DirectoryNotFoundException) { return false; }
+    }
+
+    public bool IsDefinitelyAbsent(string path)
+    {
+        MigrationRecordCodec.RejectReparsePoints(path);
+        try
+        {
+            _ = File.GetAttributes(path);
+            return false;
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return true;
+        }
     }
 
     public string ReadIdentity(string path)
